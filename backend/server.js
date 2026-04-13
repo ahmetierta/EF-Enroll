@@ -3,6 +3,7 @@ const cors = require("cors");
 
 const studentsRoutes = require("./routes/students");
 const usersRoutes = require("./routes/users");
+const professorsRoutes = require("./routes/professors");
 
 const app = express();
 
@@ -11,6 +12,7 @@ app.use(express.json());
 
 app.use("/students", studentsRoutes);
 app.use("/users", usersRoutes);
+app.use("/professors", professorsRoutes);
 
 app.get("/", (req, res) => {
   res.send("Backend po punon");

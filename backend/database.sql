@@ -1,5 +1,4 @@
-DROP DATABASE IF EXISTS ef_enroll;
-CREATE DATABASE ef_enroll;
+
 USE ef_enroll;
 CREATE TABLE users (
  id INT AUTO_INCREMENT PRIMARY KEY,
