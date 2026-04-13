@@ -1,4 +1,3 @@
-
 USE ef_enroll;
 CREATE TABLE users (
  id INT AUTO_INCREMENT PRIMARY KEY,
@@ -85,3 +84,7 @@ CREATE TABLE announcements (
  FOREIGN KEY (professor_id) REFERENCES professors(id)
 );
 SHOW TABLES;
+SELECT * FROM users;
+INSERT INTO users (username, email, password_hash)
+VALUES ('student1', 'student1@gmail.com', '123456');
+SELECT * FROM users;
