@@ -62,11 +62,11 @@ const Courses = () => {
       .then(() => {
         fetchCourses();
         resetForm();
-        alert("Kursi u shtua me sukses");
+        alert("Course added successfully.");
       })
       .catch((err) => {
         console.log(err);
-        alert("Gabim gjate shtimit");
+        alert("Failed to add course.");
       });
   };
 
@@ -76,27 +76,27 @@ const Courses = () => {
       .then(() => {
         fetchCourses();
         resetForm();
-        alert("Kursi u perditesua me sukses");
+        alert("Course updated successfully.");
       })
       .catch((err) => {
         console.log(err);
-        alert("Gabim gjate perditesimit");
+        alert("Failed to update course.");
       });
   };
 
   const deleteCourse = (id) => {
-    if (!window.confirm("A don me fshi kete kurs?")) return;
+    if (!window.confirm("Do you want to delete this course?")) return;
 
     axios
       .delete(`http://localhost:5000/courses/${id}`)
       .then(() => {
         fetchCourses();
         if (editId === id) resetForm();
-        alert("Kursi u fshi me sukses");
+        alert("Course deleted successfully.");
       })
       .catch((err) => {
         console.log(err);
-        alert("Gabim gjate fshirjes");
+        alert("Failed to delete course.");
       });
   };
 
@@ -306,10 +306,10 @@ const Courses = () => {
                       </td>
                       <td className="px-4 py-4">{course.kredite}</td>
                       <td className="px-4 py-3">
-                        {course.professor_name || "Pa profesor"}
+                        {course.professor_name || "No professor"}
                       </td>
                       <td className="px-4 py-3">
-                        {course.semester_name || "Pa semester"}
+                        {course.semester_name || "No semester"}
                       </td>
                       <td className="px-4 py-4">
                         <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
@@ -337,7 +337,7 @@ const Courses = () => {
                 ) : (
                   <tr>
                     <td className="px-4 py-10 text-center text-slate-400" colSpan="8">
-                      Nuk ka kurse te regjistruara.
+                      No courses found.
                     </td>
                   </tr>
                 )}

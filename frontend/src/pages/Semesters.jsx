@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
+const initialFormData = {
+  emertimi: "",
+  data_fillimit: "",
+  data_perfundimit: "",
+  statusi: "",
+};
+
 const Semesters = () => {
   const [semesters, setSemesters] = useState([]);
-
-  const [formData, setFormData] = useState({
-    emertimi: "",
-    data_fillimit: "",
-    data_perfundimit: "",
-    statusi: "",
-  });
-
+  const [formData, setFormData] = useState(initialFormData);
   const [editId, setEditId] = useState(null);
 
   useEffect(() => {
@@ -32,12 +32,7 @@ const Semesters = () => {
   };
 
   const resetForm = () => {
-    setFormData({
-      emertimi: "",
-      data_fillimit: "",
-      data_perfundimit: "",
-      statusi: "",
-    });
+    setFormData(initialFormData);
     setEditId(null);
   };
 
@@ -47,11 +42,11 @@ const Semesters = () => {
       .then(() => {
         fetchSemesters();
         resetForm();
-        alert("Semestri u shtua me sukses");
+        alert("Semester added successfully.");
       })
       .catch((err) => {
         console.log(err);
-        alert("Gabim gjatë shtimit");
+        alert("Failed to add semester.");
       });
   };
 
@@ -61,27 +56,27 @@ const Semesters = () => {
       .then(() => {
         fetchSemesters();
         resetForm();
-        alert("Semestri u përditësua me sukses");
+        alert("Semester updated successfully.");
       })
       .catch((err) => {
         console.log(err);
-        alert("Gabim gjatë përditësimit");
+        alert("Failed to update semester.");
       });
   };
 
   const deleteSemester = (id) => {
-    if (!window.confirm("A don me fshi këtë semestër?")) return;
+    if (!window.confirm("Do you want to delete this semester?")) return;
 
     axios
       .delete(`http://localhost:5000/semesters/${id}`)
       .then(() => {
         fetchSemesters();
         if (editId === id) resetForm();
-        alert("Semestri u fshi me sukses");
+        alert("Semester deleted successfully.");
       })
       .catch((err) => {
         console.log(err);
-        alert("Gabim gjatë fshirjes");
+        alert("Failed to delete semester.");
       });
   };
 
@@ -225,7 +220,7 @@ const Semesters = () => {
                 ) : (
                   <tr>
                     <td className="px-4 py-6 text-slate-500" colSpan="6">
-                      Nuk ka semestre të regjistruar.
+                      No semesters found.
                     </td>
                   </tr>
                 )}

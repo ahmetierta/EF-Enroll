@@ -52,6 +52,12 @@ router.get("/:id", (req, res) => {
 router.post("/", (req, res) => {
   const { course_id, dita, ora_fillimit, ora_perfundimit, salla } = req.body;
 
+  if (!course_id || !dita || !ora_fillimit || !ora_perfundimit || !salla) {
+    return res.status(400).json({
+      message: "All schedule fields are required.",
+    });
+  }
+
   const sql =
     "INSERT INTO schedules (course_id, dita, ora_fillimit, ora_perfundimit, salla) VALUES (?, ?, ?, ?, ?)";
 
@@ -59,8 +65,13 @@ router.post("/", (req, res) => {
     sql,
     [course_id, dita, ora_fillimit, ora_perfundimit, salla],
     (err, result) => {
-      if (err) return res.status(500).json(err);
-      res.json({ message: "Orari u shtua me sukses", result });
+      if (err) {
+        return res.status(500).json({
+          message: "Failed to create schedule.",
+          error: err.sqlMessage || err.message,
+        });
+      }
+      res.json({ message: "Schedule created successfully.", result });
     }
   );
 });
@@ -70,6 +81,12 @@ router.put("/:id", (req, res) => {
   const id = req.params.id;
   const { course_id, dita, ora_fillimit, ora_perfundimit, salla } = req.body;
 
+  if (!course_id || !dita || !ora_fillimit || !ora_perfundimit || !salla) {
+    return res.status(400).json({
+      message: "All schedule fields are required.",
+    });
+  }
+
   const sql =
     "UPDATE schedules SET course_id = ?, dita = ?, ora_fillimit = ?, ora_perfundimit = ?, salla = ? WHERE id = ?";
 
@@ -77,8 +94,13 @@ router.put("/:id", (req, res) => {
     sql,
     [course_id, dita, ora_fillimit, ora_perfundimit, salla, id],
     (err, result) => {
-      if (err) return res.status(500).json(err);
-      res.json({ message: "Orari u perditesua me sukses", result });
+      if (err) {
+        return res.status(500).json({
+          message: "Failed to update schedule.",
+          error: err.sqlMessage || err.message,
+        });
+      }
+      res.json({ message: "Schedule updated successfully.", result });
     }
   );
 });
@@ -89,8 +111,13 @@ router.delete("/:id", (req, res) => {
   const sql = "DELETE FROM schedules WHERE id = ?";
 
   db.query(sql, [id], (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json({ message: "Orari u fshi me sukses", result });
+    if (err) {
+      return res.status(500).json({
+        message: "Failed to delete schedule.",
+        error: err.sqlMessage || err.message,
+      });
+    }
+    res.json({ message: "Schedule deleted successfully.", result });
   });
 });
 

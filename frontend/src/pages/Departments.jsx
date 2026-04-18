@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
+const initialFormData = {
+  emertimi: "",
+  pershkrimi: "",
+  shefi_departamentit: "",
+};
+
 const Departments = () => {
   const [departments, setDepartments] = useState([]);
-
-  const [formData, setFormData] = useState({
-    emertimi: "",
-    pershkrimi: "",
-    shefi_departamentit: "",
-  });
-
+  const [formData, setFormData] = useState(initialFormData);
   const [editId, setEditId] = useState(null);
 
   useEffect(() => {
@@ -31,11 +31,7 @@ const Departments = () => {
   };
 
   const resetForm = () => {
-    setFormData({
-      emertimi: "",
-      pershkrimi: "",
-      shefi_departamentit: "",
-    });
+    setFormData(initialFormData);
     setEditId(null);
   };
 
@@ -45,11 +41,11 @@ const Departments = () => {
       .then(() => {
         fetchDepartments();
         resetForm();
-        alert("Departamenti u shtua me sukses");
+        alert("Department added successfully.");
       })
       .catch((err) => {
         console.log(err);
-        alert("Gabim gjatë shtimit");
+        alert("Failed to add department.");
       });
   };
 
@@ -59,27 +55,27 @@ const Departments = () => {
       .then(() => {
         fetchDepartments();
         resetForm();
-        alert("Departamenti u përditësua me sukses");
+        alert("Department updated successfully.");
       })
       .catch((err) => {
         console.log(err);
-        alert("Gabim gjatë përditësimit");
+        alert("Failed to update department.");
       });
   };
 
   const deleteDepartment = (id) => {
-    if (!window.confirm("A don me fshi këtë departament?")) return;
+    if (!window.confirm("Do you want to delete this department?")) return;
 
     axios
       .delete(`http://localhost:5000/departments/${id}`)
       .then(() => {
         fetchDepartments();
         if (editId === id) resetForm();
-        alert("Departamenti u fshi me sukses");
+        alert("Department deleted successfully.");
       })
       .catch((err) => {
         console.log(err);
-        alert("Gabim gjatë fshirjes");
+        alert("Failed to delete department.");
       });
   };
 
@@ -185,7 +181,9 @@ const Departments = () => {
                       <td className="px-4 py-3">{department.id}</td>
                       <td className="px-4 py-3">{department.emertimi}</td>
                       <td className="px-4 py-3">{department.pershkrimi}</td>
-                      <td className="px-4 py-3">{department.shefi_departamentit}</td>
+                      <td className="px-4 py-3">
+                        {department.shefi_departamentit}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
                           <button
@@ -207,7 +205,7 @@ const Departments = () => {
                 ) : (
                   <tr>
                     <td className="px-4 py-6 text-slate-500" colSpan="5">
-                      Nuk ka departamente të regjistruara.
+                      No departments found.
                     </td>
                   </tr>
                 )}

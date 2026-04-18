@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
+const initialFormData = {
+  username: "",
+  email: "",
+  password_hash: "",
+  numri_studentit: "",
+  programi: "",
+  viti_studimit: "",
+};
+
 const Students = () => {
   const [students, setStudents] = useState([]);
-
-  const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    password_hash: "",
-    numri_studentit: "",
-    programi: "",
-    viti_studimit: "",
-  });
-
+  const [formData, setFormData] = useState(initialFormData);
   const [editId, setEditId] = useState(null);
 
   useEffect(() => {
@@ -34,14 +34,7 @@ const Students = () => {
   };
 
   const resetForm = () => {
-    setFormData({
-      username: "",
-      email: "",
-      password_hash: "",
-      numri_studentit: "",
-      programi: "",
-      viti_studimit: "",
-    });
+    setFormData(initialFormData);
     setEditId(null);
   };
 
@@ -51,11 +44,11 @@ const Students = () => {
       .then(() => {
         fetchStudents();
         resetForm();
-        alert("Studenti u shtua me sukses");
+        alert("Student added successfully.");
       })
       .catch((err) => {
         console.log(err);
-        alert("Gabim gjatë shtimit");
+        alert("Failed to add student.");
       });
   };
 
@@ -65,27 +58,27 @@ const Students = () => {
       .then(() => {
         fetchStudents();
         resetForm();
-        alert("Studenti u përditësua me sukses");
+        alert("Student updated successfully.");
       })
       .catch((err) => {
         console.log(err);
-        alert("Gabim gjatë përditësimit");
+        alert("Failed to update student.");
       });
   };
 
   const deleteStudent = (id) => {
-    if (!window.confirm("A don me fshi këtë student?")) return;
+    if (!window.confirm("Do you want to delete this student?")) return;
 
     axios
       .delete(`http://localhost:5000/students/${id}`)
       .then(() => {
         fetchStudents();
         if (editId === id) resetForm();
-        alert("Studenti u fshi me sukses");
+        alert("Student deleted successfully.");
       })
       .catch((err) => {
         console.log(err);
-        alert("Gabim gjatë fshirjes");
+        alert("Failed to delete student.");
       });
   };
 
@@ -247,7 +240,7 @@ const Students = () => {
                 ) : (
                   <tr>
                     <td className="px-4 py-6 text-slate-500" colSpan="7">
-                      Nuk ka studentë të regjistruar.
+                      No students found.
                     </td>
                   </tr>
                 )}

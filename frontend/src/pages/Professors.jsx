@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
+const initialFormData = {
+  username: "",
+  email: "",
+  password_hash: "",
+  titulli: "",
+  departamenti: "",
+};
+
 const Professors = () => {
   const [professors, setProfessors] = useState([]);
   const [departments, setDepartments] = useState([]);
-
-  const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    password_hash: "",
-    titulli: "",
-    departamenti: "",
-  });
-
+  const [formData, setFormData] = useState(initialFormData);
   const [editId, setEditId] = useState(null);
 
   useEffect(() => {
@@ -42,13 +42,7 @@ const Professors = () => {
   };
 
   const resetForm = () => {
-    setFormData({
-      username: "",
-      email: "",
-      password_hash: "",
-      titulli: "",
-      departamenti: "",
-    });
+    setFormData(initialFormData);
     setEditId(null);
   };
 
@@ -58,11 +52,11 @@ const Professors = () => {
       .then(() => {
         fetchProfessors();
         resetForm();
-        alert("Profesori u shtua me sukses");
+        alert("Professor added successfully.");
       })
       .catch((err) => {
         console.log(err);
-        alert("Gabim gjatë shtimit");
+        alert("Failed to add professor.");
       });
   };
 
@@ -72,27 +66,27 @@ const Professors = () => {
       .then(() => {
         fetchProfessors();
         resetForm();
-        alert("Profesori u përditësua me sukses");
+        alert("Professor updated successfully.");
       })
       .catch((err) => {
         console.log(err);
-        alert("Gabim gjatë përditësimit");
+        alert("Failed to update professor.");
       });
   };
 
   const deleteProfessor = (id) => {
-    if (!window.confirm("A don me fshi këtë profesor?")) return;
+    if (!window.confirm("Do you want to delete this professor?")) return;
 
     axios
       .delete(`http://localhost:5000/professors/${id}`)
       .then(() => {
         fetchProfessors();
         if (editId === id) resetForm();
-        alert("Profesori u fshi me sukses");
+        alert("Professor deleted successfully.");
       })
       .catch((err) => {
         console.log(err);
-        alert("Gabim gjatë fshirjes");
+        alert("Failed to delete professor.");
       });
   };
 
@@ -110,20 +104,17 @@ const Professors = () => {
   return (
     <div className="min-h-screen bg-slate-300 p-8 text-slate-900">
       <div className="mx-auto max-w-7xl">
-
         <h1 className="mb-8 text-3xl font-bold text-blue-700">
           Professors Management
         </h1>
 
         <div className="grid gap-8 lg:grid-cols-3">
-
           <div className="rounded-2xl border border-slate-300 bg-white p-6 shadow-sm">
             <h2 className="mb-6 text-xl font-semibold">
               {editId ? "Edit Professor" : "Add Professor"}
             </h2>
 
             <div className="space-y-4">
-
               <input
                 type="text"
                 name="username"
@@ -173,7 +164,6 @@ const Professors = () => {
                   </option>
                 ))}
               </select>
-
             </div>
 
             <div className="mt-6 flex gap-3">
@@ -205,10 +195,7 @@ const Professors = () => {
           </div>
 
           <div className="overflow-x-auto rounded-2xl border border-slate-300 bg-white p-6 shadow-sm lg:col-span-2">
-
-            <h2 className="mb-6 text-xl font-semibold">
-              Professors List
-            </h2>
+            <h2 className="mb-6 text-xl font-semibold">Professors List</h2>
 
             <table className="w-full border-collapse text-left">
               <thead>
@@ -237,7 +224,6 @@ const Professors = () => {
 
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
-
                           <button
                             onClick={() => editProfessor(professor)}
                             className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 hover:bg-slate-100"
@@ -251,7 +237,6 @@ const Professors = () => {
                           >
                             Delete
                           </button>
-
                         </div>
                       </td>
                     </tr>
@@ -259,13 +244,12 @@ const Professors = () => {
                 ) : (
                   <tr>
                     <td className="px-4 py-6 text-slate-500" colSpan="6">
-                      Nuk ka profesorë të regjistruar.
+                      No professors found.
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
-
           </div>
         </div>
       </div>

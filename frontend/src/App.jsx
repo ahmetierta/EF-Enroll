@@ -31,8 +31,8 @@ function PlaceholderPage({ title }) {
       <div className="rounded-3xl border border-slate-300 bg-white p-8 shadow-sm">
         <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
         <p className="mt-2 text-slate-600">
-          This page is ready in the navbar and can be connected once we build
-          its CRUD frontend.
+          This page is already available in the navigation and will be
+          connected once we build its frontend CRUD module.
         </p>
       </div>
     </div>

@@ -47,46 +47,92 @@ const Schedules = () => {
   };
 
   const addSchedule = () => {
+    if (
+      !formData.course_id ||
+      !formData.dita ||
+      !formData.ora_fillimit ||
+      !formData.ora_perfundimit ||
+      !formData.salla.trim()
+    ) {
+      alert("Please fill in all schedule fields.");
+      return;
+    }
+
+    const payload = {
+      ...formData,
+      course_id: Number(formData.course_id),
+      salla: formData.salla.trim(),
+    };
+
     axios
-      .post("http://localhost:5000/schedules", formData)
+      .post("http://localhost:5000/schedules", payload)
       .then(() => {
         fetchSchedules();
         resetForm();
-        alert("Orari u shtua me sukses");
+        alert("Schedule added successfully.");
       })
       .catch((err) => {
         console.log(err);
-        alert("Gabim gjate shtimit");
+        alert(
+          err.response?.data?.error ||
+            err.response?.data?.message ||
+            "Failed to add schedule."
+        );
       });
   };
 
   const updateSchedule = () => {
+    if (
+      !formData.course_id ||
+      !formData.dita ||
+      !formData.ora_fillimit ||
+      !formData.ora_perfundimit ||
+      !formData.salla.trim()
+    ) {
+      alert("Please fill in all schedule fields.");
+      return;
+    }
+
+    const payload = {
+      ...formData,
+      course_id: Number(formData.course_id),
+      salla: formData.salla.trim(),
+    };
+
     axios
-      .put(`http://localhost:5000/schedules/${editId}`, formData)
+      .put(`http://localhost:5000/schedules/${editId}`, payload)
       .then(() => {
         fetchSchedules();
         resetForm();
-        alert("Orari u perditesua me sukses");
+        alert("Schedule updated successfully.");
       })
       .catch((err) => {
         console.log(err);
-        alert("Gabim gjate perditesimit");
+        alert(
+          err.response?.data?.error ||
+            err.response?.data?.message ||
+            "Failed to update schedule."
+        );
       });
   };
 
   const deleteSchedule = (id) => {
-    if (!window.confirm("A don me fshi kete orar?")) return;
+    if (!window.confirm("Do you want to delete this schedule?")) return;
 
     axios
       .delete(`http://localhost:5000/schedules/${id}`)
       .then(() => {
         fetchSchedules();
         if (editId === id) resetForm();
-        alert("Orari u fshi me sukses");
+        alert("Schedule deleted successfully.");
       })
       .catch((err) => {
         console.log(err);
-        alert("Gabim gjate fshirjes");
+        alert(
+          err.response?.data?.error ||
+            err.response?.data?.message ||
+            "Failed to delete schedule."
+        );
       });
   };
 
@@ -273,7 +319,7 @@ const Schedules = () => {
                           #{schedule.id}
                         </td>
                         <td className="px-4 py-4 font-medium text-slate-900">
-                          {schedule.course_name || "Pa kurs"}
+                          {schedule.course_name || "No course"}
                         </td>
                         <td className="px-4 py-4">{schedule.dita}</td>
                         <td className="px-4 py-4">
@@ -311,7 +357,7 @@ const Schedules = () => {
                         className="px-4 py-10 text-center text-slate-400"
                         colSpan="7"
                       >
-                        Nuk ka orare te regjistruara.
+                        No schedules found.
                       </td>
                     </tr>
                   )}
