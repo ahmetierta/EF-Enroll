@@ -96,14 +96,14 @@ const Semesters = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-8">
+    <div className="min-h-screen bg-slate-300 p-8 text-slate-900">
       <div className="mx-auto max-w-7xl">
-        <h1 className="mb-8 text-3xl font-bold text-blue-400">
+        <h1 className="mb-8 text-3xl font-bold text-blue-700">
           Semesters Management
         </h1>
 
         <div className="grid gap-8 lg:grid-cols-3">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+          <div className="rounded-2xl border border-slate-300 bg-white p-6 shadow-sm">
             <h2 className="mb-6 text-xl font-semibold">
               {editId ? "Edit Semester" : "Add Semester"}
             </h2>
@@ -115,7 +115,7 @@ const Semesters = () => {
                 placeholder="Semester Name"
                 value={formData.emertimi}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3"
+                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
               />
 
               <input
@@ -123,7 +123,7 @@ const Semesters = () => {
                 name="data_fillimit"
                 value={formData.data_fillimit}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3"
+                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
               />
 
               <input
@@ -131,7 +131,7 @@ const Semesters = () => {
                 name="data_perfundimit"
                 value={formData.data_perfundimit}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3"
+                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
               />
 
               <input
@@ -140,7 +140,7 @@ const Semesters = () => {
                 placeholder="Status"
                 value={formData.statusi}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3"
+                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
               />
             </div>
 
@@ -149,14 +149,14 @@ const Semesters = () => {
                 <>
                   <button
                     onClick={updateSemester}
-                    className="flex-1 rounded-lg bg-blue-500 px-4 py-3 hover:bg-blue-600"
+                    className="flex-1 rounded-lg bg-blue-600 px-4 py-3 text-white hover:bg-blue-700"
                   >
                     Update
                   </button>
 
                   <button
                     onClick={resetForm}
-                    className="flex-1 rounded-lg bg-slate-700 px-4 py-3 hover:bg-slate-600"
+                    className="flex-1 rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-700 hover:bg-slate-50"
                   >
                     Cancel
                   </button>
@@ -164,7 +164,7 @@ const Semesters = () => {
               ) : (
                 <button
                   onClick={addSemester}
-                  className="w-full rounded-lg bg-blue-500 px-4 py-3 hover:bg-blue-600"
+                  className="w-full rounded-lg bg-blue-600 px-4 py-3 text-white hover:bg-blue-700"
                 >
                   Add Semester
                 </button>
@@ -172,12 +172,12 @@ const Semesters = () => {
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900 p-6 lg:col-span-2">
+          <div className="overflow-x-auto rounded-2xl border border-slate-300 bg-white p-6 shadow-sm lg:col-span-2">
             <h2 className="mb-6 text-xl font-semibold">Semesters List</h2>
 
             <table className="w-full border-collapse text-left">
               <thead>
-                <tr className="border-b border-slate-700 text-blue-300">
+                <tr className="border-b border-slate-200 text-blue-700">
                   <th className="px-4 py-3">ID</th>
                   <th className="px-4 py-3">Name</th>
                   <th className="px-4 py-3">Start Date</th>
@@ -192,7 +192,7 @@ const Semesters = () => {
                   semesters.map((semester) => (
                     <tr
                       key={semester.id}
-                      className="border-b border-slate-800 hover:bg-slate-800/50"
+                      className="border-b border-slate-200 hover:bg-slate-50"
                     >
                       <td className="px-4 py-3">{semester.id}</td>
                       <td className="px-4 py-3">{semester.emertimi}</td>
@@ -207,7 +207,7 @@ const Semesters = () => {
                         <div className="flex gap-2">
                           <button
                             onClick={() => editSemester(semester)}
-                            className="rounded-lg bg-white px-3 py-2 text-black"
+                            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 hover:bg-slate-100"
                           >
                             Edit
                           </button>
@@ -224,7 +224,7 @@ const Semesters = () => {
                   ))
                 ) : (
                   <tr>
-                    <td className="px-4 py-6 text-slate-400" colSpan="6">
+                    <td className="px-4 py-6 text-slate-500" colSpan="6">
                       Nuk ka semestre të regjistruar.
                     </td>
                   </tr>

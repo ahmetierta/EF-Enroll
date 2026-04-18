@@ -112,18 +112,61 @@ const Courses = () => {
     });
   };
 
+  const totalCapacity = courses.reduce(
+    (sum, course) => sum + Number(course.kapaciteti || 0),
+    0
+  );
+
   return (
-    <div className="min-h-screen bg-slate-950 p-8 text-white">
+    <div className="min-h-screen bg-slate-300 p-6 text-slate-900 lg:p-8">
       <div className="mx-auto max-w-7xl">
-        <h1 className="mb-8 text-3xl font-bold text-blue-400">
-          Courses Management
-        </h1>
+        <div className="mb-8 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+          <div className="grid gap-8 px-6 py-8 lg:grid-cols-[1.5fr_1fr] lg:px-10">
+            <div>
+              <span className="inline-flex rounded-full bg-sky-100 px-3 py-1 text-sm font-semibold text-sky-700">
+                EF Enroll Courses
+              </span>
+              <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-900 lg:text-4xl">
+                Manage courses with a cleaner academic dashboard
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 lg:text-base">
+                Create course offers, assign professors, connect semesters, and
+                keep capacity details organized in one place.
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+              <div className="rounded-2xl border border-slate-200 bg-slate-900 p-5 text-white">
+                <p className="text-sm text-slate-300">Total Courses</p>
+                <p className="mt-2 text-3xl font-bold">{courses.length}</p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                <p className="text-sm text-sky-700">Professors Available</p>
+                <p className="mt-2 text-3xl font-bold text-slate-900">
+                  {professors.length}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                <p className="text-sm text-blue-700">Total Capacity</p>
+                <p className="mt-2 text-3xl font-bold text-slate-900">
+                  {totalCapacity}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div className="grid gap-8 lg:grid-cols-3">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <h2 className="mb-6 text-xl font-semibold">
+          <div className="rounded-[1.75rem] border border-blue-100 bg-white p-6 shadow-lg shadow-blue-100/40">
+            <h2 className="mb-2 text-xl font-semibold text-slate-900">
               {editId ? "Edit Course" : "Add Course"}
             </h2>
+            <p className="mb-6 text-sm text-slate-500">
+              Fill in the course information and connect it with the right
+              professor and semester.
+            </p>
 
             <div className="space-y-4">
               <input
@@ -132,7 +175,7 @@ const Courses = () => {
                 placeholder="Course Name"
                 value={formData.emertimi}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-blue-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
               />
 
               <textarea
@@ -141,7 +184,7 @@ const Courses = () => {
                 value={formData.pershkrimi}
                 onChange={handleChange}
                 rows="4"
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-blue-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
               />
 
               <input
@@ -150,14 +193,14 @@ const Courses = () => {
                 placeholder="Credits"
                 value={formData.kredite}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-blue-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
               />
 
               <select
                 name="professor_id"
                 value={formData.professor_id}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-blue-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
               >
                 <option value="">Select Professor</option>
                 {professors.map((professor) => (
@@ -171,7 +214,7 @@ const Courses = () => {
                 name="semester_id"
                 value={formData.semester_id}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-blue-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
               >
                 <option value="">Select Semester</option>
                 {semesters.map((semester) => (
@@ -187,7 +230,7 @@ const Courses = () => {
                 placeholder="Capacity"
                 value={formData.kapaciteti}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-blue-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
               />
             </div>
 
@@ -196,13 +239,13 @@ const Courses = () => {
                 <>
                   <button
                     onClick={updateCourse}
-                    className="flex-1 rounded-lg bg-blue-500 px-4 py-3 font-semibold text-white hover:bg-blue-600"
+                    className="flex-1 rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700"
                   >
                     Update
                   </button>
                   <button
                     onClick={resetForm}
-                    className="flex-1 rounded-lg bg-slate-700 px-4 py-3 font-semibold text-white hover:bg-slate-600"
+                    className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 font-semibold text-slate-700 transition hover:bg-slate-50"
                   >
                     Cancel
                   </button>
@@ -210,7 +253,7 @@ const Courses = () => {
               ) : (
                 <button
                   onClick={addCourse}
-                  className="w-full rounded-lg bg-blue-500 px-4 py-3 font-semibold text-white hover:bg-blue-600"
+                  className="w-full rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700"
                 >
                   Add Course
                 </button>
@@ -218,12 +261,22 @@ const Courses = () => {
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900 p-6 lg:col-span-2">
-            <h2 className="mb-6 text-xl font-semibold">Courses List</h2>
+          <div className="overflow-hidden rounded-[1.75rem] border border-blue-100 bg-white p-6 shadow-lg shadow-blue-100/40 lg:col-span-2">
+            <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-900">
+                  Courses List
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Review, edit, and manage all course offers from one table.
+                </p>
+              </div>
+            </div>
 
-            <table className="w-full border-collapse text-left">
+            <div className="overflow-x-auto">
+              <table className="min-w-full border-separate border-spacing-y-2 text-left">
               <thead>
-                <tr className="border-b border-slate-700 text-blue-300">
+                <tr className="text-xs uppercase tracking-[0.2em] text-slate-500">
                   <th className="px-4 py-3">ID</th>
                   <th className="px-4 py-3">Name</th>
                   <th className="px-4 py-3">Description</th>
@@ -240,30 +293,40 @@ const Courses = () => {
                   courses.map((course) => (
                     <tr
                       key={course.id}
-                      className="border-b border-slate-800 hover:bg-slate-800/50"
+                      className="rounded-2xl bg-slate-50 text-sm text-slate-700 transition hover:bg-blue-50"
                     >
-                      <td className="px-4 py-3">{course.id}</td>
-                      <td className="px-4 py-3">{course.emertimi}</td>
-                      <td className="px-4 py-3">{course.pershkrimi}</td>
-                      <td className="px-4 py-3">{course.kredite}</td>
+                      <td className="rounded-l-2xl px-4 py-4 font-semibold text-slate-900">
+                        #{course.id}
+                      </td>
+                      <td className="px-4 py-4 font-medium text-slate-900">
+                        {course.emertimi}
+                      </td>
+                      <td className="max-w-xs px-4 py-4 text-slate-600">
+                        {course.pershkrimi}
+                      </td>
+                      <td className="px-4 py-4">{course.kredite}</td>
                       <td className="px-4 py-3">
                         {course.professor_name || "Pa profesor"}
                       </td>
                       <td className="px-4 py-3">
                         {course.semester_name || "Pa semester"}
                       </td>
-                      <td className="px-4 py-3">{course.kapaciteti}</td>
+                      <td className="px-4 py-4">
+                        <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                          {course.kapaciteti} seats
+                        </span>
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
                           <button
                             onClick={() => editCourse(course)}
-                            className="rounded-lg bg-white px-3 py-2 text-black hover:bg-slate-200"
+                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 transition hover:border-blue-200 hover:bg-blue-50"
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => deleteCourse(course.id)}
-                            className="rounded-lg bg-red-500 px-3 py-2 text-white hover:bg-red-600"
+                            className="rounded-xl bg-red-500 px-3 py-2 text-white transition hover:bg-red-600"
                           >
                             Delete
                           </button>
@@ -273,13 +336,14 @@ const Courses = () => {
                   ))
                 ) : (
                   <tr>
-                    <td className="px-4 py-6 text-slate-400" colSpan="8">
+                    <td className="px-4 py-10 text-center text-slate-400" colSpan="8">
                       Nuk ka kurse te regjistruara.
                     </td>
                   </tr>
                 )}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
         </div>
       </div>
