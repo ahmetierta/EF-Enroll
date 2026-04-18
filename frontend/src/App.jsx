@@ -3,6 +3,7 @@ import Students from "./pages/Students";
 import Professors from "./pages/Professors";
 import Semesters from "./pages/Semesters";
 import Departments from "./pages/Departments";
+import Courses from "./pages/Courses";
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route path="/professors" element={<Professors />} />
         <Route path="/semesters" element={<Semesters />} />
         <Route path="/departments" element={<Departments />} />
+        <Route path="/courses" element={<Courses />} />
       </Routes>
     </Router>
   );

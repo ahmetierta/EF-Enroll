@@ -6,6 +6,7 @@ const usersRoutes = require("./routes/users");
 const professorsRoutes = require("./routes/professors");
 const semestersRoutes = require("./routes/semesters");
 const departmentsRoutes = require("./routes/departments");
+const coursesRoutes = require("./routes/courses");
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use("/users", usersRoutes);
 app.use("/professors", professorsRoutes);
 app.use("/semesters", semestersRoutes);
 app.use("/departments", departmentsRoutes);
+app.use("/courses", coursesRoutes);
 
 app.get("/", (req, res) => {
   res.send("Backend po punon");
