@@ -177,12 +177,12 @@ const Schedules = () => {
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
               >
                 <option value="">Select Day</option>
-                <option value="E Hene">E Hene</option>
-                <option value="E Marte">E Marte</option>
-                <option value="E Merkur">E Merkur</option>
-                <option value="E Enjte">E Enjte</option>
-                <option value="E Premte">E Premte</option>
-                <option value="E Shtune">E Shtune</option>
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
               </select>
 
               <input
