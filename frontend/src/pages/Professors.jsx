@@ -3,6 +3,7 @@ import axios from "axios";
 
 const Professors = () => {
   const [professors, setProfessors] = useState([]);
+  const [departments, setDepartments] = useState([]);
 
   const [formData, setFormData] = useState({
     username: "",
@@ -16,12 +17,20 @@ const Professors = () => {
 
   useEffect(() => {
     fetchProfessors();
+    fetchDepartments();
   }, []);
 
   const fetchProfessors = () => {
     axios
       .get("http://localhost:5000/professors")
       .then((res) => setProfessors(res.data))
+      .catch((err) => console.log(err));
+  };
+
+  const fetchDepartments = () => {
+    axios
+      .get("http://localhost:5000/departments")
+      .then((res) => setDepartments(res.data))
       .catch((err) => console.log(err));
   };
 
@@ -151,14 +160,19 @@ const Professors = () => {
                 className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
               />
 
-              <input
-                type="text"
+              <select
                 name="departamenti"
-                placeholder="Department"
                 value={formData.departamenti}
                 onChange={handleChange}
                 className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
-              />
+              >
+                <option value="">Select Department</option>
+                {departments.map((department) => (
+                  <option key={department.id} value={department.emertimi}>
+                    {department.emertimi}
+                  </option>
+                ))}
+              </select>
 
             </div>
 
