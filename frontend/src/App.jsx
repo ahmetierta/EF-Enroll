@@ -11,6 +11,7 @@ import Professors from "./pages/Professors";
 import Semesters from "./pages/Semesters";
 import Departments from "./pages/Departments";
 import Courses from "./pages/Courses";
+import Schedules from "./pages/Schedules";
 
 const navItems = [
   { to: "/courses", label: "Courses" },
@@ -90,10 +91,7 @@ function App() {
           <Route path="semesters" element={<Semesters />} />
           <Route path="departments" element={<Departments />} />
           <Route path="courses" element={<Courses />} />
-          <Route
-            path="schedules"
-            element={<PlaceholderPage title="Schedules" />}
-          />
+          <Route path="schedules" element={<Schedules />} />
           <Route
             path="enrollments"
             element={<PlaceholderPage title="Enrollments" />}
