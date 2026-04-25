@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import FormCard from "../components/layout/FormCard";
+import PageContainer from "../components/layout/PageContainer";
+import TableCard from "../components/layout/TableCard";
+import Button from "../components/ui/Button";
+import TextInput from "../components/ui/TextInput";
 
 const initialFormData = {
   emertimi: "",
@@ -13,16 +18,16 @@ const Semesters = () => {
   const [formData, setFormData] = useState(initialFormData);
   const [editId, setEditId] = useState(null);
 
-  useEffect(() => {
-    fetchSemesters();
-  }, []);
-
-  const fetchSemesters = () => {
+  function fetchSemesters() {
     axios
       .get("http://localhost:5000/semesters")
       .then((res) => setSemesters(res.data))
       .catch((err) => console.log(err));
-  };
+  }
+
+  useEffect(() => {
+    fetchSemesters();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -91,86 +96,64 @@ const Semesters = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-300 p-8 text-slate-900">
-      <div className="mx-auto max-w-7xl">
-        <h1 className="mb-8 text-3xl font-bold text-blue-700">
-          Semesters Management
-        </h1>
+    <PageContainer title="Semesters Management">
+      <div className="grid gap-8 lg:grid-cols-3">
+        <FormCard title={editId ? "Edit Semester" : "Add Semester"}>
+          <div className="space-y-4">
+            <TextInput
+              name="emertimi"
+              placeholder="Semester Name"
+              value={formData.emertimi}
+              onChange={handleChange}
+            />
 
-        <div className="grid gap-8 lg:grid-cols-3">
-          <div className="rounded-2xl border border-slate-300 bg-white p-6 shadow-sm">
-            <h2 className="mb-6 text-xl font-semibold">
-              {editId ? "Edit Semester" : "Add Semester"}
-            </h2>
+            <TextInput
+              type="date"
+              name="data_fillimit"
+              value={formData.data_fillimit}
+              onChange={handleChange}
+            />
 
-            <div className="space-y-4">
-              <input
-                type="text"
-                name="emertimi"
-                placeholder="Semester Name"
-                value={formData.emertimi}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
-              />
+            <TextInput
+              type="date"
+              name="data_perfundimit"
+              value={formData.data_perfundimit}
+              onChange={handleChange}
+            />
 
-              <input
-                type="date"
-                name="data_fillimit"
-                value={formData.data_fillimit}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
-              />
-
-              <input
-                type="date"
-                name="data_perfundimit"
-                value={formData.data_perfundimit}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
-              />
-
-              <input
-                type="text"
-                name="statusi"
-                placeholder="Status"
-                value={formData.statusi}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
-              />
-            </div>
-
-            <div className="mt-6 flex gap-3">
-              {editId ? (
-                <>
-                  <button
-                    onClick={updateSemester}
-                    className="flex-1 rounded-lg bg-blue-600 px-4 py-3 text-white hover:bg-blue-700"
-                  >
-                    Update
-                  </button>
-
-                  <button
-                    onClick={resetForm}
-                    className="flex-1 rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-700 hover:bg-slate-50"
-                  >
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={addSemester}
-                  className="w-full rounded-lg bg-blue-600 px-4 py-3 text-white hover:bg-blue-700"
-                >
-                  Add Semester
-                </button>
-              )}
-            </div>
+            <TextInput
+              name="statusi"
+              placeholder="Status"
+              value={formData.statusi}
+              onChange={handleChange}
+            />
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-slate-300 bg-white p-6 shadow-sm lg:col-span-2">
-            <h2 className="mb-6 text-xl font-semibold">Semesters List</h2>
+          <div className="mt-6 flex gap-3">
+            {editId ? (
+              <>
+                <Button onClick={updateSemester} className="flex-1">
+                  Update
+                </Button>
 
-            <table className="w-full border-collapse text-left">
+                <Button
+                  onClick={resetForm}
+                  className="flex-1"
+                  variant="secondary"
+                >
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <Button onClick={addSemester} fullWidth>
+                Add Semester
+              </Button>
+            )}
+          </div>
+        </FormCard>
+
+        <TableCard title="Semesters List">
+          <table className="w-full border-collapse text-left">
               <thead>
                 <tr className="border-b border-slate-200 text-blue-700">
                   <th className="px-4 py-3">ID</th>
@@ -200,19 +183,21 @@ const Semesters = () => {
                       <td className="px-4 py-3">{semester.statusi}</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
-                          <button
+                          <Button
                             onClick={() => editSemester(semester)}
-                            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 hover:bg-slate-100"
+                            className="px-3 py-2"
+                            variant="ghost"
                           >
                             Edit
-                          </button>
+                          </Button>
 
-                          <button
+                          <Button
                             onClick={() => deleteSemester(semester.id)}
-                            className="rounded-lg bg-red-500 px-3 py-2 text-white"
+                            className="px-3 py-2"
+                            variant="danger"
                           >
                             Delete
-                          </button>
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -225,11 +210,10 @@ const Semesters = () => {
                   </tr>
                 )}
               </tbody>
-            </table>
-          </div>
-        </div>
+          </table>
+        </TableCard>
       </div>
-    </div>
+    </PageContainer>
   );
 };
 

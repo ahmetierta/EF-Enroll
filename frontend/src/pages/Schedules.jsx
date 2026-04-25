@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import Button from "../components/ui/Button";
+import SelectInput from "../components/ui/SelectInput";
+import TextInput from "../components/ui/TextInput";
 
 const initialFormData = {
   course_id: "",
@@ -15,24 +18,24 @@ const Schedules = () => {
   const [formData, setFormData] = useState(initialFormData);
   const [editId, setEditId] = useState(null);
 
-  useEffect(() => {
-    fetchSchedules();
-    fetchCourses();
-  }, []);
-
-  const fetchSchedules = () => {
+  function fetchSchedules() {
     axios
       .get("http://localhost:5000/schedules")
       .then((res) => setSchedules(res.data))
       .catch((err) => console.log(err));
-  };
+  }
 
-  const fetchCourses = () => {
+  function fetchCourses() {
     axios
       .get("http://localhost:5000/courses")
       .then((res) => setCourses(res.data))
       .catch((err) => console.log(err));
-  };
+  }
+
+  useEffect(() => {
+    fetchSchedules();
+    fetchCourses();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -202,11 +205,11 @@ const Schedules = () => {
             </p>
 
             <div className="space-y-4">
-              <select
+              <SelectInput
                 name="course_id"
                 value={formData.course_id}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
+                className="rounded-xl border-slate-200 focus:bg-white"
               >
                 <option value="">Select Course</option>
                 {courses.map((course) => (
@@ -214,13 +217,13 @@ const Schedules = () => {
                     {course.emertimi}
                   </option>
                 ))}
-              </select>
+              </SelectInput>
 
-              <select
+              <SelectInput
                 name="dita"
                 value={formData.dita}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
+                className="rounded-xl border-slate-200 focus:bg-white"
               >
                 <option value="">Select Day</option>
                 <option value="Monday">Monday</option>
@@ -229,57 +232,58 @@ const Schedules = () => {
                 <option value="Thursday">Thursday</option>
                 <option value="Friday">Friday</option>
                 <option value="Saturday">Saturday</option>
-              </select>
+              </SelectInput>
 
-              <input
+              <TextInput
                 type="time"
                 name="ora_fillimit"
                 value={formData.ora_fillimit}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
+                className="rounded-xl border-slate-200 focus:bg-white"
               />
 
-              <input
+              <TextInput
                 type="time"
                 name="ora_perfundimit"
                 value={formData.ora_perfundimit}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
+                className="rounded-xl border-slate-200 focus:bg-white"
               />
 
-              <input
-                type="text"
+              <TextInput
                 name="salla"
                 placeholder="Room"
                 value={formData.salla}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
+                className="rounded-xl border-slate-200 focus:bg-white"
               />
             </div>
 
             <div className="mt-6 flex gap-3">
               {editId ? (
                 <>
-                  <button
+                  <Button
                     onClick={updateSchedule}
-                    className="flex-1 rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700"
+                    className="flex-1 rounded-xl"
                   >
                     Update
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={resetForm}
-                    className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 font-semibold text-slate-700 transition hover:bg-slate-50"
+                    className="flex-1 rounded-xl border-slate-200"
+                    variant="secondary"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </>
               ) : (
-                <button
+                <Button
                   onClick={addSchedule}
-                  className="w-full rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700"
+                  className="rounded-xl"
+                  fullWidth
                 >
                   Add Schedule
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -335,18 +339,20 @@ const Schedules = () => {
                         </td>
                         <td className="px-4 py-4">
                           <div className="flex gap-2">
-                            <button
+                            <Button
                               onClick={() => editSchedule(schedule)}
-                              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 transition hover:border-blue-200 hover:bg-blue-50"
+                              className="rounded-xl border-slate-200 px-3 py-2 hover:border-blue-200 hover:bg-blue-50"
+                              variant="secondary"
                             >
                               Edit
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               onClick={() => deleteSchedule(schedule.id)}
-                              className="rounded-xl bg-red-500 px-3 py-2 text-white transition hover:bg-red-600"
+                              className="rounded-xl px-3 py-2"
+                              variant="danger"
                             >
                               Delete
-                            </button>
+                            </Button>
                           </div>
                         </td>
                       </tr>

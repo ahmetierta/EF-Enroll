@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import Button from "../components/ui/Button";
+import SelectInput from "../components/ui/SelectInput";
+import TextArea from "../components/ui/TextArea";
+import TextInput from "../components/ui/TextInput";
 
 const initialFormData = {
   emertimi: "",
@@ -17,32 +21,32 @@ const Courses = () => {
   const [formData, setFormData] = useState(initialFormData);
   const [editId, setEditId] = useState(null);
 
+  function fetchCourses() {
+    axios
+      .get("http://localhost:5000/courses")
+      .then((res) => setCourses(res.data))
+      .catch((err) => console.log(err));
+  }
+
+  function fetchProfessors() {
+    axios
+      .get("http://localhost:5000/professors")
+      .then((res) => setProfessors(res.data))
+      .catch((err) => console.log(err));
+  }
+
+  function fetchSemesters() {
+    axios
+      .get("http://localhost:5000/semesters")
+      .then((res) => setSemesters(res.data))
+      .catch((err) => console.log(err));
+  }
+
   useEffect(() => {
     fetchCourses();
     fetchProfessors();
     fetchSemesters();
   }, []);
-
-  const fetchCourses = () => {
-    axios
-      .get("http://localhost:5000/courses")
-      .then((res) => setCourses(res.data))
-      .catch((err) => console.log(err));
-  };
-
-  const fetchProfessors = () => {
-    axios
-      .get("http://localhost:5000/professors")
-      .then((res) => setProfessors(res.data))
-      .catch((err) => console.log(err));
-  };
-
-  const fetchSemesters = () => {
-    axios
-      .get("http://localhost:5000/semesters")
-      .then((res) => setSemesters(res.data))
-      .catch((err) => console.log(err));
-  };
 
   const handleChange = (e) => {
     setFormData({
@@ -169,38 +173,36 @@ const Courses = () => {
             </p>
 
             <div className="space-y-4">
-              <input
-                type="text"
+              <TextInput
                 name="emertimi"
                 placeholder="Course Name"
                 value={formData.emertimi}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
+                className="rounded-xl border-slate-200 focus:bg-white"
               />
 
-              <textarea
+              <TextArea
                 name="pershkrimi"
                 placeholder="Description"
                 value={formData.pershkrimi}
                 onChange={handleChange}
-                rows="4"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
+                className="rounded-xl border-slate-200 focus:bg-white"
               />
 
-              <input
+              <TextInput
                 type="number"
                 name="kredite"
                 placeholder="Credits"
                 value={formData.kredite}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
+                className="rounded-xl border-slate-200 focus:bg-white"
               />
 
-              <select
+              <SelectInput
                 name="professor_id"
                 value={formData.professor_id}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
+                className="rounded-xl border-slate-200 focus:bg-white"
               >
                 <option value="">Select Professor</option>
                 {professors.map((professor) => (
@@ -208,13 +210,13 @@ const Courses = () => {
                     {professor.username} {professor.titulli ? `(${professor.titulli})` : ""}
                   </option>
                 ))}
-              </select>
+              </SelectInput>
 
-              <select
+              <SelectInput
                 name="semester_id"
                 value={formData.semester_id}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
+                className="rounded-xl border-slate-200 focus:bg-white"
               >
                 <option value="">Select Semester</option>
                 {semesters.map((semester) => (
@@ -222,41 +224,43 @@ const Courses = () => {
                     {semester.emertimi}
                   </option>
                 ))}
-              </select>
+              </SelectInput>
 
-              <input
+              <TextInput
                 type="number"
                 name="kapaciteti"
                 placeholder="Capacity"
                 value={formData.kapaciteti}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
+                className="rounded-xl border-slate-200 focus:bg-white"
               />
             </div>
 
             <div className="mt-6 flex gap-3">
               {editId ? (
                 <>
-                  <button
+                  <Button
                     onClick={updateCourse}
-                    className="flex-1 rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700"
+                    className="flex-1 rounded-xl"
                   >
                     Update
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={resetForm}
-                    className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 font-semibold text-slate-700 transition hover:bg-slate-50"
+                    className="flex-1 rounded-xl border-slate-200"
+                    variant="secondary"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </>
               ) : (
-                <button
+                <Button
                   onClick={addCourse}
-                  className="w-full rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700"
+                  className="rounded-xl"
+                  fullWidth
                 >
                   Add Course
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -318,18 +322,20 @@ const Courses = () => {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
-                          <button
+                          <Button
                             onClick={() => editCourse(course)}
-                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 transition hover:border-blue-200 hover:bg-blue-50"
+                            className="rounded-xl border-slate-200 px-3 py-2 hover:border-blue-200 hover:bg-blue-50"
+                            variant="secondary"
                           >
                             Edit
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => deleteCourse(course.id)}
-                            className="rounded-xl bg-red-500 px-3 py-2 text-white transition hover:bg-red-600"
+                            className="rounded-xl px-3 py-2"
+                            variant="danger"
                           >
                             Delete
-                          </button>
+                          </Button>
                         </div>
                       </td>
                     </tr>

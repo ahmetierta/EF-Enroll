@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import FormCard from "../components/layout/FormCard";
+import PageContainer from "../components/layout/PageContainer";
+import TableCard from "../components/layout/TableCard";
+import Button from "../components/ui/Button";
+import TextArea from "../components/ui/TextArea";
+import TextInput from "../components/ui/TextInput";
 
 const initialFormData = {
   emertimi: "",
@@ -12,16 +18,16 @@ const Departments = () => {
   const [formData, setFormData] = useState(initialFormData);
   const [editId, setEditId] = useState(null);
 
-  useEffect(() => {
-    fetchDepartments();
-  }, []);
-
-  const fetchDepartments = () => {
+  function fetchDepartments() {
     axios
       .get("http://localhost:5000/departments")
       .then((res) => setDepartments(res.data))
       .catch((err) => console.log(err));
-  };
+  }
+
+  useEffect(() => {
+    fetchDepartments();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -89,78 +95,56 @@ const Departments = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-300 p-8 text-slate-900">
-      <div className="mx-auto max-w-7xl">
-        <h1 className="mb-8 text-3xl font-bold text-blue-700">
-          Departments Management
-        </h1>
+    <PageContainer title="Departments Management">
+      <div className="grid gap-8 lg:grid-cols-3">
+        <FormCard title={editId ? "Edit Department" : "Add Department"}>
+          <div className="space-y-4">
+            <TextInput
+              name="emertimi"
+              placeholder="Department Name"
+              value={formData.emertimi}
+              onChange={handleChange}
+            />
 
-        <div className="grid gap-8 lg:grid-cols-3">
-          <div className="rounded-2xl border border-slate-300 bg-white p-6 shadow-sm">
-            <h2 className="mb-6 text-xl font-semibold">
-              {editId ? "Edit Department" : "Add Department"}
-            </h2>
+            <TextArea
+              name="pershkrimi"
+              placeholder="Description"
+              value={formData.pershkrimi}
+              onChange={handleChange}
+            />
 
-            <div className="space-y-4">
-              <input
-                type="text"
-                name="emertimi"
-                placeholder="Department Name"
-                value={formData.emertimi}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
-              />
-
-              <textarea
-                name="pershkrimi"
-                placeholder="Description"
-                value={formData.pershkrimi}
-                onChange={handleChange}
-                rows="4"
-                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
-              />
-
-              <input
-                type="text"
-                name="shefi_departamentit"
-                placeholder="Head of Department"
-                value={formData.shefi_departamentit}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
-              />
-            </div>
-
-            <div className="mt-6 flex gap-3">
-              {editId ? (
-                <>
-                  <button
-                    onClick={updateDepartment}
-                    className="flex-1 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700"
-                  >
-                    Update
-                  </button>
-                  <button
-                    onClick={resetForm}
-                    className="flex-1 rounded-lg border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={addDepartment}
-                  className="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700"
-                >
-                  Add Department
-                </button>
-              )}
-            </div>
+            <TextInput
+              name="shefi_departamentit"
+              placeholder="Head of Department"
+              value={formData.shefi_departamentit}
+              onChange={handleChange}
+            />
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-slate-300 bg-white p-6 shadow-sm lg:col-span-2">
-            <h2 className="mb-6 text-xl font-semibold">Departments List</h2>
+          <div className="mt-6 flex gap-3">
+            {editId ? (
+              <>
+                <Button onClick={updateDepartment} className="flex-1">
+                  Update
+                </Button>
+                <Button
+                  onClick={resetForm}
+                  className="flex-1"
+                  variant="secondary"
+                >
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <Button onClick={addDepartment} fullWidth>
+                Add Department
+              </Button>
+            )}
+          </div>
+        </FormCard>
 
-            <table className="w-full border-collapse text-left">
+        <TableCard title="Departments List">
+          <table className="w-full border-collapse text-left">
               <thead>
                 <tr className="border-b border-slate-200 text-blue-700">
                   <th className="px-4 py-3">ID</th>
@@ -186,18 +170,20 @@ const Departments = () => {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
-                          <button
+                          <Button
                             onClick={() => editDepartment(department)}
-                            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 hover:bg-slate-100"
+                            className="px-3 py-2"
+                            variant="ghost"
                           >
                             Edit
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => deleteDepartment(department.id)}
-                            className="rounded-lg bg-red-500 px-3 py-2 text-white hover:bg-red-600"
+                            className="px-3 py-2"
+                            variant="danger"
                           >
                             Delete
-                          </button>
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -210,11 +196,10 @@ const Departments = () => {
                   </tr>
                 )}
               </tbody>
-            </table>
-          </div>
-        </div>
+          </table>
+        </TableCard>
       </div>
-    </div>
+    </PageContainer>
   );
 };
 

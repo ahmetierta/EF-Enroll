@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import FormCard from "../components/layout/FormCard";
+import PageContainer from "../components/layout/PageContainer";
+import TableCard from "../components/layout/TableCard";
+import Button from "../components/ui/Button";
+import TextInput from "../components/ui/TextInput";
 
 const initialFormData = {
   username: "",
@@ -15,16 +20,16 @@ const Students = () => {
   const [formData, setFormData] = useState(initialFormData);
   const [editId, setEditId] = useState(null);
 
-  useEffect(() => {
-    fetchStudents();
-  }, []);
-
-  const fetchStudents = () => {
+  function fetchStudents() {
     axios
       .get("http://localhost:5000/students")
       .then((res) => setStudents(res.data))
       .catch((err) => console.log(err));
-  };
+  }
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -95,105 +100,79 @@ const Students = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-300 p-8 text-slate-900">
-      <div className="mx-auto max-w-7xl">
-        <h1 className="mb-8 text-3xl font-bold text-blue-700">
-          Students Management
-        </h1>
+    <PageContainer title="Students Management">
+      <div className="grid gap-8 lg:grid-cols-3">
+        <FormCard title={editId ? "Edit Student" : "Add Student"}>
+          <div className="space-y-4">
+            <TextInput
+              name="username"
+              placeholder="Username"
+              value={formData.username}
+              onChange={handleChange}
+            />
 
-        <div className="grid gap-8 lg:grid-cols-3">
-          <div className="rounded-2xl border border-slate-300 bg-white p-6 shadow-sm">
-            <h2 className="mb-6 text-xl font-semibold">
-              {editId ? "Edit Student" : "Add Student"}
-            </h2>
+            <TextInput
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={handleChange}
+            />
 
-            <div className="space-y-4">
-              <input
-                type="text"
-                name="username"
-                placeholder="Username"
-                value={formData.username}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
-              />
+            <TextInput
+              name="password_hash"
+              placeholder="Password"
+              value={formData.password_hash}
+              onChange={handleChange}
+            />
 
-              <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
-              />
+            <TextInput
+              name="numri_studentit"
+              placeholder="Student Number"
+              value={formData.numri_studentit}
+              onChange={handleChange}
+            />
 
-              <input
-                type="text"
-                name="password_hash"
-                placeholder="Password"
-                value={formData.password_hash}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
-              />
+            <TextInput
+              name="programi"
+              placeholder="Program"
+              value={formData.programi}
+              onChange={handleChange}
+            />
 
-              <input
-                type="text"
-                name="numri_studentit"
-                placeholder="Student Number"
-                value={formData.numri_studentit}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
-              />
-
-              <input
-                type="text"
-                name="programi"
-                placeholder="Program"
-                value={formData.programi}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
-              />
-
-              <input
-                type="number"
-                name="viti_studimit"
-                placeholder="Year"
-                value={formData.viti_studimit}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
-              />
-            </div>
-
-            <div className="mt-6 flex gap-3">
-              {editId ? (
-                <>
-                  <button
-                    onClick={updateStudent}
-                    className="flex-1 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700"
-                  >
-                    Update
-                  </button>
-                  <button
-                    onClick={resetForm}
-                    className="flex-1 rounded-lg border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={addStudent}
-                  className="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700"
-                >
-                  Add Student
-                </button>
-              )}
-            </div>
+            <TextInput
+              type="number"
+              name="viti_studimit"
+              placeholder="Year"
+              value={formData.viti_studimit}
+              onChange={handleChange}
+            />
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-slate-300 bg-white p-6 shadow-sm lg:col-span-2">
-            <h2 className="mb-6 text-xl font-semibold">Students List</h2>
+          <div className="mt-6 flex gap-3">
+            {editId ? (
+              <>
+                <Button onClick={updateStudent} className="flex-1">
+                  Update
+                </Button>
+                <Button
+                  onClick={resetForm}
+                  className="flex-1"
+                  variant="secondary"
+                >
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <Button onClick={addStudent} fullWidth>
+                Add Student
+              </Button>
+            )}
+          </div>
+        </FormCard>
 
-            <table className="w-full border-collapse text-left">
+        <TableCard title="Students List">
+          <table className="w-full border-collapse text-left">
               <thead>
                 <tr className="border-b border-slate-200 text-blue-700">
                   <th className="px-4 py-3">ID</th>
@@ -221,18 +200,20 @@ const Students = () => {
                       <td className="px-4 py-3">{student.viti_studimit}</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
-                          <button
+                          <Button
                             onClick={() => editStudent(student)}
-                            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 hover:bg-slate-100"
+                            className="px-3 py-2"
+                            variant="ghost"
                           >
                             Edit
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => deleteStudent(student.id)}
-                            className="rounded-lg bg-red-500 px-3 py-2 text-white hover:bg-red-600"
+                            className="px-3 py-2"
+                            variant="danger"
                           >
                             Delete
-                          </button>
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -245,11 +226,10 @@ const Students = () => {
                   </tr>
                 )}
               </tbody>
-            </table>
-          </div>
-        </div>
+          </table>
+        </TableCard>
       </div>
-    </div>
+    </PageContainer>
   );
 };
 
