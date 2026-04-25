@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import Button from "../components/ui/Button";
 import SelectInput from "../components/ui/SelectInput";
 import TextArea from "../components/ui/TextArea";
 import TextInput from "../components/ui/TextInput";
+import { courseService } from "../services/courseService";
+import { professorService } from "../services/professorService";
+import { semesterService } from "../services/semesterService";
 
 const initialFormData = {
   emertimi: "",
@@ -22,22 +24,22 @@ const Courses = () => {
   const [editId, setEditId] = useState(null);
 
   function fetchCourses() {
-    axios
-      .get("http://localhost:5000/courses")
+    courseService
+      .getAll()
       .then((res) => setCourses(res.data))
       .catch((err) => console.log(err));
   }
 
   function fetchProfessors() {
-    axios
-      .get("http://localhost:5000/professors")
+    professorService
+      .getAll()
       .then((res) => setProfessors(res.data))
       .catch((err) => console.log(err));
   }
 
   function fetchSemesters() {
-    axios
-      .get("http://localhost:5000/semesters")
+    semesterService
+      .getAll()
       .then((res) => setSemesters(res.data))
       .catch((err) => console.log(err));
   }
@@ -61,8 +63,8 @@ const Courses = () => {
   };
 
   const addCourse = () => {
-    axios
-      .post("http://localhost:5000/courses", formData)
+    courseService
+      .create(formData)
       .then(() => {
         fetchCourses();
         resetForm();
@@ -75,8 +77,8 @@ const Courses = () => {
   };
 
   const updateCourse = () => {
-    axios
-      .put(`http://localhost:5000/courses/${editId}`, formData)
+    courseService
+      .update(editId, formData)
       .then(() => {
         fetchCourses();
         resetForm();
@@ -91,8 +93,8 @@ const Courses = () => {
   const deleteCourse = (id) => {
     if (!window.confirm("Do you want to delete this course?")) return;
 
-    axios
-      .delete(`http://localhost:5000/courses/${id}`)
+    courseService
+      .remove(id)
       .then(() => {
         fetchCourses();
         if (editId === id) resetForm();

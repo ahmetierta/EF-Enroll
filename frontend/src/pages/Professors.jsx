@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import FormCard from "../components/layout/FormCard";
 import PageContainer from "../components/layout/PageContainer";
 import TableCard from "../components/layout/TableCard";
 import Button from "../components/ui/Button";
 import SelectInput from "../components/ui/SelectInput";
 import TextInput from "../components/ui/TextInput";
+import { departmentService } from "../services/departmentService";
+import { professorService } from "../services/professorService";
 
 const initialFormData = {
   username: "",
@@ -22,15 +23,15 @@ const Professors = () => {
   const [editId, setEditId] = useState(null);
 
   function fetchProfessors() {
-    axios
-      .get("http://localhost:5000/professors")
+    professorService
+      .getAll()
       .then((res) => setProfessors(res.data))
       .catch((err) => console.log(err));
   }
 
   function fetchDepartments() {
-    axios
-      .get("http://localhost:5000/departments")
+    departmentService
+      .getAll()
       .then((res) => setDepartments(res.data))
       .catch((err) => console.log(err));
   }
@@ -53,8 +54,8 @@ const Professors = () => {
   };
 
   const addProfessor = () => {
-    axios
-      .post("http://localhost:5000/professors", formData)
+    professorService
+      .create(formData)
       .then(() => {
         fetchProfessors();
         resetForm();
@@ -67,8 +68,8 @@ const Professors = () => {
   };
 
   const updateProfessor = () => {
-    axios
-      .put(`http://localhost:5000/professors/${editId}`, formData)
+    professorService
+      .update(editId, formData)
       .then(() => {
         fetchProfessors();
         resetForm();
@@ -83,8 +84,8 @@ const Professors = () => {
   const deleteProfessor = (id) => {
     if (!window.confirm("Do you want to delete this professor?")) return;
 
-    axios
-      .delete(`http://localhost:5000/professors/${id}`)
+    professorService
+      .remove(id)
       .then(() => {
         fetchProfessors();
         if (editId === id) resetForm();

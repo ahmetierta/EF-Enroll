@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import FormCard from "../components/layout/FormCard";
 import PageContainer from "../components/layout/PageContainer";
 import TableCard from "../components/layout/TableCard";
 import Button from "../components/ui/Button";
 import TextInput from "../components/ui/TextInput";
+import { studentService } from "../services/studentService";
 
 const initialFormData = {
   username: "",
@@ -21,8 +21,8 @@ const Students = () => {
   const [editId, setEditId] = useState(null);
 
   function fetchStudents() {
-    axios
-      .get("http://localhost:5000/students")
+    studentService
+      .getAll()
       .then((res) => setStudents(res.data))
       .catch((err) => console.log(err));
   }
@@ -44,8 +44,8 @@ const Students = () => {
   };
 
   const addStudent = () => {
-    axios
-      .post("http://localhost:5000/students", formData)
+    studentService
+      .create(formData)
       .then(() => {
         fetchStudents();
         resetForm();
@@ -58,8 +58,8 @@ const Students = () => {
   };
 
   const updateStudent = () => {
-    axios
-      .put(`http://localhost:5000/students/${editId}`, formData)
+    studentService
+      .update(editId, formData)
       .then(() => {
         fetchStudents();
         resetForm();
@@ -74,8 +74,8 @@ const Students = () => {
   const deleteStudent = (id) => {
     if (!window.confirm("Do you want to delete this student?")) return;
 
-    axios
-      .delete(`http://localhost:5000/students/${id}`)
+    studentService
+      .remove(id)
       .then(() => {
         fetchStudents();
         if (editId === id) resetForm();

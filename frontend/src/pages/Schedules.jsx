@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import Button from "../components/ui/Button";
 import SelectInput from "../components/ui/SelectInput";
 import TextInput from "../components/ui/TextInput";
+import { courseService } from "../services/courseService";
+import { scheduleService } from "../services/scheduleService";
 
 const initialFormData = {
   course_id: "",
@@ -19,15 +20,15 @@ const Schedules = () => {
   const [editId, setEditId] = useState(null);
 
   function fetchSchedules() {
-    axios
-      .get("http://localhost:5000/schedules")
+    scheduleService
+      .getAll()
       .then((res) => setSchedules(res.data))
       .catch((err) => console.log(err));
   }
 
   function fetchCourses() {
-    axios
-      .get("http://localhost:5000/courses")
+    courseService
+      .getAll()
       .then((res) => setCourses(res.data))
       .catch((err) => console.log(err));
   }
@@ -67,8 +68,8 @@ const Schedules = () => {
       salla: formData.salla.trim(),
     };
 
-    axios
-      .post("http://localhost:5000/schedules", payload)
+    scheduleService
+      .create(payload)
       .then(() => {
         fetchSchedules();
         resetForm();
@@ -102,8 +103,8 @@ const Schedules = () => {
       salla: formData.salla.trim(),
     };
 
-    axios
-      .put(`http://localhost:5000/schedules/${editId}`, payload)
+    scheduleService
+      .update(editId, payload)
       .then(() => {
         fetchSchedules();
         resetForm();
@@ -122,8 +123,8 @@ const Schedules = () => {
   const deleteSchedule = (id) => {
     if (!window.confirm("Do you want to delete this schedule?")) return;
 
-    axios
-      .delete(`http://localhost:5000/schedules/${id}`)
+    scheduleService
+      .remove(id)
       .then(() => {
         fetchSchedules();
         if (editId === id) resetForm();

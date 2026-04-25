@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import FormCard from "../components/layout/FormCard";
 import PageContainer from "../components/layout/PageContainer";
 import TableCard from "../components/layout/TableCard";
 import Button from "../components/ui/Button";
 import TextArea from "../components/ui/TextArea";
 import TextInput from "../components/ui/TextInput";
+import { departmentService } from "../services/departmentService";
 
 const initialFormData = {
   emertimi: "",
@@ -19,8 +19,8 @@ const Departments = () => {
   const [editId, setEditId] = useState(null);
 
   function fetchDepartments() {
-    axios
-      .get("http://localhost:5000/departments")
+    departmentService
+      .getAll()
       .then((res) => setDepartments(res.data))
       .catch((err) => console.log(err));
   }
@@ -42,8 +42,8 @@ const Departments = () => {
   };
 
   const addDepartment = () => {
-    axios
-      .post("http://localhost:5000/departments", formData)
+    departmentService
+      .create(formData)
       .then(() => {
         fetchDepartments();
         resetForm();
@@ -56,8 +56,8 @@ const Departments = () => {
   };
 
   const updateDepartment = () => {
-    axios
-      .put(`http://localhost:5000/departments/${editId}`, formData)
+    departmentService
+      .update(editId, formData)
       .then(() => {
         fetchDepartments();
         resetForm();
@@ -72,8 +72,8 @@ const Departments = () => {
   const deleteDepartment = (id) => {
     if (!window.confirm("Do you want to delete this department?")) return;
 
-    axios
-      .delete(`http://localhost:5000/departments/${id}`)
+    departmentService
+      .remove(id)
       .then(() => {
         fetchDepartments();
         if (editId === id) resetForm();

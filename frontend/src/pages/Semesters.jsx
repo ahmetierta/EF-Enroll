@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import FormCard from "../components/layout/FormCard";
 import PageContainer from "../components/layout/PageContainer";
 import TableCard from "../components/layout/TableCard";
 import Button from "../components/ui/Button";
 import TextInput from "../components/ui/TextInput";
+import { semesterService } from "../services/semesterService";
 
 const initialFormData = {
   emertimi: "",
@@ -19,8 +19,8 @@ const Semesters = () => {
   const [editId, setEditId] = useState(null);
 
   function fetchSemesters() {
-    axios
-      .get("http://localhost:5000/semesters")
+    semesterService
+      .getAll()
       .then((res) => setSemesters(res.data))
       .catch((err) => console.log(err));
   }
@@ -42,8 +42,8 @@ const Semesters = () => {
   };
 
   const addSemester = () => {
-    axios
-      .post("http://localhost:5000/semesters", formData)
+    semesterService
+      .create(formData)
       .then(() => {
         fetchSemesters();
         resetForm();
@@ -56,8 +56,8 @@ const Semesters = () => {
   };
 
   const updateSemester = () => {
-    axios
-      .put(`http://localhost:5000/semesters/${editId}`, formData)
+    semesterService
+      .update(editId, formData)
       .then(() => {
         fetchSemesters();
         resetForm();
@@ -72,8 +72,8 @@ const Semesters = () => {
   const deleteSemester = (id) => {
     if (!window.confirm("Do you want to delete this semester?")) return;
 
-    axios
-      .delete(`http://localhost:5000/semesters/${id}`)
+    semesterService
+      .remove(id)
       .then(() => {
         fetchSemesters();
         if (editId === id) resetForm();
