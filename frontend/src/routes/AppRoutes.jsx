@@ -1,5 +1,6 @@
 import { Route, Routes } from "react-router-dom";
 import AppLayout from "../layouts/AppLayout";
+import AdminApprovals from "../pages/admin/AdminApprovals";
 import Courses from "../pages/Courses";
 import Departments from "../pages/Departments";
 import PlaceholderPage from "../pages/PlaceholderPage";
@@ -23,6 +24,7 @@ const AppRoutes = () => {
       <Route path="/register/professor" element={<RegisterProfessor />} />
 
       <Route path="/" element={<AppLayout />}>
+        <Route path="admin/approvals" element={<AdminApprovals />} />
         <Route path="students" element={<Students />} />
         <Route path="professors" element={<Professors />} />
         <Route path="semesters" element={<Semesters />} />

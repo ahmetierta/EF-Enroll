@@ -1,5 +1,6 @@
 export const navItems = [
   { to: "/", label: "Public Courses" },
+  { to: "/admin/approvals", label: "Approvals" },
   { to: "/courses", label: "Courses" },
   { to: "/students", label: "Students" },
   { to: "/professors", label: "Professors" },

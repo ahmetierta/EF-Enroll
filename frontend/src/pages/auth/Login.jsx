@@ -12,7 +12,7 @@ const initialFormData = {
 };
 
 const roleRedirects = {
-  admin: "/courses",
+  admin: "/admin/approvals",
   professor: "/courses",
   student: "/",
 };

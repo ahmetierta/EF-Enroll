@@ -571,6 +571,40 @@ Ky file ka auth routes:
 - krijon edhe rresht ne tabelen `professors`
 - profesori nuk mund te beje login derisa admini ta aprovoje
 
+#### `backend/routes/admin.js`
+
+Ky file ka routes qe perdoren vetem nga admini.
+
+Ne fillim te file-it routes mbrohen me:
+
+```js
+router.use(authenticateToken);
+router.use(requireRole("admin"));
+```
+
+Kjo do te thote:
+
+- request-i duhet te kete JWT token valid
+- user-i ne token duhet te kete `role = admin`
+
+Endpoints:
+
+- `GET /admin/pending-professors` merr professor accounts me status `pending`
+- `PUT /admin/users/:id/approve` e ndryshon statusin ne `approved`
+- `PUT /admin/users/:id/reject` e ndryshon statusin ne `rejected`
+
+Flow:
+
+```text
+Professor signs up
+Backend creates user role professor, status pending
+Admin logs in
+Admin opens /admin/approvals
+Admin clicks Approve
+Backend changes status to approved
+Professor can log in
+```
+
 #### `backend/migrations/001_add_auth_fields.sql`
 
 Ky file duhet ekzekutuar ne MySQL.
@@ -599,6 +633,26 @@ me()
 
 Faqet nuk therrasin axios direkt. Ato therrasin `authService`.
 
+#### `frontend/src/services/adminService.js`
+
+Ky service perdoret per admin approval.
+
+Funksionet:
+
+```js
+getPendingProfessors()
+approveProfessor(userId)
+rejectProfessor(userId)
+```
+
+Keto funksione therrasin:
+
+```text
+/admin/pending-professors
+/admin/users/:id/approve
+/admin/users/:id/reject
+```
+
 #### `frontend/src/utils/authStorage.js`
 
 Ky file merret me ruajtjen e login state ne `localStorage`.
@@ -625,6 +679,12 @@ Login.jsx thirr authService.login()
 backend kthen token + user
 saveAuth ruan tokenin
 frontend ben redirect sipas role
+```
+
+Nese role eshte `admin`, frontend e dergon user-in te:
+
+```text
+/admin/approvals
 ```
 
 #### `frontend/src/pages/auth/Register.jsx`
@@ -665,6 +725,27 @@ POST /auth/register/professor
 Krijon user + professor profile me status `pending`.
 
 Profesori nuk shtohet me password nga admini. Ai regjistrohet vete, pastaj admini e aprovon.
+
+#### `frontend/src/pages/admin/AdminApprovals.jsx`
+
+Kjo faqe perdoret nga admini per me aprovu ose refuzu professor accounts.
+
+Brenda saj:
+
+- merret lista e professor accounts me status `pending`
+- shfaqet tabela me emrin, email, titullin, departamentin dhe statusin
+- admini mund te klikoje `Approve`
+- admini mund te klikoje `Reject`
+
+Kur klikohet `Approve`:
+
+```text
+AdminApprovals.jsx -> adminService.approveProfessor(userId)
+adminService -> PUT /admin/users/:id/approve
+backend -> UPDATE users SET status = 'approved'
+```
+
+Pas aprovimit, profesori mund te beje login.
 
 ## Services
 
