@@ -1,4 +1,5 @@
 export const navItems = [
+  { to: "/", label: "Public Courses" },
   { to: "/courses", label: "Courses" },
   { to: "/students", label: "Students" },
   { to: "/professors", label: "Professors" },
@@ -8,4 +9,6 @@ export const navItems = [
   { to: "/enrollments", label: "Enrollments" },
   { to: "/waiting-list", label: "Waiting List" },
   { to: "/announcements", label: "Announcements" },
+  { to: "/login", label: "Login" },
+  { to: "/register", label: "Register" },
 ];
