@@ -19,6 +19,23 @@ function authenticateToken(req, res, next) {
   });
 }
 
+function optionalAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    return next();
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (!err) {
+      req.user = user;
+    }
+
+    next();
+  });
+}
+
 function requireRole(...allowedRoles) {
   return (req, res, next) => {
     if (!allowedRoles.includes(req.user.role)) {
@@ -31,5 +48,6 @@ function requireRole(...allowedRoles) {
 
 module.exports = {
   authenticateToken,
+  optionalAuth,
   requireRole,
 };

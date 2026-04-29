@@ -13,6 +13,7 @@ import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
 import RegisterProfessor from "../pages/auth/RegisterProfessor";
 import RegisterStudent from "../pages/auth/RegisterStudent";
+import ProtectedRoute from "./ProtectedRoute";
 
 const AppRoutes = () => {
   return (
@@ -24,24 +25,85 @@ const AppRoutes = () => {
       <Route path="/register/professor" element={<RegisterProfessor />} />
 
       <Route path="/" element={<AppLayout />}>
-        <Route path="admin/approvals" element={<AdminApprovals />} />
-        <Route path="students" element={<Students />} />
-        <Route path="professors" element={<Professors />} />
-        <Route path="semesters" element={<Semesters />} />
-        <Route path="departments" element={<Departments />} />
-        <Route path="courses" element={<Courses />} />
-        <Route path="schedules" element={<Schedules />} />
+        <Route
+          path="admin/approvals"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminApprovals />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="students"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "professor"]}>
+              <Students />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="professors"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <Professors />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="semesters"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <Semesters />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="departments"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <Departments />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="courses"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "professor"]}>
+              <Courses />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="schedules"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "professor"]}>
+              <Schedules />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="enrollments"
-          element={<PlaceholderPage title="Enrollments" />}
+          element={
+            <ProtectedRoute allowedRoles={["admin", "professor"]}>
+              <PlaceholderPage title="Enrollments" />
+            </ProtectedRoute>
+          }
         />
         <Route
           path="waiting-list"
-          element={<PlaceholderPage title="Waiting List" />}
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <PlaceholderPage title="Waiting List" />
+            </ProtectedRoute>
+          }
         />
         <Route
           path="announcements"
-          element={<PlaceholderPage title="Announcements" />}
+          element={
+            <ProtectedRoute allowedRoles={["admin", "professor"]}>
+              <PlaceholderPage title="Announcements" />
+            </ProtectedRoute>
+          }
         />
       </Route>
     </Routes>

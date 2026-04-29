@@ -5,6 +5,9 @@ import { clearAuth, getAuthUser } from "../../utils/authStorage";
 const MainNavbar = () => {
   const navigate = useNavigate();
   const authUser = getAuthUser();
+  const visibleItems = navItems.filter((item) =>
+    item.roles.includes(authUser?.role)
+  );
 
   const handleLogout = () => {
     clearAuth();
@@ -14,7 +17,7 @@ const MainNavbar = () => {
   return (
     <div className="flex flex-col gap-3 border-b border-slate-200 pb-1 lg:flex-row lg:items-center lg:justify-between">
       <nav className="flex flex-wrap gap-5">
-        {navItems.map((item) => (
+        {visibleItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -34,7 +37,7 @@ const MainNavbar = () => {
       {authUser && (
         <div className="flex flex-wrap items-center gap-3 pb-3 text-sm">
           <span className="text-slate-600">
-            {authUser.email} · {authUser.role}
+            {authUser.email} - {authUser.role}
           </span>
           <button
             type="button"

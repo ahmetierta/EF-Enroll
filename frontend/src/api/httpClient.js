@@ -5,6 +5,10 @@ const httpClient = axios.create({
 });
 
 httpClient.interceptors.request.use((config) => {
+  if (config.skipAuth) {
+    return config;
+  }
+
   const token = localStorage.getItem("token");
 
   if (token) {

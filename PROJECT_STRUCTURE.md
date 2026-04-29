@@ -109,6 +109,20 @@ Shembull lidhjeje:
 Professors.jsx -> departmentService.getAll() -> GET /departments -> departments.js
 ```
 
+### `backend/routes/courses.js`
+
+Ky file menaxhon courses.
+
+`GET /courses` perdor `optionalAuth`.
+
+Logjika:
+
+- nese request-i eshte publik pa token, kthen krejt kurset per public course catalog
+- nese request-i vjen nga professor i loguar, kthen vetem kurset qe i takojne atij profesori
+- kjo behet ne backend me filter `professors.user_id = req.user.id`
+
+Kjo eshte e rendesishme sepse nuk mjafton vetem me i fsheh linkat ne frontend. Backend duhet te ktheje vetem te dhenat qe user-i ka te drejte me i pa.
+
 ## Frontend Structure
 
 Frontend ndodhet ne folderin `frontend/src`.
@@ -205,12 +219,19 @@ Ky file mban listen e linkave te navbar-it.
 Shembull:
 
 ```js
-{ to: "/courses", label: "Courses" }
+{ to: "/courses", label: "Courses", roles: ["admin", "professor"] }
 ```
 
 Pse ekziston:
 
 Qe linkat e navigimit te mos jene te shkruar direkt brenda `MainNavbar.jsx`. Nese shtohet nje faqe e re, mund ta shtojme ne kete liste.
+
+Fusha `roles` tregon kush ka te drejte me e pa ate link ne dashboard.
+
+Shembull:
+
+- admin sheh `Approvals`, `Professors`, `Departments`, `Semesters`
+- professor sheh vetem linkat qe i duhen, si `Courses`, `Students`, `Schedules`, `Enrollments`, `Announcements`
 
 ## Layouts
 

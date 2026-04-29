@@ -12,7 +12,7 @@ const PublicCourses = () => {
 
   function fetchCourses() {
     courseService
-      .getAll()
+      .getPublicAll()
       .then((res) => setCourses(res.data))
       .catch(() => setError("Courses could not be loaded."));
   }
