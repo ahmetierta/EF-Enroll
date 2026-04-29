@@ -12,6 +12,14 @@ const AuthShell = ({ children, subtitle, title }) => {
             >
               EF Enroll
             </Link>
+            <div className="mt-6">
+              <Link
+                to="/"
+                className="inline-flex rounded-lg border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-slate-800"
+              >
+                Back to courses
+              </Link>
+            </div>
             <h1 className="mt-8 text-3xl font-bold">{title}</h1>
             <p className="mt-3 text-sm leading-6 text-slate-300">{subtitle}</p>
           </div>
