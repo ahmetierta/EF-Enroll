@@ -11,20 +11,15 @@ const PublicCourses = () => {
   const authUser = getAuthUser();
 
   function fetchCourses() {
-    if (!authUser) {
-      setCourses([]);
-      return;
-    }
-
     courseService
-      .getAll()
+      .getPublicAll()
       .then((res) => setCourses(res.data))
       .catch(() => setError("Courses could not be loaded."));
   }
 
   useEffect(() => {
     fetchCourses();
-  }, [authUser?.id]);
+  }, []);
 
   const handleEnroll = () => {
     if (!authUser) {
@@ -80,8 +75,8 @@ const PublicCourses = () => {
             Browse available courses
           </h1>
           <p className="mt-3 max-w-2xl text-slate-600">
-            Students can review available courses after logging in. Guest
-            visitors only see the access screen.
+            Students can review available courses here. To enroll in a course,
+            they need to create an account and log in first.
           </p>
         </section>
 
@@ -92,23 +87,7 @@ const PublicCourses = () => {
         )}
 
         <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {!authUser ? (
-            <div className="rounded-xl border border-slate-200 bg-white p-8 text-slate-700 md:col-span-2 xl:col-span-3">
-              <h2 className="text-xl font-semibold text-slate-950">
-                Login required
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                Course details, professors, capacity, and enrollment actions are
-                protected. Please log in with an approved account.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <Button onClick={() => navigate("/login")}>Login</Button>
-                <Button onClick={() => navigate("/register")} variant="secondary">
-                  Sign up
-                </Button>
-              </div>
-            </div>
-          ) : courses.length > 0 ? (
+          {courses.length > 0 ? (
             courses.map((course) => (
               <article
                 key={course.id}

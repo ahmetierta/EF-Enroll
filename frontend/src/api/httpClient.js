@@ -6,6 +6,10 @@ const httpClient = axios.create({
 });
 
 httpClient.interceptors.request.use((config) => {
+  if (config.skipAuth) {
+    return config;
+  }
+
   const token = getAuthToken();
 
   if (token) {

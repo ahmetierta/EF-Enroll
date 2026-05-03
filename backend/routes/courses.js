@@ -3,13 +3,12 @@ const router = express.Router();
 const db = require("../db");
 const {
   authenticateToken,
+  optionalAuth,
   requireRole,
 } = require("../middleware/authMiddleware");
 
-router.use(authenticateToken);
-
 // GET all courses with professor and semester info
-router.get("/", requireRole("admin", "professor", "student"), (req, res) => {
+router.get("/", optionalAuth, (req, res) => {
   const professorFilter =
     req.user?.role === "professor" ? "WHERE professors.user_id = ?" : "";
 
@@ -42,7 +41,7 @@ router.get("/", requireRole("admin", "professor", "student"), (req, res) => {
 });
 
 // GET course by id with professor and semester info
-router.get("/:id", requireRole("admin", "professor", "student"), (req, res) => {
+router.get("/:id", optionalAuth, (req, res) => {
   const id = req.params.id;
   const professorFilter =
     req.user?.role === "professor" ? "AND professors.user_id = ?" : "";
@@ -76,7 +75,7 @@ router.get("/:id", requireRole("admin", "professor", "student"), (req, res) => {
 });
 
 // POST create course
-router.post("/", requireRole("admin"), (req, res) => {
+router.post("/", authenticateToken, requireRole("admin"), (req, res) => {
   const {
     emertimi,
     pershkrimi,
@@ -100,7 +99,7 @@ router.post("/", requireRole("admin"), (req, res) => {
 });
 
 // PUT update course
-router.put("/:id", requireRole("admin"), (req, res) => {
+router.put("/:id", authenticateToken, requireRole("admin"), (req, res) => {
   const id = req.params.id;
   const {
     emertimi,
@@ -125,7 +124,7 @@ router.put("/:id", requireRole("admin"), (req, res) => {
 });
 
 // DELETE course
-router.delete("/:id", requireRole("admin"), (req, res) => {
+router.delete("/:id", authenticateToken, requireRole("admin"), (req, res) => {
   const id = req.params.id;
   const sql = "DELETE FROM courses WHERE id = ?";
 
