@@ -11,7 +11,6 @@ import { professorService } from "../services/professorService";
 const initialFormData = {
   username: "",
   email: "",
-  password_hash: "",
   titulli: "",
   departamenti: "",
 };
@@ -53,20 +52,6 @@ const Professors = () => {
     setEditId(null);
   };
 
-  const addProfessor = () => {
-    professorService
-      .create(formData)
-      .then(() => {
-        fetchProfessors();
-        resetForm();
-        alert("Professor added successfully.");
-      })
-      .catch((err) => {
-        console.log(err);
-        alert("Failed to add professor.");
-      });
-  };
-
   const updateProfessor = () => {
     professorService
       .update(editId, formData)
@@ -102,7 +87,6 @@ const Professors = () => {
     setFormData({
       username: professor.username || "",
       email: professor.email || "",
-      password_hash: "",
       titulli: professor.titulli || "",
       departamenti: professor.departamenti || "",
     });
@@ -111,54 +95,47 @@ const Professors = () => {
   return (
     <PageContainer title="Professors Management">
       <div className="grid gap-8 lg:grid-cols-3">
-        <FormCard title={editId ? "Edit Professor" : "Add Professor"}>
-          <div className="space-y-4">
-            <TextInput
-              name="username"
-              placeholder="Username"
-              value={formData.username}
-              onChange={handleChange}
-            />
+        <FormCard title={editId ? "Edit Professor" : "Professor Accounts"}>
+          {editId ? (
+            <>
+              <div className="space-y-4">
+                <TextInput
+                  name="username"
+                  placeholder="Username"
+                  value={formData.username}
+                  onChange={handleChange}
+                />
 
-            <TextInput
-              type="email"
-              name="email"
-              placeholder="Email"
-              value={formData.email}
-              onChange={handleChange}
-            />
+                <TextInput
+                  type="email"
+                  name="email"
+                  placeholder="Email"
+                  value={formData.email}
+                  onChange={handleChange}
+                />
 
-            <TextInput
-              name="password_hash"
-              placeholder="Password"
-              value={formData.password_hash}
-              onChange={handleChange}
-            />
+                <TextInput
+                  name="titulli"
+                  placeholder="Title (Dr., Prof.)"
+                  value={formData.titulli}
+                  onChange={handleChange}
+                />
 
-            <TextInput
-              name="titulli"
-              placeholder="Title (Dr., Prof.)"
-              value={formData.titulli}
-              onChange={handleChange}
-            />
+                <SelectInput
+                  name="departamenti"
+                  value={formData.departamenti}
+                  onChange={handleChange}
+                >
+                  <option value="">Select Department</option>
+                  {departments.map((department) => (
+                    <option key={department.id} value={department.emertimi}>
+                      {department.emertimi}
+                    </option>
+                  ))}
+                </SelectInput>
+              </div>
 
-            <SelectInput
-              name="departamenti"
-              value={formData.departamenti}
-              onChange={handleChange}
-            >
-              <option value="">Select Department</option>
-              {departments.map((department) => (
-                <option key={department.id} value={department.emertimi}>
-                  {department.emertimi}
-                </option>
-              ))}
-            </SelectInput>
-          </div>
-
-          <div className="mt-6 flex gap-3">
-            {editId ? (
-              <>
+              <div className="mt-6 flex gap-3">
                 <Button onClick={updateProfessor} className="flex-1">
                   Update
                 </Button>
@@ -170,13 +147,21 @@ const Professors = () => {
                 >
                   Cancel
                 </Button>
-              </>
-            ) : (
-              <Button onClick={addProfessor} fullWidth>
-                Add Professor
-              </Button>
-            )}
-          </div>
+              </div>
+            </>
+          ) : (
+            <div className="space-y-4 text-sm leading-6 text-slate-600">
+              <p>
+                Professors create their own account from the register page.
+                Admins can approve pending accounts and edit professor profile
+                details after registration.
+              </p>
+              <p>
+                Select a professor from the table to update their title or
+                department.
+              </p>
+            </div>
+          )}
         </FormCard>
 
         <TableCard title="Professors List">
