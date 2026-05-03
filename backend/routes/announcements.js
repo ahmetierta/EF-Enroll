@@ -66,7 +66,22 @@ router.post("/", requireRole("admin", "professor"), (req, res) => {
         return res.status(404).json({ message: "Professor profile not found" });
       }
 
-      insertAnnouncement(professors[0].id);
+      const professorId = professors[0].id;
+
+      db.query(
+        "SELECT id FROM courses WHERE id = ? AND professor_id = ?",
+        [course_id, professorId],
+        (err, courses) => {
+          if (err) return res.status(500).json(err);
+          if (courses.length === 0) {
+            return res.status(403).json({
+              message: "You can only add comments for your own courses",
+            });
+          }
+
+          insertAnnouncement(professorId);
+        }
+      );
     }
   );
 });
