@@ -2,11 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button";
 import { courseService } from "../services/courseService";
+import { enrollmentService } from "../services/enrollmentService";
 import { getAuthUser } from "../utils/authStorage";
 
 const PublicCourses = () => {
   const [courses, setCourses] = useState([]);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [enrollingCourseId, setEnrollingCourseId] = useState(null);
   const navigate = useNavigate();
   const authUser = getAuthUser();
 
@@ -21,13 +24,33 @@ const PublicCourses = () => {
     fetchCourses();
   }, []);
 
-  const handleEnroll = () => {
+  const handleEnroll = (courseId) => {
+    setError("");
+    setMessage("");
+
     if (!authUser) {
       navigate("/login");
       return;
     }
 
-    alert("Enrollment will be available after the enrollments module is added.");
+    if (authUser.role !== "student") {
+      setError("Only students can enroll in courses.");
+      return;
+    }
+
+    setEnrollingCourseId(courseId);
+
+    enrollmentService
+      .create(courseId)
+      .then((res) => {
+        setMessage(res.data.message || "Enrollment created successfully.");
+      })
+      .catch((err) => {
+        setError(err.response?.data?.message || "Enrollment failed.");
+      })
+      .finally(() => {
+        setEnrollingCourseId(null);
+      });
   };
 
   return (
@@ -86,6 +109,12 @@ const PublicCourses = () => {
           </p>
         )}
 
+        {message && (
+          <p className="mb-6 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
+            {message}
+          </p>
+        )}
+
         <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {courses.length > 0 ? (
             courses.map((course) => (
@@ -123,8 +152,13 @@ const PublicCourses = () => {
                   </dl>
                 </div>
 
-                <Button onClick={handleEnroll} className="mt-6" fullWidth>
-                  Enroll
+                <Button
+                  onClick={() => handleEnroll(course.id)}
+                  className="mt-6"
+                  disabled={enrollingCourseId === course.id}
+                  fullWidth
+                >
+                  {enrollingCourseId === course.id ? "Enrolling..." : "Enroll"}
                 </Button>
               </article>
             ))
