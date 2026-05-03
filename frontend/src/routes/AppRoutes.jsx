@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import AppLayout from "../layouts/AppLayout";
 import AdminApprovals from "../pages/admin/AdminApprovals";
+import Announcements from "../pages/Announcements";
 import Courses from "../pages/Courses";
 import Departments from "../pages/Departments";
 import Enrollments from "../pages/Enrollments";
@@ -129,7 +130,7 @@ const AppRoutes = () => {
           path="announcements"
           element={
             <ProtectedRoute allowedRoles={["admin", "professor"]}>
-              <PlaceholderPage title="Announcements" />
+              <Announcements />
             </ProtectedRoute>
           }
         />
