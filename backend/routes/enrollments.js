@@ -73,11 +73,17 @@ router.get("/mine", requireRole("student"), (req, res) => {
         enrollments.nota,
         courses.emertimi AS course_name,
         courses.kredite,
-        users.username AS professor_name
+        courses.cmimi,
+        users.username AS professor_name,
+        payments.id AS payment_id,
+        payments.statusi AS payment_status,
+        payments.amount AS paid_amount,
+        payments.data_pageses AS payment_date
       FROM enrollments
       JOIN courses ON enrollments.course_id = courses.id
       LEFT JOIN professors ON courses.professor_id = professors.id
       LEFT JOIN users ON professors.user_id = users.id
+      LEFT JOIN payments ON payments.enrollment_id = enrollments.id
       WHERE enrollments.student_id = ?
       ORDER BY enrollments.id DESC
     `;
