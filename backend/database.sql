@@ -42,6 +42,7 @@ CREATE TABLE courses (
  professor_id INT,
  semester_id INT,
  kapaciteti INT,
+ cmimi DECIMAL(10,2) DEFAULT 0.00,
  FOREIGN KEY (professor_id) REFERENCES professors(id),
  FOREIGN KEY (semester_id) REFERENCES semesters(id)
 );
@@ -63,6 +64,15 @@ CREATE TABLE enrollments (
  nota INT,
  FOREIGN KEY (student_id) REFERENCES students(id),
  FOREIGN KEY (course_id) REFERENCES courses(id)
+);
+CREATE TABLE payments (
+ id INT AUTO_INCREMENT PRIMARY KEY,
+ enrollment_id INT,
+ amount DECIMAL(10,2) NOT NULL,
+ statusi VARCHAR(50) DEFAULT 'paid',
+ payment_method VARCHAR(50) DEFAULT 'simulated',
+ data_pageses TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY (enrollment_id) REFERENCES enrollments(id)
 );
 CREATE TABLE waiting_list (
  id INT AUTO_INCREMENT PRIMARY KEY,
