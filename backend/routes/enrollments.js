@@ -114,15 +114,44 @@ router.post("/", requireRole("student"), (req, res) => {
         });
       }
 
-      const insertSql =
-        "INSERT INTO enrollments (student_id, course_id, data_regjistrimit, statusi) VALUES (?, ?, CURDATE(), 'active')";
+      const capacitySql = `
+        SELECT
+          courses.id,
+          courses.kapaciteti,
+          COUNT(enrollments.id) AS enrolled_count
+        FROM courses
+        LEFT JOIN enrollments
+          ON enrollments.course_id = courses.id
+          AND enrollments.statusi = 'active'
+        WHERE courses.id = ?
+        GROUP BY courses.id, courses.kapaciteti
+      `;
 
-      db.query(insertSql, [student.id, course_id], (err, result) => {
+      db.query(capacitySql, [course_id], (err, capacityRows) => {
         if (err) return res.status(500).json(err);
 
-        res.status(201).json({
-          message: "Enrollment created successfully",
-          enrollment_id: result.insertId,
+        if (capacityRows.length === 0) {
+          return res.status(404).json({ message: "Course not found" });
+        }
+
+        const course = capacityRows[0];
+        const capacity = Number(course.kapaciteti || 0);
+        const enrolledCount = Number(course.enrolled_count || 0);
+
+        if (capacity > 0 && enrolledCount >= capacity) {
+          return res.status(409).json({ message: "Course is full" });
+        }
+
+        const insertSql =
+          "INSERT INTO enrollments (student_id, course_id, data_regjistrimit, statusi) VALUES (?, ?, CURDATE(), 'active')";
+
+        db.query(insertSql, [student.id, course_id], (err, result) => {
+          if (err) return res.status(500).json(err);
+
+          res.status(201).json({
+            message: "Enrollment created successfully",
+            enrollment_id: result.insertId,
+          });
         });
       });
     });
