@@ -8,6 +8,45 @@ const {
 
 router.use(authenticateToken);
 
+// GET revenue summary for admin dashboard
+router.get("/revenue/summary", requireRole("admin"), (req, res) => {
+  const totalsSql = `
+    SELECT
+      COALESCE(SUM(amount), 0) AS total_revenue,
+      COUNT(id) AS total_payments
+    FROM payments
+    WHERE statusi = 'paid'
+  `;
+
+  const byCourseSql = `
+    SELECT
+      courses.id AS course_id,
+      courses.emertimi AS course_name,
+      COALESCE(SUM(payments.amount), 0) AS revenue,
+      COUNT(payments.id) AS payments_count
+    FROM payments
+    JOIN enrollments ON payments.enrollment_id = enrollments.id
+    JOIN courses ON enrollments.course_id = courses.id
+    WHERE payments.statusi = 'paid'
+    GROUP BY courses.id, courses.emertimi
+    ORDER BY revenue DESC
+  `;
+
+  db.query(totalsSql, (err, totals) => {
+    if (err) return res.status(500).json(err);
+
+    db.query(byCourseSql, (err, byCourse) => {
+      if (err) return res.status(500).json(err);
+
+      res.json({
+        total_revenue: Number(totals[0]?.total_revenue || 0),
+        total_payments: Number(totals[0]?.total_payments || 0),
+        by_course: byCourse,
+      });
+    });
+  });
+});
+
 // GET payments for admin/professor dashboards
 router.get("/", requireRole("admin", "professor"), (req, res) => {
   const professorFilter =
