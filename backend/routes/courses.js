@@ -21,6 +21,7 @@ router.get("/", optionalAuth, (req, res) => {
       courses.professor_id,
       courses.semester_id,
       courses.kapaciteti,
+      courses.cmimi,
       professors.titulli,
       users.username AS professor_name,
       semesters.emertimi AS semester_name
@@ -55,6 +56,7 @@ router.get("/:id", optionalAuth, (req, res) => {
       courses.professor_id,
       courses.semester_id,
       courses.kapaciteti,
+      courses.cmimi,
       professors.titulli,
       users.username AS professor_name,
       semesters.emertimi AS semester_name
@@ -83,14 +85,15 @@ router.post("/", authenticateToken, requireRole("admin"), (req, res) => {
     professor_id,
     semester_id,
     kapaciteti,
+    cmimi,
   } = req.body;
 
   const sql =
-    "INSERT INTO courses (emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti) VALUES (?, ?, ?, ?, ?, ?)";
+    "INSERT INTO courses (emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
   db.query(
     sql,
-    [emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti],
+    [emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi || 0],
     (err, result) => {
       if (err) return res.status(500).json(err);
       res.json({ message: "Kursi u shtua me sukses", result });
@@ -108,14 +111,15 @@ router.put("/:id", authenticateToken, requireRole("admin"), (req, res) => {
     professor_id,
     semester_id,
     kapaciteti,
+    cmimi,
   } = req.body;
 
   const sql =
-    "UPDATE courses SET emertimi = ?, pershkrimi = ?, kredite = ?, professor_id = ?, semester_id = ?, kapaciteti = ? WHERE id = ?";
+    "UPDATE courses SET emertimi = ?, pershkrimi = ?, kredite = ?, professor_id = ?, semester_id = ?, kapaciteti = ?, cmimi = ? WHERE id = ?";
 
   db.query(
     sql,
-    [emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, id],
+    [emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi || 0, id],
     (err, result) => {
       if (err) return res.status(500).json(err);
       res.json({ message: "Kursi u perditesua me sukses", result });
