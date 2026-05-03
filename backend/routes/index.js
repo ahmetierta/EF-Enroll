@@ -1,6 +1,7 @@
 const express = require("express");
 
 const adminRoutes = require("./admin");
+const announcementsRoutes = require("./announcements");
 const authRoutes = require("./auth");
 const coursesRoutes = require("./courses");
 const departmentsRoutes = require("./departments");
@@ -15,6 +16,7 @@ const usersRoutes = require("./users");
 const router = express.Router();
 
 router.use("/admin", adminRoutes);
+router.use("/announcements", announcementsRoutes);
 router.use("/auth", authRoutes);
 router.use("/courses", coursesRoutes);
 router.use("/departments", departmentsRoutes);
