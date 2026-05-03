@@ -2,7 +2,6 @@ import httpClient from "../api/httpClient";
 
 export const courseService = {
   getAll: () => httpClient.get("/courses"),
-  getPublicAll: () => httpClient.get("/courses", { skipAuth: true }),
   create: (courseData) => httpClient.post("/courses", courseData),
   update: (courseId, courseData) =>
     httpClient.put(`/courses/${courseId}`, courseData),
