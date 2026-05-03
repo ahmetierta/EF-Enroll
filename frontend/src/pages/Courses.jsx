@@ -14,6 +14,7 @@ const initialFormData = {
   professor_id: "",
   semester_id: "",
   kapaciteti: "",
+  cmimi: "",
 };
 
 const Courses = () => {
@@ -115,6 +116,7 @@ const Courses = () => {
       professor_id: course.professor_id || "",
       semester_id: course.semester_id || "",
       kapaciteti: course.kapaciteti || "",
+      cmimi: course.cmimi || "",
     });
   };
 
@@ -236,6 +238,17 @@ const Courses = () => {
                 onChange={handleChange}
                 className="rounded-xl border-slate-200 focus:bg-white"
               />
+
+              <TextInput
+                type="number"
+                name="cmimi"
+                placeholder="Price"
+                value={formData.cmimi}
+                onChange={handleChange}
+                className="rounded-xl border-slate-200 focus:bg-white"
+                min="0"
+                step="0.01"
+              />
             </div>
 
             <div className="mt-6 flex gap-3">
@@ -290,6 +303,7 @@ const Courses = () => {
                   <th className="px-4 py-3">Professor</th>
                   <th className="px-4 py-3">Semester</th>
                   <th className="px-4 py-3">Capacity</th>
+                  <th className="px-4 py-3">Price</th>
                   <th className="px-4 py-3">Actions</th>
                 </tr>
               </thead>
@@ -322,6 +336,9 @@ const Courses = () => {
                           {course.kapaciteti} seats
                         </span>
                       </td>
+                      <td className="px-4 py-4">
+                        {Number(course.cmimi || 0).toFixed(2)} EUR
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
                           <Button
@@ -344,7 +361,7 @@ const Courses = () => {
                   ))
                 ) : (
                   <tr>
-                    <td className="px-4 py-10 text-center text-slate-400" colSpan="8">
+                    <td className="px-4 py-10 text-center text-slate-400" colSpan="9">
                       No courses found.
                     </td>
                   </tr>

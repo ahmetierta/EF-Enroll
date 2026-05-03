@@ -149,6 +149,10 @@ const PublicCourses = () => {
                       <dt className="font-semibold text-slate-950">Capacity</dt>
                       <dd>{course.kapaciteti || 0} seats</dd>
                     </div>
+                    <div>
+                      <dt className="font-semibold text-slate-950">Price</dt>
+                      <dd>{Number(course.cmimi || 0).toFixed(2)} EUR</dd>
+                    </div>
                   </dl>
                 </div>
 
