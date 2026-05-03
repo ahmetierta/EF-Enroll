@@ -9,6 +9,7 @@ export const navItems = [
   { to: "/schedules", label: "Schedules", roles: ["admin", "professor"] },
   { to: "/enrollments", label: "Enrollments", roles: ["admin", "professor"] },
   { to: "/payments", label: "Payments", roles: ["admin", "professor"] },
+  { to: "/revenue", label: "Revenue", roles: ["admin"] },
   { to: "/waiting-list", label: "Waiting List", roles: ["admin"] },
   { to: "/announcements", label: "Announcements", roles: ["admin", "professor"] },
 ];

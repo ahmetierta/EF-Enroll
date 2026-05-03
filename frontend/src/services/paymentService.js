@@ -5,4 +5,5 @@ export const paymentService = {
     httpClient.post("/payments", { enrollment_id: enrollmentId }),
   getMine: () => httpClient.get("/payments/mine"),
   getAll: () => httpClient.get("/payments"),
+  getRevenueSummary: () => httpClient.get("/payments/revenue/summary"),
 };

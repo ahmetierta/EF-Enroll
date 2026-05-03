@@ -9,6 +9,7 @@ import Payments from "../pages/Payments";
 import PlaceholderPage from "../pages/PlaceholderPage";
 import Professors from "../pages/Professors";
 import PublicCourses from "../pages/PublicCourses";
+import Revenue from "../pages/Revenue";
 import Schedules from "../pages/Schedules";
 import Semesters from "../pages/Semesters";
 import Students from "../pages/Students";
@@ -97,6 +98,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute allowedRoles={["admin", "professor"]}>
               <Payments />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="revenue"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <Revenue />
             </ProtectedRoute>
           }
         />
