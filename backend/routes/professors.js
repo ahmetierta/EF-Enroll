@@ -119,22 +119,70 @@ router.delete("/:id", (req, res) => {
 
     const user_id = professorRows[0].user_id;
 
-    const sqlDeleteProfessor = "DELETE FROM professors WHERE id = ?";
-
-    db.query(sqlDeleteProfessor, [id], (err, professorResult) => {
+    db.beginTransaction((err) => {
       if (err) return res.status(500).json(err);
 
-      const sqlDeleteUser = "DELETE FROM users WHERE id = ?";
+      db.query(
+        "UPDATE courses SET professor_id = NULL WHERE professor_id = ?",
+        [id],
+        (err) => {
+          if (err) {
+            return db.rollback(() => res.status(500).json(err));
+          }
 
-      db.query(sqlDeleteUser, [user_id], (err, userResult) => {
-        if (err) return res.status(500).json(err);
+          db.query(
+            "UPDATE announcements SET professor_id = NULL WHERE professor_id = ?",
+            [id],
+            (err) => {
+              if (err) {
+                return db.rollback(() => res.status(500).json(err));
+              }
 
-        res.json({
-          message: "Profesori dhe user-i u fshine me sukses",
-          professorResult,
-          userResult,
-        });
-      });
+              db.query(
+                "UPDATE course_materials SET professor_id = NULL WHERE professor_id = ?",
+                [id],
+                (err) => {
+                  if (err) {
+                    return db.rollback(() => res.status(500).json(err));
+                  }
+
+                  db.query(
+                    "DELETE FROM professors WHERE id = ?",
+                    [id],
+                    (err, professorResult) => {
+                      if (err) {
+                        return db.rollback(() => res.status(500).json(err));
+                      }
+
+                      db.query(
+                        "DELETE FROM users WHERE id = ?",
+                        [user_id],
+                        (err, userResult) => {
+                          if (err) {
+                            return db.rollback(() => res.status(500).json(err));
+                          }
+
+                          db.commit((err) => {
+                            if (err) {
+                              return db.rollback(() => res.status(500).json(err));
+                            }
+
+                            res.json({
+                              message: "Profesori dhe user-i u fshine me sukses",
+                              professorResult,
+                              userResult,
+                            });
+                          });
+                        }
+                      );
+                    }
+                  );
+                }
+              );
+            }
+          );
+        }
+      );
     });
   });
 });
