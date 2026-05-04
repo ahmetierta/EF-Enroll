@@ -61,11 +61,33 @@ router.put("/:id", (req, res) => {
 // DELETE semester
 router.delete("/:id", (req, res) => {
   const id = req.params.id;
-  const sql = "DELETE FROM semesters WHERE id = ?";
 
-  db.query(sql, [id], (err, result) => {
+  db.beginTransaction((err) => {
     if (err) return res.status(500).json(err);
-    res.json({ message: "Semestri u fshi me sukses", result });
+
+    db.query(
+      "UPDATE courses SET semester_id = NULL WHERE semester_id = ?",
+      [id],
+      (err) => {
+        if (err) {
+          return db.rollback(() => res.status(500).json(err));
+        }
+
+        db.query("DELETE FROM semesters WHERE id = ?", [id], (err, result) => {
+          if (err) {
+            return db.rollback(() => res.status(500).json(err));
+          }
+
+          db.commit((err) => {
+            if (err) {
+              return db.rollback(() => res.status(500).json(err));
+            }
+
+            res.json({ message: "Semestri u fshi me sukses", result });
+          });
+        });
+      }
+    );
   });
 });
 
