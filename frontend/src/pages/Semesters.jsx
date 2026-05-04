@@ -3,6 +3,7 @@ import FormCard from "../components/layout/FormCard";
 import PageContainer from "../components/layout/PageContainer";
 import TableCard from "../components/layout/TableCard";
 import Button from "../components/ui/Button";
+import SelectInput from "../components/ui/SelectInput";
 import TextInput from "../components/ui/TextInput";
 import { semesterService } from "../services/semesterService";
 
@@ -121,12 +122,17 @@ const Semesters = () => {
               onChange={handleChange}
             />
 
-            <TextInput
+            <SelectInput
               name="statusi"
-              placeholder="Status"
               value={formData.statusi}
               onChange={handleChange}
-            />
+            >
+              <option value="">Select Status</option>
+              <option value="planned">Planned</option>
+              <option value="active">Active</option>
+              <option value="completed">Completed</option>
+              <option value="archived">Archived</option>
+            </SelectInput>
           </div>
 
           <div className="mt-6 flex gap-3">
