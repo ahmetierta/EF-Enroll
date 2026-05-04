@@ -13,6 +13,12 @@ const initialFormData = {
   salla: "",
 };
 
+const roomOptions = Array.from({ length: 30 }, (_, index) => `Room ${index + 1}`);
+
+function timeOverlaps(startA, endA, startB, endB) {
+  return startA < endB && startB < endA;
+}
+
 const Schedules = () => {
   const [schedules, setSchedules] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -155,6 +161,26 @@ const Schedules = () => {
     schedules.map((schedule) => schedule.salla).filter(Boolean)
   ).size;
 
+  const hasTimeSelection =
+    formData.dita && formData.ora_fillimit && formData.ora_perfundimit;
+
+  const unavailableRooms = new Set(
+    hasTimeSelection
+      ? schedules
+          .filter((schedule) => schedule.id !== editId)
+          .filter((schedule) => schedule.dita === formData.dita)
+          .filter((schedule) =>
+            timeOverlaps(
+              formData.ora_fillimit,
+              formData.ora_perfundimit,
+              schedule.ora_fillimit?.slice(0, 5),
+              schedule.ora_perfundimit?.slice(0, 5)
+            )
+          )
+          .map((schedule) => schedule.salla)
+      : []
+  );
+
   return (
     <div className="min-h-screen bg-slate-300 p-6 text-slate-900 lg:p-8">
       <div className="mx-auto max-w-7xl">
@@ -251,13 +277,23 @@ const Schedules = () => {
                 className="rounded-xl border-slate-200 focus:bg-white"
               />
 
-              <TextInput
+              <SelectInput
                 name="salla"
-                placeholder="Room"
                 value={formData.salla}
                 onChange={handleChange}
                 className="rounded-xl border-slate-200 focus:bg-white"
-              />
+              >
+                <option value="">Select Room</option>
+                {roomOptions.map((room) => (
+                  <option
+                    key={room}
+                    value={room}
+                    disabled={unavailableRooms.has(room)}
+                  >
+                    {unavailableRooms.has(room) ? `${room} - occupied` : room}
+                  </option>
+                ))}
+              </SelectInput>
             </div>
 
             <div className="mt-6 flex gap-3">
