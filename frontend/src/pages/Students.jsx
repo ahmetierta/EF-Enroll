@@ -3,6 +3,7 @@ import FormCard from "../components/layout/FormCard";
 import PageContainer from "../components/layout/PageContainer";
 import TableCard from "../components/layout/TableCard";
 import Button from "../components/ui/Button";
+import SelectInput from "../components/ui/SelectInput";
 import TextInput from "../components/ui/TextInput";
 import { studentService } from "../services/studentService";
 
@@ -14,6 +15,16 @@ const initialFormData = {
   programi: "",
   viti_studimit: "",
 };
+
+const programOptions = [
+  "Computer Science",
+  "Software Engineering",
+  "Information Systems",
+  "Cyber Security",
+  "Data Science",
+];
+
+const yearOptions = [1, 2, 3, 4, 5];
 
 const Students = () => {
   const [students, setStudents] = useState([]);
@@ -133,20 +144,31 @@ const Students = () => {
               onChange={handleChange}
             />
 
-            <TextInput
+            <SelectInput
               name="programi"
-              placeholder="Program"
               value={formData.programi}
               onChange={handleChange}
-            />
+            >
+              <option value="">Select Program</option>
+              {programOptions.map((program) => (
+                <option key={program} value={program}>
+                  {program}
+                </option>
+              ))}
+            </SelectInput>
 
-            <TextInput
-              type="number"
+            <SelectInput
               name="viti_studimit"
-              placeholder="Year"
               value={formData.viti_studimit}
               onChange={handleChange}
-            />
+            >
+              <option value="">Select Year</option>
+              {yearOptions.map((year) => (
+                <option key={year} value={year}>
+                  Year {year}
+                </option>
+              ))}
+            </SelectInput>
           </div>
 
           <div className="mt-6 flex gap-3">

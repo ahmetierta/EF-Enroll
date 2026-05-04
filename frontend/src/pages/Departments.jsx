@@ -3,9 +3,11 @@ import FormCard from "../components/layout/FormCard";
 import PageContainer from "../components/layout/PageContainer";
 import TableCard from "../components/layout/TableCard";
 import Button from "../components/ui/Button";
+import SelectInput from "../components/ui/SelectInput";
 import TextArea from "../components/ui/TextArea";
 import TextInput from "../components/ui/TextInput";
 import { departmentService } from "../services/departmentService";
+import { professorService } from "../services/professorService";
 
 const initialFormData = {
   emertimi: "",
@@ -15,6 +17,7 @@ const initialFormData = {
 
 const Departments = () => {
   const [departments, setDepartments] = useState([]);
+  const [professors, setProfessors] = useState([]);
   const [formData, setFormData] = useState(initialFormData);
   const [editId, setEditId] = useState(null);
 
@@ -25,8 +28,16 @@ const Departments = () => {
       .catch((err) => console.log(err));
   }
 
+  function fetchProfessors() {
+    professorService
+      .getAll()
+      .then((res) => setProfessors(res.data))
+      .catch((err) => console.log(err));
+  }
+
   useEffect(() => {
     fetchDepartments();
+    fetchProfessors();
   }, []);
 
   const handleChange = (e) => {
@@ -113,12 +124,18 @@ const Departments = () => {
               onChange={handleChange}
             />
 
-            <TextInput
+            <SelectInput
               name="shefi_departamentit"
-              placeholder="Head of Department"
               value={formData.shefi_departamentit}
               onChange={handleChange}
-            />
+            >
+              <option value="">Select Head of Department</option>
+              {professors.map((professor) => (
+                <option key={professor.id} value={professor.username}>
+                  {professor.username} {professor.titulli ? `(${professor.titulli})` : ""}
+                </option>
+              ))}
+            </SelectInput>
           </div>
 
           <div className="mt-6 flex gap-3">
