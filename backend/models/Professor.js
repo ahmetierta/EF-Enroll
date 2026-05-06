@@ -30,6 +30,21 @@ const Professor = new EntitySchema({
       nullable: true,
       onDelete: "NO ACTION",
     },
+    courses: {
+      type: "one-to-many",
+      target: "Course",
+      inverseSide: "professor",
+    },
+    announcements: {
+      type: "one-to-many",
+      target: "Announcement",
+      inverseSide: "professor",
+    },
+    materials: {
+      type: "one-to-many",
+      target: "CourseMaterial",
+      inverseSide: "professor",
+    },
   },
 });
 

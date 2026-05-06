@@ -34,6 +34,16 @@ const Student = new EntitySchema({
       nullable: true,
       onDelete: "NO ACTION",
     },
+    enrollments: {
+      type: "one-to-many",
+      target: "Enrollment",
+      inverseSide: "student",
+    },
+    waitingListItems: {
+      type: "one-to-many",
+      target: "WaitingList",
+      inverseSide: "student",
+    },
   },
 });
 

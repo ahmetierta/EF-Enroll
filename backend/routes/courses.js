@@ -1,83 +1,72 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+const AppDataSource = require("../data-source");
 const {
   authenticateToken,
   optionalAuth,
   requireRole,
 } = require("../middleware/authMiddleware");
 
+function mapCourseResponse(course) {
+  return {
+    id: course.id,
+    emertimi: course.emertimi,
+    pershkrimi: course.pershkrimi,
+    kredite: course.kredite,
+    professor_id: course.professor?.id || null,
+    semester_id: course.semester?.id || null,
+    kapaciteti: course.kapaciteti,
+    cmimi: course.cmimi,
+    titulli: course.professor?.titulli || null,
+    professor_name: course.professor?.user?.username || null,
+    semester_name: course.semester?.emertimi || null,
+  };
+}
+
+function buildCourseQuery() {
+  return AppDataSource.getRepository("Course")
+    .createQueryBuilder("course")
+    .leftJoinAndSelect("course.professor", "professor")
+    .leftJoinAndSelect("professor.user", "user")
+    .leftJoinAndSelect("course.semester", "semester");
+}
+
 // GET all courses with professor and semester info
-router.get("/", optionalAuth, (req, res) => {
-  const professorFilter =
-    req.user?.role === "professor" ? "WHERE professors.user_id = ?" : "";
+router.get("/", optionalAuth, async (req, res) => {
+  try {
+    const query = buildCourseQuery().orderBy("course.id", "DESC");
 
-  const sql = `
-    SELECT
-      courses.id,
-      courses.emertimi,
-      courses.pershkrimi,
-      courses.kredite,
-      courses.professor_id,
-      courses.semester_id,
-      courses.kapaciteti,
-      courses.cmimi,
-      professors.titulli,
-      users.username AS professor_name,
-      semesters.emertimi AS semester_name
-    FROM courses
-    LEFT JOIN professors ON courses.professor_id = professors.id
-    LEFT JOIN users ON professors.user_id = users.id
-    LEFT JOIN semesters ON courses.semester_id = semesters.id
-    ${professorFilter}
-    ORDER BY courses.id DESC
-  `;
+    if (req.user?.role === "professor") {
+      query.where("user.id = :userId", { userId: req.user.id });
+    }
 
-  const params = req.user?.role === "professor" ? [req.user.id] : [];
-
-  db.query(sql, params, (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
-  });
+    const courses = await query.getMany();
+    res.json(courses.map(mapCourseResponse));
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // GET course by id with professor and semester info
-router.get("/:id", optionalAuth, (req, res) => {
+router.get("/:id", optionalAuth, async (req, res) => {
   const id = req.params.id;
-  const professorFilter =
-    req.user?.role === "professor" ? "AND professors.user_id = ?" : "";
 
-  const sql = `
-    SELECT
-      courses.id,
-      courses.emertimi,
-      courses.pershkrimi,
-      courses.kredite,
-      courses.professor_id,
-      courses.semester_id,
-      courses.kapaciteti,
-      courses.cmimi,
-      professors.titulli,
-      users.username AS professor_name,
-      semesters.emertimi AS semester_name
-    FROM courses
-    LEFT JOIN professors ON courses.professor_id = professors.id
-    LEFT JOIN users ON professors.user_id = users.id
-    LEFT JOIN semesters ON courses.semester_id = semesters.id
-    WHERE courses.id = ?
-    ${professorFilter}
-  `;
+  try {
+    const query = buildCourseQuery().where("course.id = :id", { id });
 
-  const params = req.user?.role === "professor" ? [id, req.user.id] : [id];
+    if (req.user?.role === "professor") {
+      query.andWhere("user.id = :userId", { userId: req.user.id });
+    }
 
-  db.query(sql, params, (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
-  });
+    const course = await query.getOne();
+    res.json(course ? [mapCourseResponse(course)] : []);
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // POST create course
-router.post("/", authenticateToken, requireRole("admin"), (req, res) => {
+router.post("/", authenticateToken, requireRole("admin"), async (req, res) => {
   const {
     emertimi,
     pershkrimi,
@@ -88,21 +77,27 @@ router.post("/", authenticateToken, requireRole("admin"), (req, res) => {
     cmimi,
   } = req.body;
 
-  const sql =
-    "INSERT INTO courses (emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi) VALUES (?, ?, ?, ?, ?, ?, ?)";
+  try {
+    const courseRepository = AppDataSource.getRepository("Course");
+    const course = courseRepository.create({
+      emertimi,
+      pershkrimi,
+      kredite,
+      kapaciteti,
+      cmimi: cmimi || 0,
+      professor: professor_id ? { id: professor_id } : null,
+      semester: semester_id ? { id: semester_id } : null,
+    });
 
-  db.query(
-    sql,
-    [emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi || 0],
-    (err, result) => {
-      if (err) return res.status(500).json(err);
-      res.json({ message: "Kursi u shtua me sukses", result });
-    }
-  );
+    const savedCourse = await courseRepository.save(course);
+    res.json({ message: "Kursi u shtua me sukses", result: savedCourse });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // PUT update course
-router.put("/:id", authenticateToken, requireRole("admin"), (req, res) => {
+router.put("/:id", authenticateToken, requireRole("admin"), async (req, res) => {
   const id = req.params.id;
   const {
     emertimi,
@@ -114,28 +109,43 @@ router.put("/:id", authenticateToken, requireRole("admin"), (req, res) => {
     cmimi,
   } = req.body;
 
-  const sql =
-    "UPDATE courses SET emertimi = ?, pershkrimi = ?, kredite = ?, professor_id = ?, semester_id = ?, kapaciteti = ?, cmimi = ? WHERE id = ?";
+  try {
+    const courseRepository = AppDataSource.getRepository("Course");
+    const course = await courseRepository.findOneBy({ id });
 
-  db.query(
-    sql,
-    [emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi || 0, id],
-    (err, result) => {
-      if (err) return res.status(500).json(err);
-      res.json({ message: "Kursi u perditesua me sukses", result });
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
     }
-  );
+
+    courseRepository.merge(course, {
+      emertimi,
+      pershkrimi,
+      kredite,
+      kapaciteti,
+      cmimi: cmimi || 0,
+      professor: professor_id ? { id: professor_id } : null,
+      semester: semester_id ? { id: semester_id } : null,
+    });
+
+    const savedCourse = await courseRepository.save(course);
+    res.json({ message: "Kursi u perditesua me sukses", result: savedCourse });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // DELETE course
-router.delete("/:id", authenticateToken, requireRole("admin"), (req, res) => {
+router.delete("/:id", authenticateToken, requireRole("admin"), async (req, res) => {
   const id = req.params.id;
-  const sql = "DELETE FROM courses WHERE id = ?";
 
-  db.query(sql, [id], (err, result) => {
-    if (err) return res.status(500).json(err);
+  try {
+    const courseRepository = AppDataSource.getRepository("Course");
+    const result = await courseRepository.delete(id);
+
     res.json({ message: "Kursi u fshi me sukses", result });
-  });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 module.exports = router;
