@@ -1,66 +1,82 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+const AppDataSource = require("../data-source");
 
 // GET all departments
-router.get("/", (req, res) => {
-  const sql = "SELECT * FROM departments";
+router.get("/", async (req, res) => {
+  try {
+    const departmentRepository = AppDataSource.getRepository("Department");
+    const departments = await departmentRepository.find({
+      order: { id: "DESC" },
+    });
 
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
-  });
+    res.json(departments);
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // GET department by id
-router.get("/:id", (req, res) => {
-  const id = req.params.id;
-  const sql = "SELECT * FROM departments WHERE id = ?";
+router.get("/:id", async (req, res) => {
+  try {
+    const departmentRepository = AppDataSource.getRepository("Department");
+    const department = await departmentRepository.findOneBy({
+      id: Number(req.params.id),
+    });
 
-  db.query(sql, [id], (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
-  });
+    res.json(department ? [department] : []);
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // POST create department
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   const { emertimi, pershkrimi, shefi_departamentit } = req.body;
 
-  const sql =
-    "INSERT INTO departments (emertimi, pershkrimi, shefi_departamentit) VALUES (?, ?, ?)";
+  try {
+    const departmentRepository = AppDataSource.getRepository("Department");
+    const department = departmentRepository.create({
+      emertimi,
+      pershkrimi,
+      shefi_departamentit,
+    });
+    const result = await departmentRepository.save(department);
 
-  db.query(sql, [emertimi, pershkrimi, shefi_departamentit], (err, result) => {
-    if (err) return res.status(500).json(err);
     res.json({ message: "Departamenti u shtua me sukses", result });
-  });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // PUT update department
-router.put("/:id", (req, res) => {
-  const id = req.params.id;
+router.put("/:id", async (req, res) => {
   const { emertimi, pershkrimi, shefi_departamentit } = req.body;
 
-  const sql =
-    "UPDATE departments SET emertimi = ?, pershkrimi = ?, shefi_departamentit = ? WHERE id = ?";
+  try {
+    const departmentRepository = AppDataSource.getRepository("Department");
+    const result = await departmentRepository.update(Number(req.params.id), {
+      emertimi,
+      pershkrimi,
+      shefi_departamentit,
+    });
 
-  db.query(sql, [emertimi, pershkrimi, shefi_departamentit, id], (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json({ message: "Departamenti u përditësua me sukses", result });
-  });
+    res.json({ message: "Departamenti u perditesua me sukses", result });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // DELETE department
-router.delete("/:id", (req, res) => {
-  const id = req.params.id;
-  const sql = "DELETE FROM departments WHERE id = ?";
+router.delete("/:id", async (req, res) => {
+  try {
+    const departmentRepository = AppDataSource.getRepository("Department");
+    const result = await departmentRepository.delete(Number(req.params.id));
 
-  db.query(sql, [id], (err, result) => {
-    if (err) return res.status(500).json(err);
     res.json({ message: "Departamenti u fshi me sukses", result });
-  });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 module.exports = router;
-
- 

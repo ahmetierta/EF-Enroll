@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+const AppDataSource = require("../data-source");
 const {
   authenticateToken,
   requireRole,
@@ -8,160 +8,163 @@ const {
 
 router.use(authenticateToken);
 
-function getStudentForUser(userId, callback) {
-  db.query(
-    "SELECT id FROM students WHERE user_id = ?",
-    [userId],
-    (err, students) => {
-      if (err) return callback(err);
-      callback(null, students[0]);
-    }
-  );
+async function getStudentForUser(userId) {
+  return AppDataSource.getRepository("Student").findOne({
+    where: { user: { id: userId } },
+  });
+}
+
+function mapEnrollment(enrollment) {
+  return {
+    id: enrollment.id,
+    student_id: enrollment.student?.id || null,
+    course_id: enrollment.course?.id || null,
+    data_regjistrimit: enrollment.data_regjistrimit,
+    statusi: enrollment.statusi,
+    nota: enrollment.nota,
+    numri_studentit: enrollment.student?.numri_studentit || null,
+    student_name: enrollment.student?.user?.username || null,
+    student_email: enrollment.student?.user?.email || null,
+    course_name: enrollment.course?.emertimi || null,
+    kredite: enrollment.course?.kredite || null,
+    professor_user_id: enrollment.course?.professor?.user?.id || null,
+  };
+}
+
+function mapStudentEnrollment(enrollment) {
+  const payment = enrollment.payments?.[0];
+
+  return {
+    id: enrollment.id,
+    student_id: enrollment.student?.id || null,
+    course_id: enrollment.course?.id || null,
+    data_regjistrimit: enrollment.data_regjistrimit,
+    statusi: enrollment.statusi,
+    nota: enrollment.nota,
+    course_name: enrollment.course?.emertimi || null,
+    kredite: enrollment.course?.kredite || null,
+    cmimi: enrollment.course?.cmimi || 0,
+    professor_name: enrollment.course?.professor?.user?.username || null,
+    payment_id: payment?.id || null,
+    payment_status: payment?.statusi || null,
+    paid_amount: payment?.amount || null,
+    payment_date: payment?.data_pageses || null,
+  };
 }
 
 // GET all enrollments with student and course details
-router.get("/", requireRole("admin", "professor"), (req, res) => {
-  const professorFilter =
-    req.user.role === "professor" ? "WHERE professors.user_id = ?" : "";
+router.get("/", requireRole("admin", "professor"), async (req, res) => {
+  try {
+    const query = AppDataSource.getRepository("Enrollment")
+      .createQueryBuilder("enrollment")
+      .leftJoinAndSelect("enrollment.student", "student")
+      .leftJoinAndSelect("student.user", "studentUser")
+      .leftJoinAndSelect("enrollment.course", "course")
+      .leftJoinAndSelect("course.professor", "professor")
+      .leftJoinAndSelect("professor.user", "professorUser")
+      .orderBy("enrollment.id", "DESC");
 
-  const sql = `
-    SELECT
-      enrollments.id,
-      enrollments.student_id,
-      enrollments.course_id,
-      enrollments.data_regjistrimit,
-      enrollments.statusi,
-      enrollments.nota,
-      students.numri_studentit,
-      users.username AS student_name,
-      users.email AS student_email,
-      courses.emertimi AS course_name,
-      courses.kredite,
-      professors.user_id AS professor_user_id
-    FROM enrollments
-    JOIN students ON enrollments.student_id = students.id
-    JOIN users ON students.user_id = users.id
-    JOIN courses ON enrollments.course_id = courses.id
-    LEFT JOIN professors ON courses.professor_id = professors.id
-    ${professorFilter}
-    ORDER BY enrollments.id DESC
-  `;
+    if (req.user.role === "professor") {
+      query.where("professorUser.id = :userId", { userId: req.user.id });
+    }
 
-  const params = req.user.role === "professor" ? [req.user.id] : [];
-
-  db.query(sql, params, (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
-  });
+    const enrollments = await query.getMany();
+    res.json(enrollments.map(mapEnrollment));
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // GET logged-in student's own enrollments
-router.get("/mine", requireRole("student"), (req, res) => {
-  getStudentForUser(req.user.id, (err, student) => {
-    if (err) return res.status(500).json(err);
+router.get("/mine", requireRole("student"), async (req, res) => {
+  try {
+    const student = await getStudentForUser(req.user.id);
+
     if (!student) {
       return res.status(404).json({ message: "Student profile not found" });
     }
 
-    const sql = `
-      SELECT
-        enrollments.id,
-        enrollments.student_id,
-        enrollments.course_id,
-        enrollments.data_regjistrimit,
-        enrollments.statusi,
-        enrollments.nota,
-        courses.emertimi AS course_name,
-        courses.kredite,
-        courses.cmimi,
-        users.username AS professor_name,
-        payments.id AS payment_id,
-        payments.statusi AS payment_status,
-        payments.amount AS paid_amount,
-        payments.data_pageses AS payment_date
-      FROM enrollments
-      JOIN courses ON enrollments.course_id = courses.id
-      LEFT JOIN professors ON courses.professor_id = professors.id
-      LEFT JOIN users ON professors.user_id = users.id
-      LEFT JOIN payments ON payments.enrollment_id = enrollments.id
-      WHERE enrollments.student_id = ?
-      ORDER BY enrollments.id DESC
-    `;
-
-    db.query(sql, [student.id], (err, result) => {
-      if (err) return res.status(500).json(err);
-      res.json(result);
+    const enrollments = await AppDataSource.getRepository("Enrollment").find({
+      where: { student: { id: student.id } },
+      relations: {
+        course: {
+          professor: {
+            user: true,
+          },
+        },
+        payments: true,
+      },
+      order: { id: "DESC" },
     });
-  });
+
+    res.json(enrollments.map(mapStudentEnrollment));
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // POST enroll logged-in student in a course
-router.post("/", requireRole("student"), (req, res) => {
+router.post("/", requireRole("student"), async (req, res) => {
   const { course_id } = req.body;
 
   if (!course_id) {
     return res.status(400).json({ message: "Course is required" });
   }
 
-  getStudentForUser(req.user.id, (err, student) => {
-    if (err) return res.status(500).json(err);
+  try {
+    const enrollmentRepository = AppDataSource.getRepository("Enrollment");
+    const courseRepository = AppDataSource.getRepository("Course");
+    const student = await getStudentForUser(req.user.id);
+
     if (!student) {
       return res.status(404).json({ message: "Student profile not found" });
     }
 
-    const duplicateSql =
-      "SELECT id FROM enrollments WHERE student_id = ? AND course_id = ?";
-
-    db.query(duplicateSql, [student.id, course_id], (err, existingRows) => {
-      if (err) return res.status(500).json(err);
-      if (existingRows.length > 0) {
-        return res.status(409).json({
-          message: "You are already enrolled in this course",
-        });
-      }
-
-      const capacitySql = `
-        SELECT
-          courses.id,
-          courses.kapaciteti,
-          COUNT(enrollments.id) AS enrolled_count
-        FROM courses
-        LEFT JOIN enrollments
-          ON enrollments.course_id = courses.id
-          AND enrollments.statusi = 'active'
-        WHERE courses.id = ?
-        GROUP BY courses.id, courses.kapaciteti
-      `;
-
-      db.query(capacitySql, [course_id], (err, capacityRows) => {
-        if (err) return res.status(500).json(err);
-
-        if (capacityRows.length === 0) {
-          return res.status(404).json({ message: "Course not found" });
-        }
-
-        const course = capacityRows[0];
-        const capacity = Number(course.kapaciteti || 0);
-        const enrolledCount = Number(course.enrolled_count || 0);
-
-        if (capacity > 0 && enrolledCount >= capacity) {
-          return res.status(409).json({ message: "Course is full" });
-        }
-
-        const insertSql =
-          "INSERT INTO enrollments (student_id, course_id, data_regjistrimit, statusi) VALUES (?, ?, CURDATE(), 'active')";
-
-        db.query(insertSql, [student.id, course_id], (err, result) => {
-          if (err) return res.status(500).json(err);
-
-          res.status(201).json({
-            message: "Enrollment created successfully",
-            enrollment_id: result.insertId,
-          });
-        });
-      });
+    const existingEnrollment = await enrollmentRepository.findOne({
+      where: {
+        student: { id: student.id },
+        course: { id: Number(course_id) },
+      },
     });
-  });
+
+    if (existingEnrollment) {
+      return res.status(409).json({
+        message: "You are already enrolled in this course",
+      });
+    }
+
+    const course = await courseRepository.findOneBy({ id: Number(course_id) });
+
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    const enrolledCount = await enrollmentRepository.count({
+      where: {
+        course: { id: Number(course_id) },
+        statusi: "active",
+      },
+    });
+    const capacity = Number(course.kapaciteti || 0);
+
+    if (capacity > 0 && enrolledCount >= capacity) {
+      return res.status(409).json({ message: "Course is full" });
+    }
+
+    const enrollment = await enrollmentRepository.save({
+      student,
+      course,
+      data_regjistrimit: new Date().toISOString().slice(0, 10),
+      statusi: "active",
+    });
+
+    res.status(201).json({
+      message: "Enrollment created successfully",
+      enrollment_id: enrollment.id,
+    });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 module.exports = router;

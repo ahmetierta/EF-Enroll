@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+const AppDataSource = require("../data-source");
 const {
   authenticateToken,
   requireRole,
@@ -8,160 +8,173 @@ const {
 
 router.use(authenticateToken);
 
+function mapPayment(payment) {
+  return {
+    id: payment.id,
+    enrollment_id: payment.enrollment?.id || null,
+    amount: payment.amount,
+    statusi: payment.statusi,
+    payment_method: payment.payment_method,
+    data_pageses: payment.data_pageses,
+    student_id: payment.enrollment?.student?.id || null,
+    course_id: payment.enrollment?.course?.id || null,
+    numri_studentit: payment.enrollment?.student?.numri_studentit || null,
+    student_name: payment.enrollment?.student?.user?.username || null,
+    student_email: payment.enrollment?.student?.user?.email || null,
+    course_name: payment.enrollment?.course?.emertimi || null,
+    course_price: payment.enrollment?.course?.cmimi || 0,
+  };
+}
+
+function mapStudentPayment(payment) {
+  return {
+    id: payment.id,
+    enrollment_id: payment.enrollment?.id || null,
+    amount: payment.amount,
+    statusi: payment.statusi,
+    payment_method: payment.payment_method,
+    data_pageses: payment.data_pageses,
+    course_name: payment.enrollment?.course?.emertimi || null,
+  };
+}
+
 // GET revenue summary for admin dashboard
-router.get("/revenue/summary", requireRole("admin"), (req, res) => {
-  const totalsSql = `
-    SELECT
-      COALESCE(SUM(amount), 0) AS total_revenue,
-      COUNT(id) AS total_payments
-    FROM payments
-    WHERE statusi = 'paid'
-  `;
+router.get("/revenue/summary", requireRole("admin"), async (req, res) => {
+  try {
+    const paymentRepository = AppDataSource.getRepository("Payment");
+    const totals = await paymentRepository
+      .createQueryBuilder("payment")
+      .select("COALESCE(SUM(payment.amount), 0)", "total_revenue")
+      .addSelect("COUNT(payment.id)", "total_payments")
+      .where("payment.statusi = :status", { status: "paid" })
+      .getRawOne();
 
-  const byCourseSql = `
-    SELECT
-      courses.id AS course_id,
-      courses.emertimi AS course_name,
-      COALESCE(SUM(payments.amount), 0) AS revenue,
-      COUNT(payments.id) AS payments_count
-    FROM payments
-    JOIN enrollments ON payments.enrollment_id = enrollments.id
-    JOIN courses ON enrollments.course_id = courses.id
-    WHERE payments.statusi = 'paid'
-    GROUP BY courses.id, courses.emertimi
-    ORDER BY revenue DESC
-  `;
+    const byCourse = await paymentRepository
+      .createQueryBuilder("payment")
+      .innerJoin("payment.enrollment", "enrollment")
+      .innerJoin("enrollment.course", "course")
+      .select("course.id", "course_id")
+      .addSelect("course.emertimi", "course_name")
+      .addSelect("COALESCE(SUM(payment.amount), 0)", "revenue")
+      .addSelect("COUNT(payment.id)", "payments_count")
+      .where("payment.statusi = :status", { status: "paid" })
+      .groupBy("course.id")
+      .addGroupBy("course.emertimi")
+      .orderBy("revenue", "DESC")
+      .getRawMany();
 
-  db.query(totalsSql, (err, totals) => {
-    if (err) return res.status(500).json(err);
-
-    db.query(byCourseSql, (err, byCourse) => {
-      if (err) return res.status(500).json(err);
-
-      res.json({
-        total_revenue: Number(totals[0]?.total_revenue || 0),
-        total_payments: Number(totals[0]?.total_payments || 0),
-        by_course: byCourse,
-      });
+    res.json({
+      total_revenue: Number(totals?.total_revenue || 0),
+      total_payments: Number(totals?.total_payments || 0),
+      by_course: byCourse,
     });
-  });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // GET payments for admin/professor dashboards
-router.get("/", requireRole("admin", "professor"), (req, res) => {
-  const professorFilter =
-    req.user.role === "professor" ? "WHERE professors.user_id = ?" : "";
+router.get("/", requireRole("admin", "professor"), async (req, res) => {
+  try {
+    const query = AppDataSource.getRepository("Payment")
+      .createQueryBuilder("payment")
+      .leftJoinAndSelect("payment.enrollment", "enrollment")
+      .leftJoinAndSelect("enrollment.student", "student")
+      .leftJoinAndSelect("student.user", "studentUser")
+      .leftJoinAndSelect("enrollment.course", "course")
+      .leftJoinAndSelect("course.professor", "professor")
+      .leftJoinAndSelect("professor.user", "professorUser")
+      .orderBy("payment.id", "DESC");
 
-  const sql = `
-    SELECT
-      payments.id,
-      payments.enrollment_id,
-      payments.amount,
-      payments.statusi,
-      payments.payment_method,
-      payments.data_pageses,
-      enrollments.student_id,
-      enrollments.course_id,
-      students.numri_studentit,
-      users.username AS student_name,
-      users.email AS student_email,
-      courses.emertimi AS course_name,
-      courses.cmimi AS course_price
-    FROM payments
-    JOIN enrollments ON payments.enrollment_id = enrollments.id
-    JOIN students ON enrollments.student_id = students.id
-    JOIN users ON students.user_id = users.id
-    JOIN courses ON enrollments.course_id = courses.id
-    LEFT JOIN professors ON courses.professor_id = professors.id
-    ${professorFilter}
-    ORDER BY payments.id DESC
-  `;
+    if (req.user.role === "professor") {
+      query.where("professorUser.id = :userId", { userId: req.user.id });
+    }
 
-  const params = req.user.role === "professor" ? [req.user.id] : [];
-
-  db.query(sql, params, (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
-  });
+    const payments = await query.getMany();
+    res.json(payments.map(mapPayment));
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // GET logged-in student's payments
-router.get("/mine", requireRole("student"), (req, res) => {
-  const sql = `
-    SELECT
-      payments.id,
-      payments.enrollment_id,
-      payments.amount,
-      payments.statusi,
-      payments.payment_method,
-      payments.data_pageses,
-      courses.emertimi AS course_name
-    FROM payments
-    JOIN enrollments ON payments.enrollment_id = enrollments.id
-    JOIN students ON enrollments.student_id = students.id
-    JOIN courses ON enrollments.course_id = courses.id
-    WHERE students.user_id = ?
-    ORDER BY payments.id DESC
-  `;
+router.get("/mine", requireRole("student"), async (req, res) => {
+  try {
+    const payments = await AppDataSource.getRepository("Payment")
+      .createQueryBuilder("payment")
+      .leftJoinAndSelect("payment.enrollment", "enrollment")
+      .leftJoinAndSelect("enrollment.student", "student")
+      .leftJoinAndSelect("student.user", "user")
+      .leftJoinAndSelect("enrollment.course", "course")
+      .where("user.id = :userId", { userId: req.user.id })
+      .orderBy("payment.id", "DESC")
+      .getMany();
 
-  db.query(sql, [req.user.id], (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
-  });
+    res.json(payments.map(mapStudentPayment));
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // POST simulated payment for logged-in student's enrollment
-router.post("/", requireRole("student"), (req, res) => {
+router.post("/", requireRole("student"), async (req, res) => {
   const { enrollment_id } = req.body;
 
   if (!enrollment_id) {
     return res.status(400).json({ message: "Enrollment is required" });
   }
 
-  const enrollmentSql = `
-    SELECT
-      enrollments.id,
-      courses.cmimi
-    FROM enrollments
-    JOIN students ON enrollments.student_id = students.id
-    JOIN courses ON enrollments.course_id = courses.id
-    WHERE enrollments.id = ? AND students.user_id = ?
-  `;
+  try {
+    const enrollmentRepository = AppDataSource.getRepository("Enrollment");
+    const paymentRepository = AppDataSource.getRepository("Payment");
+    const enrollment = await enrollmentRepository.findOne({
+      where: {
+        id: Number(enrollment_id),
+        student: {
+          user: { id: req.user.id },
+        },
+      },
+      relations: {
+        student: {
+          user: true,
+        },
+        course: true,
+      },
+    });
 
-  db.query(enrollmentSql, [enrollment_id, req.user.id], (err, enrollments) => {
-    if (err) return res.status(500).json(err);
-
-    if (enrollments.length === 0) {
+    if (!enrollment) {
       return res.status(404).json({ message: "Enrollment not found" });
     }
 
-    const duplicateSql =
-      "SELECT id FROM payments WHERE enrollment_id = ? AND statusi = 'paid'";
-
-    db.query(duplicateSql, [enrollment_id], (err, existingPayments) => {
-      if (err) return res.status(500).json(err);
-
-      if (existingPayments.length > 0) {
-        return res.status(409).json({
-          message: "This enrollment is already paid",
-        });
-      }
-
-      const amount = Number(enrollments[0].cmimi || 0);
-      const paymentSql =
-        "INSERT INTO payments (enrollment_id, amount, statusi, payment_method) VALUES (?, ?, 'paid', 'simulated')";
-
-      db.query(paymentSql, [enrollment_id, amount], (err, result) => {
-        if (err) return res.status(500).json(err);
-
-        res.status(201).json({
-          message: "Payment completed successfully",
-          payment_id: result.insertId,
-          amount,
-        });
-      });
+    const existingPayment = await paymentRepository.findOne({
+      where: {
+        enrollment: { id: Number(enrollment_id) },
+        statusi: "paid",
+      },
     });
-  });
+
+    if (existingPayment) {
+      return res.status(409).json({
+        message: "This enrollment is already paid",
+      });
+    }
+
+    const amount = Number(enrollment.course?.cmimi || 0);
+    const payment = await paymentRepository.save({
+      enrollment,
+      amount,
+      statusi: "paid",
+      payment_method: "simulated",
+    });
+
+    res.status(201).json({
+      message: "Payment completed successfully",
+      payment_id: payment.id,
+      amount,
+    });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 module.exports = router;

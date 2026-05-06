@@ -1,95 +1,94 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+const AppDataSource = require("../data-source");
 
 // GET all semesters
-router.get("/", (req, res) => {
-  const sql = "SELECT * FROM semesters";
+router.get("/", async (req, res) => {
+  try {
+    const semesterRepository = AppDataSource.getRepository("Semester");
+    const semesters = await semesterRepository.find({
+      order: { id: "DESC" },
+    });
 
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
-  });
+    res.json(semesters);
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // GET semester by id
-router.get("/:id", (req, res) => {
-  const id = req.params.id;
-  const sql = "SELECT * FROM semesters WHERE id = ?";
+router.get("/:id", async (req, res) => {
+  try {
+    const semesterRepository = AppDataSource.getRepository("Semester");
+    const semester = await semesterRepository.findOneBy({
+      id: Number(req.params.id),
+    });
 
-  db.query(sql, [id], (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
-  });
+    res.json(semester ? [semester] : []);
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // POST create semester
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   const { emertimi, data_fillimit, data_perfundimit, statusi } = req.body;
 
-  const sql =
-    "INSERT INTO semesters (emertimi, data_fillimit, data_perfundimit, statusi) VALUES (?, ?, ?, ?)";
+  try {
+    const semesterRepository = AppDataSource.getRepository("Semester");
+    const semester = semesterRepository.create({
+      emertimi,
+      data_fillimit,
+      data_perfundimit,
+      statusi,
+    });
+    const result = await semesterRepository.save(semester);
 
-  db.query(
-    sql,
-    [emertimi, data_fillimit, data_perfundimit, statusi],
-    (err, result) => {
-      if (err) return res.status(500).json(err);
-      res.json({ message: "Semestri u shtua me sukses", result });
-    }
-  );
+    res.json({ message: "Semestri u shtua me sukses", result });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // PUT update semester
-router.put("/:id", (req, res) => {
-  const id = req.params.id;
+router.put("/:id", async (req, res) => {
   const { emertimi, data_fillimit, data_perfundimit, statusi } = req.body;
 
-  const sql =
-    "UPDATE semesters SET emertimi = ?, data_fillimit = ?, data_perfundimit = ?, statusi = ? WHERE id = ?";
+  try {
+    const semesterRepository = AppDataSource.getRepository("Semester");
+    const result = await semesterRepository.update(Number(req.params.id), {
+      emertimi,
+      data_fillimit,
+      data_perfundimit,
+      statusi,
+    });
 
-  db.query(
-    sql,
-    [emertimi, data_fillimit, data_perfundimit, statusi, id],
-    (err, result) => {
-      if (err) return res.status(500).json(err);
-      res.json({ message: "Semestri u përditësua me sukses", result });
-    }
-  );
+    res.json({ message: "Semestri u perditesua me sukses", result });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // DELETE semester
-router.delete("/:id", (req, res) => {
-  const id = req.params.id;
+router.delete("/:id", async (req, res) => {
+  const id = Number(req.params.id);
 
-  db.beginTransaction((err) => {
-    if (err) return res.status(500).json(err);
+  try {
+    const result = await AppDataSource.transaction(async (manager) => {
+      await manager
+        .createQueryBuilder()
+        .update("Course")
+        .set({ semester: null })
+        .where("semester_id = :id", { id })
+        .execute();
 
-    db.query(
-      "UPDATE courses SET semester_id = NULL WHERE semester_id = ?",
-      [id],
-      (err) => {
-        if (err) {
-          return db.rollback(() => res.status(500).json(err));
-        }
+      return manager.getRepository("Semester").delete(id);
+    });
 
-        db.query("DELETE FROM semesters WHERE id = ?", [id], (err, result) => {
-          if (err) {
-            return db.rollback(() => res.status(500).json(err));
-          }
-
-          db.commit((err) => {
-            if (err) {
-              return db.rollback(() => res.status(500).json(err));
-            }
-
-            res.json({ message: "Semestri u fshi me sukses", result });
-          });
-        });
-      }
-    );
-  });
+    res.json({ message: "Semestri u fshi me sukses", result });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 module.exports = router;
- 

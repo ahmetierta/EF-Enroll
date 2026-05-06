@@ -1,55 +1,49 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+const AppDataSource = require("../data-source");
+
+function mapSchedule(schedule) {
+  return {
+    id: schedule.id,
+    course_id: schedule.course?.id || null,
+    dita: schedule.dita,
+    ora_fillimit: schedule.ora_fillimit,
+    ora_perfundimit: schedule.ora_perfundimit,
+    salla: schedule.salla,
+    course_name: schedule.course?.emertimi || null,
+  };
+}
 
 // GET all schedules with course info
-router.get("/", (req, res) => {
-  const sql = `
-    SELECT
-      schedules.id,
-      schedules.course_id,
-      schedules.dita,
-      schedules.ora_fillimit,
-      schedules.ora_perfundimit,
-      schedules.salla,
-      courses.emertimi AS course_name
-    FROM schedules
-    LEFT JOIN courses ON schedules.course_id = courses.id
-    ORDER BY schedules.id DESC
-  `;
+router.get("/", async (req, res) => {
+  try {
+    const schedules = await AppDataSource.getRepository("Schedule").find({
+      relations: { course: true },
+      order: { id: "DESC" },
+    });
 
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
-  });
+    res.json(schedules.map(mapSchedule));
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // GET schedule by id
-router.get("/:id", (req, res) => {
-  const id = req.params.id;
+router.get("/:id", async (req, res) => {
+  try {
+    const schedule = await AppDataSource.getRepository("Schedule").findOne({
+      where: { id: Number(req.params.id) },
+      relations: { course: true },
+    });
 
-  const sql = `
-    SELECT
-      schedules.id,
-      schedules.course_id,
-      schedules.dita,
-      schedules.ora_fillimit,
-      schedules.ora_perfundimit,
-      schedules.salla,
-      courses.emertimi AS course_name
-    FROM schedules
-    LEFT JOIN courses ON schedules.course_id = courses.id
-    WHERE schedules.id = ?
-  `;
-
-  db.query(sql, [id], (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
-  });
+    res.json(schedule ? [mapSchedule(schedule)] : []);
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // POST create schedule
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   const { course_id, dita, ora_fillimit, ora_perfundimit, salla } = req.body;
 
   if (!course_id || !dita || !ora_fillimit || !ora_perfundimit || !salla) {
@@ -58,27 +52,28 @@ router.post("/", (req, res) => {
     });
   }
 
-  const sql =
-    "INSERT INTO schedules (course_id, dita, ora_fillimit, ora_perfundimit, salla) VALUES (?, ?, ?, ?, ?)";
+  try {
+    const scheduleRepository = AppDataSource.getRepository("Schedule");
+    const schedule = scheduleRepository.create({
+      course: { id: course_id },
+      dita,
+      ora_fillimit,
+      ora_perfundimit,
+      salla,
+    });
+    const result = await scheduleRepository.save(schedule);
 
-  db.query(
-    sql,
-    [course_id, dita, ora_fillimit, ora_perfundimit, salla],
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({
-          message: "Failed to create schedule.",
-          error: err.sqlMessage || err.message,
-        });
-      }
-      res.json({ message: "Schedule created successfully.", result });
-    }
-  );
+    res.json({ message: "Schedule created successfully.", result });
+  } catch (err) {
+    res.status(500).json({
+      message: "Failed to create schedule.",
+      error: err.sqlMessage || err.message,
+    });
+  }
 });
 
 // PUT update schedule
-router.put("/:id", (req, res) => {
-  const id = req.params.id;
+router.put("/:id", async (req, res) => {
   const { course_id, dita, ora_fillimit, ora_perfundimit, salla } = req.body;
 
   if (!course_id || !dita || !ora_fillimit || !ora_perfundimit || !salla) {
@@ -87,38 +82,48 @@ router.put("/:id", (req, res) => {
     });
   }
 
-  const sql =
-    "UPDATE schedules SET course_id = ?, dita = ?, ora_fillimit = ?, ora_perfundimit = ?, salla = ? WHERE id = ?";
+  try {
+    const scheduleRepository = AppDataSource.getRepository("Schedule");
+    const schedule = await scheduleRepository.findOneBy({
+      id: Number(req.params.id),
+    });
 
-  db.query(
-    sql,
-    [course_id, dita, ora_fillimit, ora_perfundimit, salla, id],
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({
-          message: "Failed to update schedule.",
-          error: err.sqlMessage || err.message,
-        });
-      }
-      res.json({ message: "Schedule updated successfully.", result });
+    if (!schedule) {
+      return res.status(404).json({ message: "Schedule not found." });
     }
-  );
+
+    scheduleRepository.merge(schedule, {
+      course: { id: course_id },
+      dita,
+      ora_fillimit,
+      ora_perfundimit,
+      salla,
+    });
+    const result = await scheduleRepository.save(schedule);
+
+    res.json({ message: "Schedule updated successfully.", result });
+  } catch (err) {
+    res.status(500).json({
+      message: "Failed to update schedule.",
+      error: err.sqlMessage || err.message,
+    });
+  }
 });
 
 // DELETE schedule
-router.delete("/:id", (req, res) => {
-  const id = req.params.id;
-  const sql = "DELETE FROM schedules WHERE id = ?";
+router.delete("/:id", async (req, res) => {
+  try {
+    const result = await AppDataSource.getRepository("Schedule").delete(
+      Number(req.params.id)
+    );
 
-  db.query(sql, [id], (err, result) => {
-    if (err) {
-      return res.status(500).json({
-        message: "Failed to delete schedule.",
-        error: err.sqlMessage || err.message,
-      });
-    }
     res.json({ message: "Schedule deleted successfully.", result });
-  });
+  } catch (err) {
+    res.status(500).json({
+      message: "Failed to delete schedule.",
+      error: err.sqlMessage || err.message,
+    });
+  }
 });
 
 module.exports = router;

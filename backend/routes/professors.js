@@ -1,48 +1,44 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+const AppDataSource = require("../data-source");
+
+function mapProfessor(professor) {
+  return {
+    id: professor.id,
+    user_id: professor.user?.id || null,
+    titulli: professor.titulli,
+    departamenti: professor.departamenti,
+    username: professor.user?.username || null,
+    email: professor.user?.email || null,
+  };
+}
 
 // GET all professors with user info
-router.get("/", (req, res) => {
-  const sql = `
-    SELECT 
-      professors.id,
-      professors.user_id,
-      professors.titulli,
-      professors.departamenti,
-      users.username,
-      users.email
-    FROM professors
-    JOIN users ON professors.user_id = users.id
-  `;
+router.get("/", async (req, res) => {
+  try {
+    const professors = await AppDataSource.getRepository("Professor").find({
+      relations: { user: true },
+      order: { id: "DESC" },
+    });
 
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
-  });
+    res.json(professors.map(mapProfessor));
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // GET professor by id with user info
-router.get("/:id", (req, res) => {
-  const id = req.params.id;
+router.get("/:id", async (req, res) => {
+  try {
+    const professor = await AppDataSource.getRepository("Professor").findOne({
+      where: { id: Number(req.params.id) },
+      relations: { user: true },
+    });
 
-  const sql = `
-    SELECT 
-      professors.id,
-      professors.user_id,
-      professors.titulli,
-      professors.departamenti,
-      users.username,
-      users.email
-    FROM professors
-    JOIN users ON professors.user_id = users.id
-    WHERE professors.id = ?
-  `;
-
-  db.query(sql, [id], (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
-  });
+    res.json(professor ? [mapProfessor(professor)] : []);
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // POST create user + professor
@@ -54,137 +50,102 @@ router.post("/", (req, res) => {
 });
 
 // PUT update user + professor
-router.put("/:id", (req, res) => {
-  const id = req.params.id;
-  const {
-    username,
-    email,
-    titulli,
-    departamenti,
-  } = req.body;
+router.put("/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const { username, email, titulli, departamenti } = req.body;
 
-  const sqlFindProfessor = "SELECT * FROM professors WHERE id = ?";
+  try {
+    const result = await AppDataSource.transaction(async (manager) => {
+      const professorRepository = manager.getRepository("Professor");
+      const userRepository = manager.getRepository("User");
+      const professor = await professorRepository.findOne({
+        where: { id },
+        relations: { user: true },
+      });
 
-  db.query(sqlFindProfessor, [id], (err, professorRows) => {
-    if (err) return res.status(500).json(err);
+      if (!professor) {
+        return null;
+      }
 
-    if (professorRows.length === 0) {
+      const userResult = await userRepository.update(professor.user.id, {
+        username,
+        email,
+      });
+      const professorResult = await professorRepository.update(id, {
+        titulli,
+        departamenti,
+      });
+
+      return { userResult, professorResult };
+    });
+
+    if (!result) {
       return res.status(404).json({ message: "Profesori nuk u gjet" });
     }
 
-    const user_id = professorRows[0].user_id;
-
-    const sqlUpdateUser =
-      "UPDATE users SET username = ?, email = ? WHERE id = ?";
-
-    db.query(
-      sqlUpdateUser,
-      [username, email, user_id],
-      (err, userResult) => {
-        if (err) return res.status(500).json(err);
-
-        const sqlUpdateProfessor =
-          "UPDATE professors SET titulli = ?, departamenti = ? WHERE id = ?";
-
-        db.query(
-          sqlUpdateProfessor,
-          [titulli, departamenti, id],
-          (err, professorResult) => {
-            if (err) return res.status(500).json(err);
-
-            res.json({
-              message: "User dhe profesori u perditesuan me sukses",
-              userResult,
-              professorResult,
-            });
-          }
-        );
-      }
-    );
-  });
+    res.json({
+      message: "User dhe profesori u perditesuan me sukses",
+      ...result,
+    });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // DELETE professor + user
-router.delete("/:id", (req, res) => {
-  const id = req.params.id;
+router.delete("/:id", async (req, res) => {
+  const id = Number(req.params.id);
 
-  const sqlFindProfessor = "SELECT * FROM professors WHERE id = ?";
+  try {
+    const result = await AppDataSource.transaction(async (manager) => {
+      const professorRepository = manager.getRepository("Professor");
+      const userRepository = manager.getRepository("User");
+      const professor = await professorRepository.findOne({
+        where: { id },
+        relations: { user: true },
+      });
 
-  db.query(sqlFindProfessor, [id], (err, professorRows) => {
-    if (err) return res.status(500).json(err);
+      if (!professor) {
+        return null;
+      }
 
-    if (professorRows.length === 0) {
+      await manager
+        .createQueryBuilder()
+        .update("Course")
+        .set({ professor: null })
+        .where("professor_id = :id", { id })
+        .execute();
+      await manager
+        .createQueryBuilder()
+        .update("Announcement")
+        .set({ professor: null })
+        .where("professor_id = :id", { id })
+        .execute();
+      await manager
+        .createQueryBuilder()
+        .update("CourseMaterial")
+        .set({ professor: null })
+        .where("professor_id = :id", { id })
+        .execute();
+
+      const userId = professor.user?.id;
+      const professorResult = await professorRepository.delete(id);
+      const userResult = userId ? await userRepository.delete(userId) : null;
+
+      return { professorResult, userResult };
+    });
+
+    if (!result) {
       return res.status(404).json({ message: "Profesori nuk u gjet" });
     }
 
-    const user_id = professorRows[0].user_id;
-
-    db.beginTransaction((err) => {
-      if (err) return res.status(500).json(err);
-
-      db.query(
-        "UPDATE courses SET professor_id = NULL WHERE professor_id = ?",
-        [id],
-        (err) => {
-          if (err) {
-            return db.rollback(() => res.status(500).json(err));
-          }
-
-          db.query(
-            "UPDATE announcements SET professor_id = NULL WHERE professor_id = ?",
-            [id],
-            (err) => {
-              if (err) {
-                return db.rollback(() => res.status(500).json(err));
-              }
-
-              db.query(
-                "UPDATE course_materials SET professor_id = NULL WHERE professor_id = ?",
-                [id],
-                (err) => {
-                  if (err) {
-                    return db.rollback(() => res.status(500).json(err));
-                  }
-
-                  db.query(
-                    "DELETE FROM professors WHERE id = ?",
-                    [id],
-                    (err, professorResult) => {
-                      if (err) {
-                        return db.rollback(() => res.status(500).json(err));
-                      }
-
-                      db.query(
-                        "DELETE FROM users WHERE id = ?",
-                        [user_id],
-                        (err, userResult) => {
-                          if (err) {
-                            return db.rollback(() => res.status(500).json(err));
-                          }
-
-                          db.commit((err) => {
-                            if (err) {
-                              return db.rollback(() => res.status(500).json(err));
-                            }
-
-                            res.json({
-                              message: "Profesori dhe user-i u fshine me sukses",
-                              professorResult,
-                              userResult,
-                            });
-                          });
-                        }
-                      );
-                    }
-                  );
-                }
-              );
-            }
-          );
-        }
-      );
+    res.json({
+      message: "Profesori dhe user-i u fshine me sukses",
+      ...result,
     });
-  });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 module.exports = router;

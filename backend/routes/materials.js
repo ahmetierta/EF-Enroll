@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+const AppDataSource = require("../data-source");
 const {
   authenticateToken,
   requireRole,
@@ -8,37 +8,40 @@ const {
 
 router.use(authenticateToken);
 
-router.get("/", requireRole("admin", "professor", "student"), (req, res) => {
-  const professorFilter =
-    req.user.role === "professor" ? "WHERE professors.user_id = ?" : "";
+function mapMaterial(material) {
+  return {
+    id: material.id,
+    course_id: material.course?.id || null,
+    professor_id: material.professor?.id || null,
+    titulli: material.titulli,
+    file_url: material.file_url,
+    data: material.data,
+    course_name: material.course?.emertimi || null,
+    professor_name: material.professor?.user?.username || null,
+  };
+}
 
-  const sql = `
-    SELECT
-      course_materials.id,
-      course_materials.course_id,
-      course_materials.professor_id,
-      course_materials.titulli,
-      course_materials.file_url,
-      course_materials.data,
-      courses.emertimi AS course_name,
-      users.username AS professor_name
-    FROM course_materials
-    JOIN courses ON course_materials.course_id = courses.id
-    LEFT JOIN professors ON course_materials.professor_id = professors.id
-    LEFT JOIN users ON professors.user_id = users.id
-    ${professorFilter}
-    ORDER BY course_materials.id DESC
-  `;
+router.get("/", requireRole("admin", "professor", "student"), async (req, res) => {
+  try {
+    const query = AppDataSource.getRepository("CourseMaterial")
+      .createQueryBuilder("material")
+      .leftJoinAndSelect("material.course", "course")
+      .leftJoinAndSelect("material.professor", "professor")
+      .leftJoinAndSelect("professor.user", "user")
+      .orderBy("material.id", "DESC");
 
-  const params = req.user.role === "professor" ? [req.user.id] : [];
+    if (req.user.role === "professor") {
+      query.where("user.id = :userId", { userId: req.user.id });
+    }
 
-  db.query(sql, params, (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
-  });
+    const materials = await query.getMany();
+    res.json(materials.map(mapMaterial));
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
-router.post("/", requireRole("admin", "professor"), (req, res) => {
+router.post("/", requireRole("admin", "professor"), async (req, res) => {
   const { course_id, titulli, file_url } = req.body;
 
   if (!course_id || !titulli || !file_url) {
@@ -47,51 +50,49 @@ router.post("/", requireRole("admin", "professor"), (req, res) => {
     });
   }
 
-  const insertMaterial = (professorId) => {
-    const sql =
-      "INSERT INTO course_materials (course_id, professor_id, titulli, file_url) VALUES (?, ?, ?, ?)";
+  try {
+    const courseRepository = AppDataSource.getRepository("Course");
+    const materialRepository = AppDataSource.getRepository("CourseMaterial");
+    const professorRepository = AppDataSource.getRepository("Professor");
+    let professor = null;
 
-    db.query(sql, [course_id, professorId, titulli, file_url], (err, result) => {
-      if (err) return res.status(500).json(err);
-      res.status(201).json({
-        message: "Material added successfully",
-        material_id: result.insertId,
+    if (req.user.role === "professor") {
+      professor = await professorRepository.findOne({
+        where: { user: { id: req.user.id } },
       });
-    });
-  };
 
-  if (req.user.role === "admin") {
-    insertMaterial(null);
-    return;
-  }
-
-  db.query(
-    "SELECT id FROM professors WHERE user_id = ?",
-    [req.user.id],
-    (err, professors) => {
-      if (err) return res.status(500).json(err);
-      if (professors.length === 0) {
+      if (!professor) {
         return res.status(404).json({ message: "Professor profile not found" });
       }
 
-      const professorId = professors[0].id;
+      const course = await courseRepository.findOne({
+        where: {
+          id: Number(course_id),
+          professor: { id: professor.id },
+        },
+      });
 
-      db.query(
-        "SELECT id FROM courses WHERE id = ? AND professor_id = ?",
-        [course_id, professorId],
-        (err, courses) => {
-          if (err) return res.status(500).json(err);
-          if (courses.length === 0) {
-            return res.status(403).json({
-              message: "You can only add materials for your own courses",
-            });
-          }
-
-          insertMaterial(professorId);
-        }
-      );
+      if (!course) {
+        return res.status(403).json({
+          message: "You can only add materials for your own courses",
+        });
+      }
     }
-  );
+
+    const material = await materialRepository.save({
+      course: { id: Number(course_id) },
+      professor,
+      titulli,
+      file_url,
+    });
+
+    res.status(201).json({
+      message: "Material added successfully",
+      material_id: material.id,
+    });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 module.exports = router;

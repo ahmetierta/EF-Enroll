@@ -1,64 +1,87 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+const AppDataSource = require("../data-source");
 
 // GET all users
-router.get("/", (req, res) => {
-  const sql = "SELECT * FROM users";
+router.get("/", async (req, res) => {
+  try {
+    const userRepository = AppDataSource.getRepository("User");
+    const users = await userRepository.find({
+      order: { id: "DESC" },
+    });
 
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
-  });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // GET user by id
-router.get("/:id", (req, res) => {
-  const id = req.params.id;
-  const sql = "SELECT * FROM users WHERE id = ?";
+router.get("/:id", async (req, res) => {
+  try {
+    const userRepository = AppDataSource.getRepository("User");
+    const user = await userRepository.findOneBy({ id: Number(req.params.id) });
 
-  db.query(sql, [id], (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
-  });
+    res.json(user ? [user] : []);
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // POST create user
-router.post("/", (req, res) => {
-  const { username, email, password_hash } = req.body;
+router.post("/", async (req, res) => {
+  const { username, email, password_hash, role, status } = req.body;
 
-  const sql =
-    "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)";
+  try {
+    const userRepository = AppDataSource.getRepository("User");
+    const user = userRepository.create({
+      username,
+      email,
+      password_hash,
+      role: role || "student",
+      status: status || "pending",
+    });
+    const result = await userRepository.save(user);
 
-  db.query(sql, [username, email, password_hash], (err, result) => {
-    if (err) return res.status(500).json(err);
     res.json({ message: "User u krijua me sukses", result });
-  });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // PUT update user
-router.put("/:id", (req, res) => {
-  const id = req.params.id;
-  const { username, email, password_hash } = req.body;
+router.put("/:id", async (req, res) => {
+  const { username, email, password_hash, role, status } = req.body;
 
-  const sql =
-    "UPDATE users SET username = ?, email = ?, password_hash = ? WHERE id = ?";
+  try {
+    const userRepository = AppDataSource.getRepository("User");
+    const updateData = {
+      username,
+      email,
+      password_hash,
+    };
 
-  db.query(sql, [username, email, password_hash, id], (err, result) => {
-    if (err) return res.status(500).json(err);
+    if (role) updateData.role = role;
+    if (status) updateData.status = status;
+
+    const result = await userRepository.update(Number(req.params.id), updateData);
+
     res.json({ message: "User u perditesua me sukses", result });
-  });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 // DELETE user
-router.delete("/:id", (req, res) => {
-  const id = req.params.id;
-  const sql = "DELETE FROM users WHERE id = ?";
+router.delete("/:id", async (req, res) => {
+  try {
+    const userRepository = AppDataSource.getRepository("User");
+    const result = await userRepository.delete(Number(req.params.id));
 
-  db.query(sql, [id], (err, result) => {
-    if (err) return res.status(500).json(err);
     res.json({ message: "User u fshi me sukses", result });
-  });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 module.exports = router;
