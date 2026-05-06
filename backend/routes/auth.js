@@ -1,7 +1,7 @@
 const bcrypt = require("bcryptjs");
 const express = require("express");
 const jwt = require("jsonwebtoken");
-const db = require("../db");
+const AppDataSource = require("../data-source");
 const { JWT_EXPIRES_IN, JWT_SECRET } = require("../config/auth");
 const { authenticateToken } = require("../middleware/authMiddleware");
 
@@ -21,23 +21,21 @@ function createToken(user) {
   );
 }
 
-router.post("/login", (req, res) => {
+router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ message: "Email and password are required" });
   }
 
-  const sql = "SELECT * FROM users WHERE email = ?";
+  try {
+    const userRepository = AppDataSource.getRepository("User");
+    const user = await userRepository.findOneBy({ email });
 
-  db.query(sql, [email], (err, users) => {
-    if (err) return res.status(500).json(err);
-
-    if (users.length === 0) {
+    if (!user) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    const user = users[0];
     const passwordMatches = bcrypt.compareSync(password, user.password_hash);
 
     if (!passwordMatches) {
@@ -64,10 +62,12 @@ router.post("/login", (req, res) => {
         status: user.status,
       },
     });
-  });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
-router.post("/register/student", (req, res) => {
+router.post("/register/student", async (req, res) => {
   const {
     username,
     email,
@@ -82,32 +82,41 @@ router.post("/register/student", (req, res) => {
   }
 
   const passwordHash = bcrypt.hashSync(password, 10);
-  const userSql =
-    "INSERT INTO users (username, email, password_hash, role, status) VALUES (?, ?, ?, 'student', 'approved')";
 
-  db.query(userSql, [username, email, passwordHash], (err, userResult) => {
-    if (err) return res.status(500).json(err);
+  try {
+    const { user, student } = await AppDataSource.transaction(async (manager) => {
+      const userRepository = manager.getRepository("User");
+      const studentRepository = manager.getRepository("Student");
 
-    const studentSql =
-      "INSERT INTO students (user_id, numri_studentit, programi, viti_studimit) VALUES (?, ?, ?, ?)";
+      const savedUser = await userRepository.save({
+        username,
+        email,
+        password_hash: passwordHash,
+        role: "student",
+        status: "approved",
+      });
 
-    db.query(
-      studentSql,
-      [userResult.insertId, numri_studentit, programi, viti_studimit],
-      (err, studentResult) => {
-        if (err) return res.status(500).json(err);
+      const savedStudent = await studentRepository.save({
+        user: savedUser,
+        numri_studentit,
+        programi,
+        viti_studimit,
+      });
 
-        res.status(201).json({
-          message: "Student account created successfully",
-          user_id: userResult.insertId,
-          student_id: studentResult.insertId,
-        });
-      }
-    );
-  });
+      return { user: savedUser, student: savedStudent };
+    });
+
+    res.status(201).json({
+      message: "Student account created successfully",
+      user_id: user.id,
+      student_id: student.id,
+    });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
-router.post("/register/professor", (req, res) => {
+router.post("/register/professor", async (req, res) => {
   const { username, email, password, titulli, departamenti } = req.body;
 
   if (!username || !email || !password) {
@@ -115,29 +124,37 @@ router.post("/register/professor", (req, res) => {
   }
 
   const passwordHash = bcrypt.hashSync(password, 10);
-  const userSql =
-    "INSERT INTO users (username, email, password_hash, role, status) VALUES (?, ?, ?, 'professor', 'pending')";
 
-  db.query(userSql, [username, email, passwordHash], (err, userResult) => {
-    if (err) return res.status(500).json(err);
+  try {
+    const { user, professor } = await AppDataSource.transaction(async (manager) => {
+      const userRepository = manager.getRepository("User");
+      const professorRepository = manager.getRepository("Professor");
 
-    const professorSql =
-      "INSERT INTO professors (user_id, titulli, departamenti) VALUES (?, ?, ?)";
+      const savedUser = await userRepository.save({
+        username,
+        email,
+        password_hash: passwordHash,
+        role: "professor",
+        status: "pending",
+      });
 
-    db.query(
-      professorSql,
-      [userResult.insertId, titulli, departamenti],
-      (err, professorResult) => {
-        if (err) return res.status(500).json(err);
+      const savedProfessor = await professorRepository.save({
+        user: savedUser,
+        titulli,
+        departamenti,
+      });
 
-        res.status(201).json({
-          message: "Professor account created and waiting for admin approval",
-          user_id: userResult.insertId,
-          professor_id: professorResult.insertId,
-        });
-      }
-    );
-  });
+      return { user: savedUser, professor: savedProfessor };
+    });
+
+    res.status(201).json({
+      message: "Professor account created and waiting for admin approval",
+      user_id: user.id,
+      professor_id: professor.id,
+    });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 router.get("/me", authenticateToken, (req, res) => {
