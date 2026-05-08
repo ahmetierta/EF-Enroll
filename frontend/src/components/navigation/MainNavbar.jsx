@@ -1,23 +1,24 @@
+import { useContext } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import AuthContext from "../../context/AuthContext";
 import { navItems } from "../../routes/navigation";
-import { authService } from "../../services/authService";
-import { clearAuth, getAuthUser } from "../../utils/authStorage";
+import { getAuthUser } from "../../utils/authStorage";
 
 const MainNavbar = () => {
   const navigate = useNavigate();
   const authUser = getAuthUser();
+  const { logout } = useContext(AuthContext);
   const visibleItems = navItems.filter((item) =>
     item.roles.includes(authUser?.role)
   );
 
   const handleLogout = async () => {
     try {
-      await authService.logout();
+      await logout();
     } catch {
       // Local logout still clears the client state if the server is unreachable.
     }
 
-    clearAuth();
     navigate("/login");
   };
 

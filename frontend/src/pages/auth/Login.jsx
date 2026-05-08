@@ -1,15 +1,9 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import TextInput from "../../components/ui/TextInput";
-import { authService } from "../../services/authService";
-import { saveAuth } from "../../utils/authStorage";
+import AuthContext from "../../context/AuthContext";
 import AuthShell from "./AuthShell";
-
-const initialFormData = {
-  email: "",
-  password: "",
-};
 
 const roleRedirects = {
   admin: "/admin/approvals",
@@ -18,30 +12,27 @@ const roleRedirects = {
 };
 
 const Login = () => {
-  const [formData, setFormData] = useState(initialFormData);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      const res = await authService.login(formData);
-      saveAuth(res.data.user);
-      navigate(roleRedirects[res.data.user.role] || "/courses");
+      const data = await login(email, password);
+      const user = data.user;
+
+      navigate(roleRedirects[user.role] || "/");
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed.");
+      setError(err.response?.data?.message || "Invalid email or password.");
+      console.log(err.message);
     } finally {
       setLoading(false);
     }
@@ -52,33 +43,51 @@ const Login = () => {
       title="Login"
       subtitle="Use one account to access EF Enroll. Your role is checked automatically after login."
     >
-      <form onSubmit={handleLogin} className="space-y-4">
-        <TextInput
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
-
-        <div className="relative">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label
+            htmlFor="email"
+            className="mb-2 block text-sm font-medium text-slate-700"
+          >
+            Email Address
+          </label>
           <TextInput
-            type={showPassword ? "text" : "password"}
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            className="pr-20"
+            autoComplete="on"
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
           />
-          <button
-            type="button"
-            onClick={() => setShowPassword((value) => !value)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-blue-700"
+        </div>
+
+        <div>
+          <label
+            htmlFor="password"
+            className="mb-2 block text-sm font-medium text-slate-700"
           >
-            {showPassword ? "Hide" : "Show"}
-          </button>
+            Password
+          </label>
+          <div className="relative">
+            <TextInput
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="pr-20"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((value) => !value)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-blue-700"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -88,16 +97,18 @@ const Login = () => {
         )}
 
         <Button type="submit" fullWidth disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
+          {loading ? "Signing in..." : "Sign In"}
         </Button>
       </form>
 
-      <p className="mt-6 text-sm text-slate-600">
-        Do not have an account?{" "}
-        <Link to="/register" className="font-semibold text-blue-700">
-          Sign up
-        </Link>
-      </p>
+      <div className="mt-8 border-t border-slate-200 pt-6 text-center">
+        <p className="text-sm text-slate-600">
+          Do not have an account?{" "}
+          <Link to="/register" className="font-semibold text-blue-700">
+            Create one
+          </Link>
+        </p>
+      </div>
     </AuthShell>
   );
 };

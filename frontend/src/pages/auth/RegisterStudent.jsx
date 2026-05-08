@@ -1,44 +1,42 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import TextInput from "../../components/ui/TextInput";
-import { authService } from "../../services/authService";
+import AuthContext from "../../context/AuthContext";
 import AuthShell from "./AuthShell";
 
-const initialFormData = {
-  username: "",
-  email: "",
-  password: "",
-  numri_studentit: "",
-  programi: "",
-  viti_studimit: "",
-};
-
 const RegisterStudent = () => {
-  const [formData, setFormData] = useState(initialFormData);
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [numriStudentit, setNumriStudentit] = useState("");
+  const [programi, setProgrami] = useState("");
+  const [vitiStudimit, setVitiStudimit] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const { registerStudent } = useContext(AuthContext);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleRegister = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      await authService.registerStudent(formData);
+      await registerStudent({
+        username,
+        email,
+        password,
+        numri_studentit: numriStudentit,
+        programi,
+        viti_studimit: vitiStudimit,
+      });
       alert("Student account created successfully. You can log in now.");
       navigate("/login");
     } catch (err) {
-      setError(err.response?.data?.message || "Sign up failed.");
+      setError(err.response?.data?.message || "Error occurred while registering.");
+      console.log(err.message);
     } finally {
       setLoading(false);
     }
@@ -49,59 +47,115 @@ const RegisterStudent = () => {
       title="Student Sign Up"
       subtitle="Create your student account before enrolling in courses."
     >
-      <form onSubmit={handleRegister} className="space-y-4">
-        <TextInput
-          name="username"
-          placeholder="Username"
-          value={formData.username}
-          onChange={handleChange}
-          required
-        />
-        <TextInput
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
-        <div className="relative">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label
+            htmlFor="username"
+            className="mb-2 block text-sm font-medium text-slate-700"
+          >
+            Username
+          </label>
           <TextInput
-            type={showPassword ? "text" : "password"}
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            className="pr-20"
+            autoComplete="on"
+            id="username"
+            placeholder="Your username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             required
           />
-          <button
-            type="button"
-            onClick={() => setShowPassword((value) => !value)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-blue-700"
-          >
-            {showPassword ? "Hide" : "Show"}
-          </button>
         </div>
-        <TextInput
-          name="numri_studentit"
-          placeholder="Student Number"
-          value={formData.numri_studentit}
-          onChange={handleChange}
-        />
-        <TextInput
-          name="programi"
-          placeholder="Program"
-          value={formData.programi}
-          onChange={handleChange}
-        />
-        <TextInput
-          type="number"
-          name="viti_studimit"
-          placeholder="Year"
-          value={formData.viti_studimit}
-          onChange={handleChange}
-        />
+
+        <div>
+          <label
+            htmlFor="email"
+            className="mb-2 block text-sm font-medium text-slate-700"
+          >
+            Email Address
+          </label>
+          <TextInput
+            autoComplete="on"
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="password"
+            className="mb-2 block text-sm font-medium text-slate-700"
+          >
+            Password
+          </label>
+          <div className="relative">
+            <TextInput
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="pr-20"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((value) => !value)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-blue-700"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label
+            htmlFor="numriStudentit"
+            className="mb-2 block text-sm font-medium text-slate-700"
+          >
+            Student Number
+          </label>
+          <TextInput
+            id="numriStudentit"
+            placeholder="Student Number"
+            value={numriStudentit}
+            onChange={(e) => setNumriStudentit(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="programi"
+            className="mb-2 block text-sm font-medium text-slate-700"
+          >
+            Program
+          </label>
+          <TextInput
+            id="programi"
+            placeholder="Program"
+            value={programi}
+            onChange={(e) => setProgrami(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="vitiStudimit"
+            className="mb-2 block text-sm font-medium text-slate-700"
+          >
+            Year
+          </label>
+          <TextInput
+            id="vitiStudimit"
+            type="number"
+            placeholder="Year"
+            value={vitiStudimit}
+            onChange={(e) => setVitiStudimit(e.target.value)}
+          />
+        </div>
 
         {error && (
           <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">

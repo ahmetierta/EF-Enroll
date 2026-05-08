@@ -1,27 +1,24 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import SelectInput from "../../components/ui/SelectInput";
 import TextInput from "../../components/ui/TextInput";
-import { authService } from "../../services/authService";
+import AuthContext from "../../context/AuthContext";
 import { departmentService } from "../../services/departmentService";
 import AuthShell from "./AuthShell";
 
-const initialFormData = {
-  username: "",
-  email: "",
-  password: "",
-  titulli: "",
-  departamenti: "",
-};
-
 const RegisterProfessor = () => {
   const [departments, setDepartments] = useState([]);
-  const [formData, setFormData] = useState(initialFormData);
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [titulli, setTitulli] = useState("");
+  const [departamenti, setDepartamenti] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const { registerProfessor } = useContext(AuthContext);
 
   function fetchDepartments() {
     departmentService
@@ -34,24 +31,24 @@ const RegisterProfessor = () => {
     fetchDepartments();
   }, []);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleRegister = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      await authService.registerProfessor(formData);
+      await registerProfessor({
+        username,
+        email,
+        password,
+        titulli,
+        departamenti,
+      });
       alert("Professor account created. It is pending admin approval.");
       navigate("/login");
     } catch (err) {
-      setError(err.response?.data?.message || "Sign up failed.");
+      setError(err.response?.data?.message || "Error occurred while registering.");
+      console.log(err.message);
     } finally {
       setLoading(false);
     }
@@ -62,58 +59,105 @@ const RegisterProfessor = () => {
       title="Professor Sign Up"
       subtitle="Create your professor account. You can log in after admin approval."
     >
-      <form onSubmit={handleRegister} className="space-y-4">
-        <TextInput
-          name="username"
-          placeholder="Username"
-          value={formData.username}
-          onChange={handleChange}
-          required
-        />
-        <TextInput
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
-        <div className="relative">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label
+            htmlFor="username"
+            className="mb-2 block text-sm font-medium text-slate-700"
+          >
+            Username
+          </label>
           <TextInput
-            type={showPassword ? "text" : "password"}
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            className="pr-20"
+            autoComplete="on"
+            id="username"
+            placeholder="Your username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             required
           />
-          <button
-            type="button"
-            onClick={() => setShowPassword((value) => !value)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-blue-700"
-          >
-            {showPassword ? "Hide" : "Show"}
-          </button>
         </div>
-        <TextInput
-          name="titulli"
-          placeholder="Title (Dr., Prof.)"
-          value={formData.titulli}
-          onChange={handleChange}
-        />
-        <SelectInput
-          name="departamenti"
-          value={formData.departamenti}
-          onChange={handleChange}
-        >
-          <option value="">Select Department</option>
-          {departments.map((department) => (
-            <option key={department.id} value={department.emertimi}>
-              {department.emertimi}
-            </option>
-          ))}
-        </SelectInput>
+
+        <div>
+          <label
+            htmlFor="email"
+            className="mb-2 block text-sm font-medium text-slate-700"
+          >
+            Email Address
+          </label>
+          <TextInput
+            autoComplete="on"
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="password"
+            className="mb-2 block text-sm font-medium text-slate-700"
+          >
+            Password
+          </label>
+          <div className="relative">
+            <TextInput
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="pr-20"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((value) => !value)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-blue-700"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label
+            htmlFor="titulli"
+            className="mb-2 block text-sm font-medium text-slate-700"
+          >
+            Title
+          </label>
+          <TextInput
+            id="titulli"
+            placeholder="Title (Dr., Prof.)"
+            value={titulli}
+            onChange={(e) => setTitulli(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="departamenti"
+            className="mb-2 block text-sm font-medium text-slate-700"
+          >
+            Department
+          </label>
+          <SelectInput
+            id="departamenti"
+            value={departamenti}
+            onChange={(e) => setDepartamenti(e.target.value)}
+          >
+            <option value="">Select Department</option>
+            {departments.map((department) => (
+              <option key={department.id} value={department.emertimi}>
+                {department.emertimi}
+              </option>
+            ))}
+          </SelectInput>
+        </div>
 
         {error && (
           <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
