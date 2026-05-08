@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import FormCard from "../components/layout/FormCard";
 import PageContainer from "../components/layout/PageContainer";
 import TableCard from "../components/layout/TableCard";
@@ -7,6 +8,7 @@ import SelectInput from "../components/ui/SelectInput";
 import TextInput from "../components/ui/TextInput";
 import { courseService } from "../services/courseService";
 import { materialService } from "../services/materialService";
+import { getAuthUser } from "../utils/authStorage";
 
 const initialFormData = {
   course_id: "",
@@ -15,34 +17,45 @@ const initialFormData = {
 };
 
 const Materials = () => {
+  const [searchParams] = useSearchParams();
+  const authUser = getAuthUser();
+  const authRole = authUser?.role;
+  const selectedCourseId = searchParams.get("course_id");
+  const canAddMaterial = authRole === "professor";
   const [materials, setMaterials] = useState([]);
   const [courses, setCourses] = useState([]);
   const [formData, setFormData] = useState(initialFormData);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  function fetchMaterials() {
+  const fetchMaterials = useCallback(() => {
+    if (authRole === "admin" && !selectedCourseId) {
+      return;
+    }
+
+    const params = selectedCourseId ? { course_id: selectedCourseId } : {};
+
     materialService
-      .getAll()
+      .getAll(params)
       .then((res) => setMaterials(res.data))
       .catch((err) => {
         setError(err.response?.data?.message || "Materials could not be loaded.");
       });
-  }
+  }, [authRole, selectedCourseId]);
 
-  function fetchCourses() {
+  const fetchCourses = useCallback(() => {
     courseService
       .getAll()
       .then((res) => setCourses(res.data))
       .catch((err) => {
         setError(err.response?.data?.message || "Courses could not be loaded.");
       });
-  }
+  }, []);
 
   useEffect(() => {
     fetchMaterials();
     fetchCourses();
-  }, []);
+  }, [fetchCourses, fetchMaterials]);
 
   const handleChange = (e) => {
     setFormData({
@@ -67,10 +80,21 @@ const Materials = () => {
       });
   };
 
+  const selectedCourse = courses.find(
+    (course) => String(course.id) === String(selectedCourseId)
+  );
+
   return (
-    <PageContainer title="Course Materials">
-      <div className="grid gap-8 lg:grid-cols-3">
-        <FormCard title="Add Material">
+    <PageContainer
+      title={
+        selectedCourse
+          ? `${selectedCourse.emertimi} Materials`
+          : "Course Materials"
+      }
+    >
+      <div className={`grid gap-8 ${canAddMaterial ? "lg:grid-cols-3" : ""}`}>
+        {canAddMaterial && (
+          <FormCard title="Add Material">
           <div className="space-y-4">
             <SelectInput
               name="course_id"
@@ -103,9 +127,25 @@ const Materials = () => {
           <Button onClick={addMaterial} className="mt-6" fullWidth>
             Add Material
           </Button>
-        </FormCard>
+          </FormCard>
+        )}
 
         <TableCard title="Materials List">
+          {!canAddMaterial && !selectedCourseId && authRole === "admin" && (
+            <p className="mb-4 rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-700">
+              Select a course from the courses page to review its materials.
+            </p>
+          )}
+
+          {selectedCourseId && (
+            <Link
+              to="/courses"
+              className="mb-4 inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Back to courses
+            </Link>
+          )}
+
           {message && (
             <p className="mb-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
               {message}

@@ -1,15 +1,31 @@
 import { useContext, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
+import SelectInput from "../../components/ui/SelectInput";
 import TextInput from "../../components/ui/TextInput";
 import AuthContext from "../../context/AuthContext";
 import AuthShell from "./AuthShell";
+
+const programs = [
+  "Computer Science",
+  "Software Engineering",
+  "Information Systems",
+  "Business Administration",
+  "Economics",
+  "Management",
+];
+
+const studyYears = [
+  { value: "1", label: "Year 1" },
+  { value: "2", label: "Year 2" },
+  { value: "3", label: "Year 3" },
+  { value: "4", label: "Year 4" },
+];
 
 const RegisterStudent = () => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [numriStudentit, setNumriStudentit] = useState("");
   const [programi, setProgrami] = useState("");
   const [vitiStudimit, setVitiStudimit] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -28,7 +44,6 @@ const RegisterStudent = () => {
         username,
         email,
         password,
-        numri_studentit: numriStudentit,
         programi,
         viti_studimit: vitiStudimit,
       });
@@ -113,32 +128,23 @@ const RegisterStudent = () => {
 
         <div>
           <label
-            htmlFor="numriStudentit"
-            className="mb-2 block text-sm font-medium text-slate-700"
-          >
-            Student Number
-          </label>
-          <TextInput
-            id="numriStudentit"
-            placeholder="Student Number"
-            value={numriStudentit}
-            onChange={(e) => setNumriStudentit(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label
             htmlFor="programi"
             className="mb-2 block text-sm font-medium text-slate-700"
           >
             Program
           </label>
-          <TextInput
+          <SelectInput
             id="programi"
-            placeholder="Program"
             value={programi}
             onChange={(e) => setProgrami(e.target.value)}
-          />
+          >
+            <option value="">Select Program</option>
+            {programs.map((program) => (
+              <option key={program} value={program}>
+                {program}
+              </option>
+            ))}
+          </SelectInput>
         </div>
 
         <div>
@@ -146,15 +152,20 @@ const RegisterStudent = () => {
             htmlFor="vitiStudimit"
             className="mb-2 block text-sm font-medium text-slate-700"
           >
-            Year
+            Year of Study
           </label>
-          <TextInput
+          <SelectInput
             id="vitiStudimit"
-            type="number"
-            placeholder="Year"
             value={vitiStudimit}
             onChange={(e) => setVitiStudimit(e.target.value)}
-          />
+          >
+            <option value="">Select Year of Study</option>
+            {studyYears.map((year) => (
+              <option key={year.value} value={year.value}>
+                {year.label}
+              </option>
+            ))}
+          </SelectInput>
         </div>
 
         {error && (

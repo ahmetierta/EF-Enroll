@@ -8,6 +8,7 @@ const MainNavbar = () => {
   const navigate = useNavigate();
   const authUser = getAuthUser();
   const { logout } = useContext(AuthContext);
+  const userInitial = authUser?.username?.charAt(0)?.toUpperCase() || "U";
   const visibleItems = navItems.filter((item) =>
     item.roles.includes(authUser?.role)
   );
@@ -44,9 +45,17 @@ const MainNavbar = () => {
 
       {authUser && (
         <div className="flex flex-wrap items-center gap-3 pb-3 text-sm">
-          <span className="text-slate-600">
-            {authUser.email} - {authUser.role}
-          </span>
+          <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 py-1 pl-1 pr-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
+              {userInitial}
+            </div>
+            <div className="leading-tight">
+              <p className="font-semibold text-slate-900">
+                {authUser.username || authUser.email}
+              </p>
+              <p className="capitalize text-slate-500">{authUser.role}</p>
+            </div>
+          </div>
           <button
             type="button"
             onClick={handleLogout}

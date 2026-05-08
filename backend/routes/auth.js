@@ -23,7 +23,7 @@ const refreshCookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "strict",
-  maxAge: 30 * 24 * 60 * 60 * 1000,
+  maxAge: 60 * 60 * 1000,
 };
 
 function getCookieValue(req, name) {
@@ -69,6 +69,12 @@ function buildUserResponse(user) {
     role: user.role,
     status: user.status,
   };
+}
+
+async function createStudentNumber(studentRepository) {
+  const year = new Date().getFullYear();
+  const count = await studentRepository.count();
+  return `STU-${year}-${String(count + 1).padStart(4, "0")}`;
 }
 
 router.post("/login", async (req, res) => {
@@ -168,6 +174,8 @@ router.post("/register/student", async (req, res) => {
     const { user, student } = await AppDataSource.transaction(async (manager) => {
       const userRepository = manager.getRepository("User");
       const studentRepository = manager.getRepository("Student");
+      const studentNumber =
+        numri_studentit || (await createStudentNumber(studentRepository));
 
       const savedUser = await userRepository.save({
         username,
@@ -179,7 +187,7 @@ router.post("/register/student", async (req, res) => {
 
       const savedStudent = await studentRepository.save({
         user: savedUser,
-        numri_studentit,
+        numri_studentit: studentNumber,
         programi,
         viti_studimit,
       });

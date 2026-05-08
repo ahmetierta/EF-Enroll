@@ -73,10 +73,10 @@ router.get("/revenue/summary", requireRole("admin"), async (req, res) => {
   }
 });
 
-// GET payments for admin/professor dashboards
-router.get("/", requireRole("admin", "professor"), async (req, res) => {
+// GET payments for admin dashboard
+router.get("/", requireRole("admin"), async (req, res) => {
   try {
-    const query = AppDataSource.getRepository("Payment")
+    const payments = await AppDataSource.getRepository("Payment")
       .createQueryBuilder("payment")
       .leftJoinAndSelect("payment.enrollment", "enrollment")
       .leftJoinAndSelect("enrollment.student", "student")
@@ -84,13 +84,9 @@ router.get("/", requireRole("admin", "professor"), async (req, res) => {
       .leftJoinAndSelect("enrollment.course", "course")
       .leftJoinAndSelect("course.professor", "professor")
       .leftJoinAndSelect("professor.user", "professorUser")
-      .orderBy("payment.id", "DESC");
+      .orderBy("payment.id", "DESC")
+      .getMany();
 
-    if (req.user.role === "professor") {
-      query.where("professorUser.id = :userId", { userId: req.user.id });
-    }
-
-    const payments = await query.getMany();
     res.json(payments.map(mapPayment));
   } catch (err) {
     res.status(500).json(err);

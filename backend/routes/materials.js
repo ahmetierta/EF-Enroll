@@ -23,6 +23,7 @@ function mapMaterial(material) {
 
 router.get("/", requireRole("admin", "professor", "student"), async (req, res) => {
   try {
+    const { course_id } = req.query;
     const query = AppDataSource.getRepository("CourseMaterial")
       .createQueryBuilder("material")
       .leftJoinAndSelect("material.course", "course")
@@ -30,8 +31,16 @@ router.get("/", requireRole("admin", "professor", "student"), async (req, res) =
       .leftJoinAndSelect("professor.user", "user")
       .orderBy("material.id", "DESC");
 
+    if (course_id) {
+      query.where("course.id = :courseId", { courseId: Number(course_id) });
+    }
+
     if (req.user.role === "professor") {
-      query.where("user.id = :userId", { userId: req.user.id });
+      if (course_id) {
+        query.andWhere("user.id = :userId", { userId: req.user.id });
+      } else {
+        query.where("user.id = :userId", { userId: req.user.id });
+      }
     }
 
     const materials = await query.getMany();
@@ -41,7 +50,7 @@ router.get("/", requireRole("admin", "professor", "student"), async (req, res) =
   }
 });
 
-router.post("/", requireRole("admin", "professor"), async (req, res) => {
+router.post("/", requireRole("professor"), async (req, res) => {
   const { course_id, titulli, file_url } = req.body;
 
   if (!course_id || !titulli || !file_url) {

@@ -12,6 +12,7 @@ const PublicCourses = () => {
   const [enrollingCourseId, setEnrollingCourseId] = useState(null);
   const navigate = useNavigate();
   const authUser = getAuthUser();
+  const userInitial = authUser?.username?.charAt(0)?.toUpperCase() || "U";
 
   function fetchCourses() {
     courseService
@@ -63,12 +64,43 @@ const PublicCourses = () => {
 
           <div className="flex items-center gap-3">
             {authUser ? (
-              <Link
-                to={authUser.role === "student" ? "/" : "/courses"}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-              >
-                Dashboard
-              </Link>
+              <>
+                {authUser.role === "student" ? (
+                  <>
+                    <Link
+                      to="/"
+                      className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Courses
+                    </Link>
+                    <Link
+                      to="/my-enrollments"
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                    >
+                      My Enrollments
+                    </Link>
+                  </>
+                ) : (
+                  <Link
+                    to="/courses"
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                  >
+                    Dashboard
+                  </Link>
+                )}
+
+                <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 py-1 pl-1 pr-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
+                    {userInitial}
+                  </div>
+                  <div className="hidden text-left text-xs sm:block">
+                    <p className="font-semibold text-slate-900">
+                      {authUser.username}
+                    </p>
+                    <p className="capitalize text-slate-500">{authUser.role}</p>
+                  </div>
+                </div>
+              </>
             ) : (
               <>
                 <Link
@@ -98,8 +130,9 @@ const PublicCourses = () => {
             Browse available courses
           </h1>
           <p className="mt-3 max-w-2xl text-slate-600">
-            Students can review available courses here. To enroll in a course,
-            they need to create an account and log in first.
+            {authUser?.role === "student"
+              ? "Review available courses and enroll directly from your student account."
+              : "Students can review available courses here. To enroll in a course, they need to create an account and log in first."}
           </p>
         </section>
 

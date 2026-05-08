@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import Button from "../components/ui/Button";
 import SelectInput from "../components/ui/SelectInput";
 import TextArea from "../components/ui/TextArea";
@@ -348,6 +349,12 @@ const Courses = () => {
                           >
                             Edit
                           </Button>
+                          <Link
+                            to={`/materials?course_id=${course.id}`}
+                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50"
+                          >
+                            Materials
+                          </Link>
                           <Button
                             onClick={() => deleteCourse(course.id)}
                             className="rounded-xl px-3 py-2"

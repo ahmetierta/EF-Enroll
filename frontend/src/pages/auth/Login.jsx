@@ -8,7 +8,7 @@ import AuthShell from "./AuthShell";
 const roleRedirects = {
   admin: "/admin/approvals",
   professor: "/courses",
-  student: "/",
+  student: "/my-enrollments",
 };
 
 const Login = () => {

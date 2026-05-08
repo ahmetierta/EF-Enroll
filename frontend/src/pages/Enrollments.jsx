@@ -2,8 +2,11 @@ import { useEffect, useState } from "react";
 import PageContainer from "../components/layout/PageContainer";
 import TableCard from "../components/layout/TableCard";
 import { enrollmentService } from "../services/enrollmentService";
+import { getAuthUser } from "../utils/authStorage";
 
 const Enrollments = () => {
+  const authUser = getAuthUser();
+  const isProfessor = authUser?.role === "professor";
   const [enrollments, setEnrollments] = useState([]);
   const [error, setError] = useState("");
 
@@ -28,10 +31,12 @@ const Enrollments = () => {
   ).size;
 
   return (
-    <PageContainer title="Enrollments">
+    <PageContainer title={isProfessor ? "Course Enrollments" : "Enrollments"}>
       <div className="mb-8 grid gap-4 md:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-slate-500">Total Enrollments</p>
+          <p className="text-sm text-slate-500">
+            {isProfessor ? "Your Course Enrollments" : "Total Enrollments"}
+          </p>
           <p className="mt-2 text-3xl font-bold text-slate-900">
             {enrollments.length}
           </p>
@@ -52,7 +57,9 @@ const Enrollments = () => {
         </div>
       </div>
 
-      <TableCard title="Enrollment List">
+      <TableCard
+        title={isProfessor ? "Students Enrolled in Your Courses" : "Enrollment List"}
+      >
         {error && (
           <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
