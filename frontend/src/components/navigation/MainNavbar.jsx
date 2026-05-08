@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { navItems } from "../../routes/navigation";
+import { authService } from "../../services/authService";
 import { clearAuth, getAuthUser } from "../../utils/authStorage";
 
 const MainNavbar = () => {
@@ -9,7 +10,13 @@ const MainNavbar = () => {
     item.roles.includes(authUser?.role)
   );
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch {
+      // Local logout still clears the client state if the server is unreachable.
+    }
+
     clearAuth();
     navigate("/login");
   };

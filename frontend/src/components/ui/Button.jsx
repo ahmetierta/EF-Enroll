@@ -20,7 +20,7 @@ const Button = ({
   return (
     <button
       type={type}
-      className={`rounded-lg px-4 py-3 font-semibold transition ${variantClasses[variant]} ${widthClass} ${className}`}
+      className={`rounded-lg px-4 py-3 font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${variantClasses[variant]} ${widthClass} ${className}`}
       {...props}
     >
       {children}

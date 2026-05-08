@@ -19,6 +19,8 @@ const RegisterProfessor = () => {
   const [departments, setDepartments] = useState([]);
   const [formData, setFormData] = useState(initialFormData);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   function fetchDepartments() {
@@ -39,19 +41,20 @@ const RegisterProfessor = () => {
     });
   };
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
-    authService
-      .registerProfessor(formData)
-      .then(() => {
-        alert("Professor account created. It is pending admin approval.");
-        navigate("/login");
-      })
-      .catch((err) => {
-        setError(err.response?.data?.message || "Sign up failed.");
-      });
+    try {
+      await authService.registerProfessor(formData);
+      alert("Professor account created. It is pending admin approval.");
+      navigate("/login");
+    } catch (err) {
+      setError(err.response?.data?.message || "Sign up failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -65,6 +68,7 @@ const RegisterProfessor = () => {
           placeholder="Username"
           value={formData.username}
           onChange={handleChange}
+          required
         />
         <TextInput
           type="email"
@@ -72,14 +76,26 @@ const RegisterProfessor = () => {
           placeholder="Email"
           value={formData.email}
           onChange={handleChange}
+          required
         />
-        <TextInput
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
-        />
+        <div className="relative">
+          <TextInput
+            type={showPassword ? "text" : "password"}
+            name="password"
+            placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
+            className="pr-20"
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((value) => !value)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-blue-700"
+          >
+            {showPassword ? "Hide" : "Show"}
+          </button>
+        </div>
         <TextInput
           name="titulli"
           placeholder="Title (Dr., Prof.)"
@@ -105,8 +121,8 @@ const RegisterProfessor = () => {
           </p>
         )}
 
-        <Button type="submit" fullWidth>
-          Register Professor
+        <Button type="submit" fullWidth disabled={loading}>
+          {loading ? "Creating account..." : "Register Professor"}
         </Button>
       </form>
 

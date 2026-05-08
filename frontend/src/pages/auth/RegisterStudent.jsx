@@ -17,6 +17,8 @@ const initialFormData = {
 const RegisterStudent = () => {
   const [formData, setFormData] = useState(initialFormData);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -26,19 +28,20 @@ const RegisterStudent = () => {
     });
   };
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
-    authService
-      .registerStudent(formData)
-      .then(() => {
-        alert("Student account created successfully. You can log in now.");
-        navigate("/login");
-      })
-      .catch((err) => {
-        setError(err.response?.data?.message || "Sign up failed.");
-      });
+    try {
+      await authService.registerStudent(formData);
+      alert("Student account created successfully. You can log in now.");
+      navigate("/login");
+    } catch (err) {
+      setError(err.response?.data?.message || "Sign up failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -52,6 +55,7 @@ const RegisterStudent = () => {
           placeholder="Username"
           value={formData.username}
           onChange={handleChange}
+          required
         />
         <TextInput
           type="email"
@@ -59,14 +63,26 @@ const RegisterStudent = () => {
           placeholder="Email"
           value={formData.email}
           onChange={handleChange}
+          required
         />
-        <TextInput
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
-        />
+        <div className="relative">
+          <TextInput
+            type={showPassword ? "text" : "password"}
+            name="password"
+            placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
+            className="pr-20"
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((value) => !value)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-blue-700"
+          >
+            {showPassword ? "Hide" : "Show"}
+          </button>
+        </div>
         <TextInput
           name="numri_studentit"
           placeholder="Student Number"
@@ -93,8 +109,8 @@ const RegisterStudent = () => {
           </p>
         )}
 
-        <Button type="submit" fullWidth>
-          Register Student
+        <Button type="submit" fullWidth disabled={loading}>
+          {loading ? "Creating account..." : "Register Student"}
         </Button>
       </form>
 

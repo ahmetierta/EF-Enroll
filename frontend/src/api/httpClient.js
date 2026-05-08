@@ -1,28 +1,42 @@
 import axios from "axios";
-import { clearAuth, getAuthToken } from "../utils/authStorage";
+import { clearAuth, saveAuth } from "../utils/authStorage";
 
 const httpClient = axios.create({
   baseURL: "http://localhost:5000",
+  withCredentials: true,
+});
+
+const refreshClient = axios.create({
+  baseURL: "http://localhost:5000",
+  withCredentials: true,
 });
 
 httpClient.interceptors.request.use((config) => {
-  if (config.skipAuth) {
-    return config;
-  }
-
-  const token = getAuthToken();
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
   return config;
 });
 
 httpClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if ([401, 403].includes(error.response?.status)) {
+  async (error) => {
+    const originalRequest = error.config;
+    const shouldRefresh =
+      [401, 403].includes(error.response?.status) &&
+      !originalRequest?._retry &&
+      !originalRequest?.url?.includes("/auth/login") &&
+      !originalRequest?.url?.includes("/auth/refresh");
+
+    if (shouldRefresh) {
+      originalRequest._retry = true;
+
+      try {
+        const res = await refreshClient.post("/auth/refresh");
+
+        saveAuth(res.data.user);
+        return httpClient(originalRequest);
+      } catch {
+        clearAuth();
+      }
+    } else if ([401, 403].includes(error.response?.status)) {
       clearAuth();
     }
 

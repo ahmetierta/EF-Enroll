@@ -20,6 +20,8 @@ const roleRedirects = {
 const Login = () => {
   const [formData, setFormData] = useState(initialFormData);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -29,19 +31,20 @@ const Login = () => {
     });
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
-    authService
-      .login(formData)
-      .then((res) => {
-        saveAuth(res.data.token, res.data.user);
-        navigate(roleRedirects[res.data.user.role] || "/courses");
-      })
-      .catch((err) => {
-        setError(err.response?.data?.message || "Login failed.");
-      });
+    try {
+      const res = await authService.login(formData);
+      saveAuth(res.data.user);
+      navigate(roleRedirects[res.data.user.role] || "/courses");
+    } catch (err) {
+      setError(err.response?.data?.message || "Login failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -56,15 +59,27 @@ const Login = () => {
           placeholder="Email"
           value={formData.email}
           onChange={handleChange}
+          required
         />
 
-        <TextInput
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
-        />
+        <div className="relative">
+          <TextInput
+            type={showPassword ? "text" : "password"}
+            name="password"
+            placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
+            className="pr-20"
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((value) => !value)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-blue-700"
+          >
+            {showPassword ? "Hide" : "Show"}
+          </button>
+        </div>
 
         {error && (
           <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -72,8 +87,8 @@ const Login = () => {
           </p>
         )}
 
-        <Button type="submit" fullWidth>
-          Login
+        <Button type="submit" fullWidth disabled={loading}>
+          {loading ? "Logging in..." : "Login"}
         </Button>
       </form>
 
