@@ -1,18 +1,18 @@
 require("reflect-metadata");
 
 const { DataSource } = require("typeorm");
-const Announcement = require("./models/Announcement");
-const Course = require("./models/Course");
-const CourseMaterial = require("./models/CourseMaterial");
-const Department = require("./models/Department");
-const Enrollment = require("./models/Enrollment");
-const Payment = require("./models/Payment");
-const Professor = require("./models/Professor");
-const Schedule = require("./models/Schedule");
-const Semester = require("./models/Semester");
-const Student = require("./models/Student");
-const User = require("./models/User");
-const WaitingList = require("./models/WaitingList");
+const Announcement = require("./entities/Announcement");
+const Course = require("./entities/Course");
+const CourseMaterial = require("./entities/CourseMaterial");
+const Department = require("./entities/Department");
+const Enrollment = require("./entities/Enrollment");
+const Payment = require("./entities/Payment");
+const Professor = require("./entities/Professor");
+const Schedule = require("./entities/Schedule");
+const Semester = require("./entities/Semester");
+const Student = require("./entities/Student");
+const User = require("./entities/User");
+const WaitingList = require("./entities/WaitingList");
 
 const AppDataSource = new DataSource({
   type: "mysql",
