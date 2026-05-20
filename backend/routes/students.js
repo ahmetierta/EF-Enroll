@@ -21,30 +21,97 @@ function mapStudent(student) {
   };
 }
 
+function getQueryValue(value) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function addStudentFilters(query, filters) {
+  const search = getQueryValue(filters.search)?.trim();
+  const courseId = getQueryValue(filters.course_id);
+  const program = getQueryValue(filters.programi);
+  const studyYear = getQueryValue(filters.viti_studimit);
+  const enrollmentStatus = getQueryValue(filters.statusi);
+  const paymentStatus = getQueryValue(filters.payment_status);
+
+  if (search) {
+    query.andWhere(
+      "(user.username LIKE :search OR user.email LIKE :search OR student.numri_studentit LIKE :search)",
+      { search: `%${search}%` }
+    );
+  }
+
+  if (courseId) {
+    query.andWhere("course.id = :courseId", { courseId: Number(courseId) });
+  }
+
+  if (program) {
+    query.andWhere("student.programi = :program", { program });
+  }
+
+  if (studyYear) {
+    query.andWhere("student.viti_studimit = :studyYear", {
+      studyYear: Number(studyYear),
+    });
+  }
+
+  if (enrollmentStatus) {
+    query.andWhere("enrollment.statusi = :enrollmentStatus", {
+      enrollmentStatus,
+    });
+  }
+
+  if (paymentStatus === "paid") {
+    query
+      .andWhere("enrollment.id IS NOT NULL")
+      .andWhere("payment.statusi = :paymentStatus", { paymentStatus: "paid" });
+  }
+
+  if (paymentStatus === "unpaid") {
+    query
+      .andWhere("enrollment.id IS NOT NULL")
+      .andWhere("(payment.id IS NULL OR payment.statusi != :paymentStatus)", {
+        paymentStatus: "paid",
+      });
+  }
+}
+
+function addStudentSorting(query, filters) {
+  const sortBy = getQueryValue(filters.sort_by) || "newest";
+  const sortOrder = getQueryValue(filters.sort_order) === "asc" ? "ASC" : "DESC";
+  const sortColumns = {
+    newest: "student.id",
+    username: "user.username",
+    student_number: "student.numri_studentit",
+    program: "student.programi",
+    year: "student.viti_studimit",
+  };
+
+  query.orderBy(sortColumns[sortBy] || sortColumns.newest, sortOrder);
+}
+
 // GET all students for admin, or only enrolled students for professor
 router.get("/", requireRole("admin", "professor"), async (req, res) => {
   try {
     const studentRepository = AppDataSource.getRepository("Student");
-    let students;
+    const query = studentRepository
+      .createQueryBuilder("student")
+      .leftJoinAndSelect("student.user", "user")
+      .leftJoin("student.enrollments", "enrollment")
+      .leftJoin("enrollment.course", "course")
+      .leftJoin("course.professor", "professor")
+      .leftJoin("professor.user", "professorUser")
+      .leftJoin("enrollment.payments", "payment")
+      .distinct(true)
+      .where("1 = 1");
 
     if (req.user.role === "professor") {
-      students = await studentRepository
-        .createQueryBuilder("student")
-        .leftJoinAndSelect("student.user", "user")
-        .innerJoin("student.enrollments", "enrollment")
-        .innerJoin("enrollment.course", "course")
-        .innerJoin("course.professor", "professor")
-        .innerJoin("professor.user", "professorUser")
-        .where("professorUser.id = :userId", { userId: req.user.id })
-        .distinct(true)
-        .orderBy("student.id", "DESC")
-        .getMany();
-    } else {
-      students = await studentRepository.find({
-        relations: { user: true },
-        order: { id: "DESC" },
-      });
+      query.andWhere("professorUser.id = :userId", { userId: req.user.id });
     }
+
+    addStudentFilters(query, req.query);
+    addStudentSorting(query, req.query);
+
+    const students = await query.getMany();
 
     res.json(students.map(mapStudent));
   } catch (err) {
