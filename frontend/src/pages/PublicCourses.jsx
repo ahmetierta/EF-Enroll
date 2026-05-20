@@ -6,6 +6,7 @@ import TextInput from "../components/ui/TextInput";
 import AuthContext from "../context/AuthContext";
 import { courseService } from "../services/courseService";
 import { enrollmentService } from "../services/enrollmentService";
+import { waitingListService } from "../services/waitingListService";
 import { getAuthUser } from "../utils/authStorage";
 
 const initialFilters = {
@@ -21,6 +22,7 @@ const initialFilters = {
 const PublicCourses = () => {
   const [courses, setCourses] = useState([]);
   const [myEnrollments, setMyEnrollments] = useState([]);
+  const [myWaitingList, setMyWaitingList] = useState([]);
   const [filters, setFilters] = useState(initialFilters);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -49,10 +51,22 @@ const PublicCourses = () => {
       .catch(() => setMyEnrollments([]));
   }, [authRole]);
 
+  const fetchMyWaitingList = useCallback(() => {
+    if (authRole !== "student") {
+      return;
+    }
+
+    waitingListService
+      .getAll()
+      .then((res) => setMyWaitingList(res.data))
+      .catch(() => setMyWaitingList([]));
+  }, [authRole]);
+
   useEffect(() => {
     fetchCourses();
     fetchMyEnrollments();
-  }, [fetchCourses, fetchMyEnrollments]);
+    fetchMyWaitingList();
+  }, [fetchCourses, fetchMyEnrollments, fetchMyWaitingList]);
 
   const semesters = useMemo(
     () =>
@@ -90,14 +104,25 @@ const PublicCourses = () => {
     }, {});
   }, [myEnrollments]);
 
+  const waitingListByCourse = useMemo(() => {
+    return myWaitingList.reduce((lookup, item) => {
+      lookup[Number(item.course_id)] = item;
+      return lookup;
+    }, {});
+  }, [myWaitingList]);
+
   const filteredCourses = useMemo(() => {
     const searchTerm = filters.search.trim().toLowerCase();
 
     return courses
       .filter((course) => {
         const enrollment = enrollmentByCourse[Number(course.id)];
+        const waitingListItem = waitingListByCourse[Number(course.id)];
         const isEnrolled = Boolean(enrollment);
+        const isWaitlisted = Boolean(waitingListItem);
         const isPaid = enrollment?.payment_status === "paid";
+        const capacity = Number(course.kapaciteti || 0);
+        const isFull = capacity > 0 && Number(course.available_seats || 0) <= 0;
         const courseText = [
           course.emertimi,
           course.pershkrimi,
@@ -135,11 +160,18 @@ const PublicCourses = () => {
           return true;
         }
 
-        if (filters.status === "available" && isEnrolled) {
+        if (
+          filters.status === "available" &&
+          (isEnrolled || isWaitlisted || isFull)
+        ) {
           return false;
         }
 
         if (filters.status === "enrolled" && !isEnrolled) {
+          return false;
+        }
+
+        if (filters.status === "waitlisted" && !isWaitlisted) {
           return false;
         }
 
@@ -164,13 +196,17 @@ const PublicCourses = () => {
 
         return String(a.emertimi || "").localeCompare(String(b.emertimi || ""));
       });
-  }, [authRole, courses, enrollmentByCourse, filters]);
+  }, [authRole, courses, enrollmentByCourse, filters, waitingListByCourse]);
 
   const enrolledCount = myEnrollments.length;
+  const waitingCount = myWaitingList.length;
   const paidCount = myEnrollments.filter(
     (enrollment) => enrollment.payment_status === "paid"
   ).length;
-  const availableCount = courses.length - enrolledCount;
+  const availableCount = courses.filter((course) => {
+    const capacity = Number(course.kapaciteti || 0);
+    return capacity === 0 || Number(course.available_seats || 0) > 0;
+  }).length;
   const activeFilterLabels = [
     filters.search && `Search: ${filters.search}`,
     filters.semester && `Semester: ${filters.semester}`,
@@ -229,9 +265,17 @@ const PublicCourses = () => {
       .create(courseId)
       .then((res) => {
         setMessage(
-          `${res.data.message || "Enrollment created successfully."} Continue to payment from My Enrollments.`
+          res.data.message || "Enrollment request completed successfully."
         );
+        fetchCourses();
         fetchMyEnrollments();
+        fetchMyWaitingList();
+
+        if (res.status === 202 || res.data.waiting_list_id) {
+          navigate("/waiting-list");
+          return;
+        }
+
         navigate("/my-enrollments");
       })
       .catch((err) => {
@@ -366,6 +410,14 @@ const PublicCourses = () => {
                 <span className="text-slate-500">My courses</span>
               </div>
             )}
+            {authRole === "student" && (
+              <div>
+                <span className="block font-bold text-slate-950">
+                  {waitingCount}
+                </span>
+                <span className="text-slate-500">Waiting list</span>
+              </div>
+            )}
           </div>
         </section>
 
@@ -483,6 +535,7 @@ const PublicCourses = () => {
                     <option value="all">All statuses</option>
                     <option value="available">Available</option>
                     <option value="enrolled">Enrolled</option>
+                    <option value="waitlisted">Waitlisted</option>
                     <option value="paid">Enrolled and paid</option>
                   </SelectInput>
                 )}
@@ -547,8 +600,13 @@ const PublicCourses = () => {
                 {filteredCourses.length > 0 ? (
                   filteredCourses.map((course) => {
                     const enrollment = enrollmentByCourse[Number(course.id)];
+                    const waitingListItem = waitingListByCourse[Number(course.id)];
                     const isEnrolled = Boolean(enrollment);
+                    const isWaitlisted = Boolean(waitingListItem);
                     const isPaid = enrollment?.payment_status === "paid";
+                    const capacity = Number(course.kapaciteti || 0);
+                    const availableSeats = Number(course.available_seats || 0);
+                    const isFull = capacity > 0 && availableSeats <= 0;
 
                     return (
                       <article
@@ -577,6 +635,11 @@ const PublicCourses = () => {
                                 }`}
                               >
                                 {isPaid ? "Paid" : "Payment pending"}
+                              </span>
+                            )}
+                            {isWaitlisted && (
+                              <span className="rounded bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-700">
+                                Waiting list #{waitingListItem.pozicioni}
                               </span>
                             )}
                           </div>
@@ -608,7 +671,15 @@ const PublicCourses = () => {
                               <dt className="font-semibold text-slate-950">
                                 Capacity
                               </dt>
-                              <dd>{course.kapaciteti || 0} seats</dd>
+                              <dd>
+                                {availableSeats} of {capacity || 0} seats available
+                              </dd>
+                            </div>
+                            <div>
+                              <dt className="font-semibold text-slate-950">
+                                Waiting list
+                              </dt>
+                              <dd>{course.waiting_count || 0} students</dd>
                             </div>
                             <div>
                               <dt className="font-semibold text-slate-950">
@@ -638,6 +709,13 @@ const PublicCourses = () => {
                             >
                               {isPaid ? "View enrollment" : "Pay now"}
                             </Link>
+                          ) : isWaitlisted ? (
+                            <Link
+                              to="/waiting-list"
+                              className="rounded bg-orange-600 px-3 py-2 text-center text-sm font-semibold text-white hover:bg-orange-700"
+                            >
+                              View waiting list
+                            </Link>
                           ) : (
                             <Button
                               onClick={() => handleEnroll(course.id)}
@@ -647,7 +725,9 @@ const PublicCourses = () => {
                             >
                               {enrollingCourseId === course.id
                                 ? "Enrolling..."
-                                : "Enroll"}
+                                : isFull
+                                  ? "Join waiting list"
+                                  : "Enroll"}
                             </Button>
                           )}
                         </div>
@@ -684,6 +764,10 @@ const PublicCourses = () => {
                 <div className="flex justify-between border-b border-slate-100 pb-2">
                   <span>My enrollments</span>
                   <strong>{enrolledCount}</strong>
+                </div>
+                <div className="flex justify-between border-b border-slate-100 pb-2">
+                  <span>Waiting list</span>
+                  <strong>{waitingCount}</strong>
                 </div>
                 <div className="flex justify-between">
                   <span>Paid courses</span>

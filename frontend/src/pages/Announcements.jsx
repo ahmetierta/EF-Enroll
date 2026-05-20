@@ -8,6 +8,7 @@ import TextArea from "../components/ui/TextArea";
 import TextInput from "../components/ui/TextInput";
 import { announcementService } from "../services/announcementService";
 import { courseService } from "../services/courseService";
+import { getAuthUser } from "../utils/authStorage";
 import { announcementSchema, validateForm } from "../validation/schemas";
 
 const initialFormData = {
@@ -17,6 +18,8 @@ const initialFormData = {
 };
 
 const Announcements = () => {
+  const authUser = getAuthUser();
+  const canAddAnnouncement = ["admin", "professor"].includes(authUser?.role);
   const [announcements, setAnnouncements] = useState([]);
   const [courses, setCourses] = useState([]);
   const [formData, setFormData] = useState(initialFormData);
@@ -78,43 +81,45 @@ const Announcements = () => {
 
   return (
     <PageContainer title="Announcements">
-      <div className="grid gap-8 lg:grid-cols-3">
-        <FormCard title="Add Comment">
-          <div className="space-y-4">
-            <SelectInput
-              name="course_id"
-              value={formData.course_id}
-              onChange={handleChange}
-            >
-              <option value="">Select Course</option>
-              {courses.map((course) => (
-                <option key={course.id} value={course.id}>
-                  {course.emertimi}
-                </option>
-              ))}
-            </SelectInput>
+      <div className={`grid gap-8 ${canAddAnnouncement ? "lg:grid-cols-3" : ""}`}>
+        {canAddAnnouncement && (
+          <FormCard title="Add Announcement">
+            <div className="space-y-4">
+              <SelectInput
+                name="course_id"
+                value={formData.course_id}
+                onChange={handleChange}
+              >
+                <option value="">Select Course</option>
+                {courses.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.emertimi}
+                  </option>
+                ))}
+              </SelectInput>
 
-            <TextInput
-              name="titulli"
-              placeholder="Title"
-              value={formData.titulli}
-              onChange={handleChange}
-            />
+              <TextInput
+                name="titulli"
+                placeholder="Title"
+                value={formData.titulli}
+                onChange={handleChange}
+              />
 
-            <TextArea
-              name="permbajtja"
-              placeholder="Comment"
-              value={formData.permbajtja}
-              onChange={handleChange}
-            />
-          </div>
+              <TextArea
+                name="permbajtja"
+                placeholder="Announcement"
+                value={formData.permbajtja}
+                onChange={handleChange}
+              />
+            </div>
 
-          <Button onClick={addAnnouncement} className="mt-6" fullWidth>
-            Add Comment
-          </Button>
-        </FormCard>
+            <Button onClick={addAnnouncement} className="mt-6" fullWidth>
+              Add Announcement
+            </Button>
+          </FormCard>
+        )}
 
-        <TableCard title="Course Comments">
+        <TableCard title="Course Announcements">
           {message && (
             <p className="mb-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
               {message}

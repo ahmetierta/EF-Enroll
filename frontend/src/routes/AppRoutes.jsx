@@ -8,13 +8,13 @@ import Enrollments from "../pages/Enrollments";
 import Materials from "../pages/Materials";
 import MyEnrollments from "../pages/MyEnrollments";
 import Payments from "../pages/Payments";
-import PlaceholderPage from "../pages/PlaceholderPage";
 import Professors from "../pages/Professors";
 import PublicCourses from "../pages/PublicCourses";
 import Revenue from "../pages/Revenue";
 import Schedules from "../pages/Schedules";
 import Semesters from "../pages/Semesters";
 import Students from "../pages/Students";
+import WaitingList from "../pages/WaitingList";
 import ForgotPassword from "../pages/auth/ForgotPassword";
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
@@ -126,8 +126,8 @@ const AppRoutes = () => {
         <Route
           path="waiting-list"
           element={
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <PlaceholderPage title="Waiting List" />
+            <ProtectedRoute allowedRoles={["admin", "professor", "student"]}>
+              <WaitingList />
             </ProtectedRoute>
           }
         />
