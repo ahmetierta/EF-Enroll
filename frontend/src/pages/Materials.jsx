@@ -9,6 +9,7 @@ import TextInput from "../components/ui/TextInput";
 import { courseService } from "../services/courseService";
 import { materialService } from "../services/materialService";
 import { getAuthUser } from "../utils/authStorage";
+import { materialSchema, validateForm } from "../validation/schemas";
 
 const initialFormData = {
   course_id: "",
@@ -64,9 +65,16 @@ const Materials = () => {
     });
   };
 
-  const addMaterial = () => {
+  const addMaterial = async () => {
     setMessage("");
     setError("");
+
+    const validationError = await validateForm(materialSchema, formData);
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
 
     materialService
       .create(formData)

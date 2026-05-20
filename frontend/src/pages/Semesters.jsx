@@ -6,6 +6,7 @@ import Button from "../components/ui/Button";
 import SelectInput from "../components/ui/SelectInput";
 import TextInput from "../components/ui/TextInput";
 import { semesterService } from "../services/semesterService";
+import { semesterSchema, validateForm } from "../validation/schemas";
 
 const initialFormData = {
   emertimi: "",
@@ -42,7 +43,14 @@ const Semesters = () => {
     setEditId(null);
   };
 
-  const addSemester = () => {
+  const addSemester = async () => {
+    const validationError = await validateForm(semesterSchema, formData);
+
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
     semesterService
       .create(formData)
       .then(() => {
@@ -56,7 +64,14 @@ const Semesters = () => {
       });
   };
 
-  const updateSemester = () => {
+  const updateSemester = async () => {
+    const validationError = await validateForm(semesterSchema, formData);
+
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
     semesterService
       .update(editId, formData)
       .then(() => {

@@ -4,6 +4,10 @@ import Button from "../../components/ui/Button";
 import SelectInput from "../../components/ui/SelectInput";
 import TextInput from "../../components/ui/TextInput";
 import AuthContext from "../../context/AuthContext";
+import {
+  studentRegisterSchema,
+  validateForm,
+} from "../../validation/schemas";
 import AuthShell from "./AuthShell";
 
 const programs = [
@@ -37,16 +41,25 @@ const RegisterStudent = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    const payload = {
+      username,
+      email,
+      password,
+      programi,
+      viti_studimit: vitiStudimit,
+    };
+    const validationError = await validateForm(studentRegisterSchema, payload);
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await registerStudent({
-        username,
-        email,
-        password,
-        programi,
-        viti_studimit: vitiStudimit,
-      });
+      await registerStudent(payload);
       alert("Student account created successfully. You can log in now.");
       navigate("/login");
     } catch (err) {

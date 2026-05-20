@@ -12,6 +12,11 @@ const refreshClient = axios.create({
 });
 
 httpClient.interceptors.request.use((config) => {
+  if (config.skipAuth) {
+    config.withCredentials = false;
+    delete config.skipAuth;
+  }
+
   return config;
 });
 

@@ -134,7 +134,7 @@ const AppRoutes = () => {
         <Route
           path="announcements"
           element={
-            <ProtectedRoute allowedRoles={["admin", "professor"]}>
+            <ProtectedRoute allowedRoles={["admin", "professor", "student"]}>
               <Announcements />
             </ProtectedRoute>
           }

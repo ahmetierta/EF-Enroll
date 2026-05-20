@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import TextInput from "../../components/ui/TextInput";
 import AuthContext from "../../context/AuthContext";
+import { loginSchema, validateForm } from "../../validation/schemas";
 import AuthShell from "./AuthShell";
 
 const roleRedirects = {
@@ -23,6 +24,14 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    const validationError = await validateForm(loginSchema, { email, password });
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setLoading(true);
 
     try {

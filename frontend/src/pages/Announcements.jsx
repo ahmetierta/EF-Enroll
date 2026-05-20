@@ -8,6 +8,7 @@ import TextArea from "../components/ui/TextArea";
 import TextInput from "../components/ui/TextInput";
 import { announcementService } from "../services/announcementService";
 import { courseService } from "../services/courseService";
+import { announcementSchema, validateForm } from "../validation/schemas";
 
 const initialFormData = {
   course_id: "",
@@ -52,9 +53,16 @@ const Announcements = () => {
     });
   };
 
-  const addAnnouncement = () => {
+  const addAnnouncement = async () => {
     setMessage("");
     setError("");
+
+    const validationError = await validateForm(announcementSchema, formData);
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
 
     announcementService
       .create(formData)

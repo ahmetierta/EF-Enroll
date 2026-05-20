@@ -5,6 +5,7 @@ import TextInput from "../components/ui/TextInput";
 import { courseService } from "../services/courseService";
 import { scheduleService } from "../services/scheduleService";
 import { getAuthUser } from "../utils/authStorage";
+import { scheduleSchema, validateForm } from "../validation/schemas";
 
 const initialFormData = {
   course_id: "",
@@ -59,23 +60,18 @@ const Schedules = () => {
     setEditId(null);
   };
 
-  const addSchedule = () => {
-    if (
-      !formData.course_id ||
-      !formData.dita ||
-      !formData.ora_fillimit ||
-      !formData.ora_perfundimit ||
-      !formData.salla.trim()
-    ) {
-      alert("Please fill in all schedule fields.");
-      return;
-    }
-
+  const addSchedule = async () => {
     const payload = {
       ...formData,
       course_id: Number(formData.course_id),
       salla: formData.salla.trim(),
     };
+    const validationError = await validateForm(scheduleSchema, payload);
+
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
 
     scheduleService
       .create(payload)
@@ -94,23 +90,18 @@ const Schedules = () => {
       });
   };
 
-  const updateSchedule = () => {
-    if (
-      !formData.course_id ||
-      !formData.dita ||
-      !formData.ora_fillimit ||
-      !formData.ora_perfundimit ||
-      !formData.salla.trim()
-    ) {
-      alert("Please fill in all schedule fields.");
-      return;
-    }
-
+  const updateSchedule = async () => {
     const payload = {
       ...formData,
       course_id: Number(formData.course_id),
       salla: formData.salla.trim(),
     };
+    const validationError = await validateForm(scheduleSchema, payload);
+
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
 
     scheduleService
       .update(editId, payload)

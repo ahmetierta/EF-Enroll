@@ -7,6 +7,10 @@ import SelectInput from "../components/ui/SelectInput";
 import TextInput from "../components/ui/TextInput";
 import { departmentService } from "../services/departmentService";
 import { professorService } from "../services/professorService";
+import {
+  professorProfileSchema,
+  validateForm,
+} from "../validation/schemas";
 
 const initialFormData = {
   username: "",
@@ -52,7 +56,14 @@ const Professors = () => {
     setEditId(null);
   };
 
-  const updateProfessor = () => {
+  const updateProfessor = async () => {
+    const validationError = await validateForm(professorProfileSchema, formData);
+
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
     professorService
       .update(editId, formData)
       .then(() => {

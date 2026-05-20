@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button";
 import AuthContext from "../context/AuthContext";
@@ -15,18 +15,18 @@ const PublicCourses = () => {
   const navigate = useNavigate();
   const { logout } = useContext(AuthContext);
   const authUser = getAuthUser();
+  const authRole = authUser?.role;
   const userInitial = authUser?.username?.charAt(0)?.toUpperCase() || "U";
 
-  function fetchCourses() {
+  const fetchCourses = useCallback(() => {
     courseService
       .getPublicAll()
       .then((res) => setCourses(res.data))
       .catch(() => setError("Courses could not be loaded."));
-  }
+  }, []);
 
-  function fetchMyEnrollments() {
-    if (authUser?.role !== "student") {
-      setMyEnrollments([]);
+  const fetchMyEnrollments = useCallback(() => {
+    if (authRole !== "student") {
       return;
     }
 
@@ -34,12 +34,12 @@ const PublicCourses = () => {
       .getMine()
       .then((res) => setMyEnrollments(res.data))
       .catch(() => setMyEnrollments([]));
-  }
+  }, [authRole]);
 
   useEffect(() => {
     fetchCourses();
     fetchMyEnrollments();
-  }, []);
+  }, [fetchCourses, fetchMyEnrollments]);
 
   const handleEnroll = (courseId) => {
     setError("");

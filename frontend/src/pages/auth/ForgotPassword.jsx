@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import TextInput from "../../components/ui/TextInput";
 import AuthContext from "../../context/AuthContext";
+import { forgotPasswordSchema, validateForm } from "../../validation/schemas";
 import AuthShell from "./AuthShell";
 
 const ForgotPassword = () => {
@@ -18,6 +19,14 @@ const ForgotPassword = () => {
     setError("");
     setMessage("");
     setDevResetLink("");
+
+    const validationError = await validateForm(forgotPasswordSchema, { email });
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setLoading(true);
 
     try {

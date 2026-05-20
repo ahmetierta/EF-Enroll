@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import TextInput from "../../components/ui/TextInput";
 import AuthContext from "../../context/AuthContext";
+import { resetPasswordSchema, validateForm } from "../../validation/schemas";
 import AuthShell from "./AuthShell";
 
 const ResetPassword = () => {
@@ -21,8 +22,13 @@ const ResetPassword = () => {
     setError("");
     setMessage("");
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+    const validationError = await validateForm(resetPasswordSchema, {
+      password,
+      confirmPassword,
+    });
+
+    if (validationError) {
+      setError(validationError);
       return;
     }
 

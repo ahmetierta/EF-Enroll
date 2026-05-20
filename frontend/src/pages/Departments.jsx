@@ -8,6 +8,7 @@ import TextArea from "../components/ui/TextArea";
 import TextInput from "../components/ui/TextInput";
 import { departmentService } from "../services/departmentService";
 import { professorService } from "../services/professorService";
+import { departmentSchema, validateForm } from "../validation/schemas";
 
 const initialFormData = {
   emertimi: "",
@@ -52,7 +53,14 @@ const Departments = () => {
     setEditId(null);
   };
 
-  const addDepartment = () => {
+  const addDepartment = async () => {
+    const validationError = await validateForm(departmentSchema, formData);
+
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
     departmentService
       .create(formData)
       .then(() => {
@@ -66,7 +74,14 @@ const Departments = () => {
       });
   };
 
-  const updateDepartment = () => {
+  const updateDepartment = async () => {
+    const validationError = await validateForm(departmentSchema, formData);
+
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
     departmentService
       .update(editId, formData)
       .then(() => {

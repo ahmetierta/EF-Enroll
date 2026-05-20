@@ -8,6 +8,7 @@ import { courseService } from "../services/courseService";
 import { professorService } from "../services/professorService";
 import { semesterService } from "../services/semesterService";
 import { getAuthUser } from "../utils/authStorage";
+import { courseSchema, validateForm } from "../validation/schemas";
 
 const initialFormData = {
   emertimi: "",
@@ -73,9 +74,16 @@ const Courses = () => {
     setEditId(null);
   };
 
-  const addCourse = () => {
+  const addCourse = async () => {
     if (!canManageCourses) {
       alert("Only admins can add courses.");
+      return;
+    }
+
+    const validationError = await validateForm(courseSchema, formData);
+
+    if (validationError) {
+      alert(validationError);
       return;
     }
 
@@ -92,9 +100,16 @@ const Courses = () => {
       });
   };
 
-  const updateCourse = () => {
+  const updateCourse = async () => {
     if (!canManageCourses) {
       alert("Only admins can update courses.");
+      return;
+    }
+
+    const validationError = await validateForm(courseSchema, formData);
+
+    if (validationError) {
+      alert(validationError);
       return;
     }
 

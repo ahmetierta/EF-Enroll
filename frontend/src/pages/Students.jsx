@@ -7,11 +7,15 @@ import SelectInput from "../components/ui/SelectInput";
 import TextInput from "../components/ui/TextInput";
 import { studentService } from "../services/studentService";
 import { getAuthUser } from "../utils/authStorage";
+import {
+  studentManagementSchema,
+  validateForm,
+} from "../validation/schemas";
 
 const initialFormData = {
   username: "",
   email: "",
-  password_hash: "",
+  password: "",
   numri_studentit: "",
   programi: "",
   viti_studimit: "",
@@ -58,7 +62,17 @@ const Students = () => {
     setEditId(null);
   };
 
-  const addStudent = () => {
+  const addStudent = async () => {
+    const validationError = await validateForm(
+      studentManagementSchema(false),
+      formData
+    );
+
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
     studentService
       .create(formData)
       .then(() => {
@@ -72,7 +86,17 @@ const Students = () => {
       });
   };
 
-  const updateStudent = () => {
+  const updateStudent = async () => {
+    const validationError = await validateForm(
+      studentManagementSchema(true),
+      formData
+    );
+
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
     studentService
       .update(editId, formData)
       .then(() => {
@@ -107,7 +131,7 @@ const Students = () => {
     setFormData({
       username: student.username || "",
       email: student.email || "",
-      password_hash: "",
+      password: "",
       numri_studentit: student.numri_studentit || "",
       programi: student.programi || "",
       viti_studimit: student.viti_studimit || "",
@@ -138,9 +162,10 @@ const Students = () => {
             />
 
             <TextInput
-              name="password_hash"
-              placeholder="Password"
-              value={formData.password_hash}
+              name="password"
+              placeholder={editId ? "New password (optional)" : "Password"}
+              type="password"
+              value={formData.password}
               onChange={handleChange}
             />
 

@@ -5,6 +5,10 @@ import SelectInput from "../../components/ui/SelectInput";
 import TextInput from "../../components/ui/TextInput";
 import AuthContext from "../../context/AuthContext";
 import { departmentService } from "../../services/departmentService";
+import {
+  professorRegisterSchema,
+  validateForm,
+} from "../../validation/schemas";
 import AuthShell from "./AuthShell";
 
 const RegisterProfessor = () => {
@@ -34,16 +38,25 @@ const RegisterProfessor = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    const payload = {
+      username,
+      email,
+      password,
+      titulli,
+      departamenti,
+    };
+    const validationError = await validateForm(professorRegisterSchema, payload);
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await registerProfessor({
-        username,
-        email,
-        password,
-        titulli,
-        departamenti,
-      });
+      await registerProfessor(payload);
       alert("Professor account created. It is pending admin approval.");
       navigate("/login");
     } catch (err) {
