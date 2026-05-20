@@ -11,6 +11,38 @@ function mapCourseResponse(course) {
   const enrolledCount = Number(course.enrolled_count || 0);
   const waitingCount = Number(course.waiting_count || 0);
   const capacity = Number(course.kapaciteti || 0);
+  const schedules = [...(course.schedules || [])]
+    .sort((a, b) => {
+      const dayCompare = String(a.dita || "").localeCompare(String(b.dita || ""));
+
+      if (dayCompare !== 0) {
+        return dayCompare;
+      }
+
+      return String(a.ora_fillimit || "").localeCompare(
+        String(b.ora_fillimit || "")
+      );
+    })
+    .map((schedule) => ({
+      id: schedule.id,
+      dita: schedule.dita,
+      ora_fillimit: schedule.ora_fillimit,
+      ora_perfundimit: schedule.ora_perfundimit,
+      salla: schedule.salla,
+    }));
+  const scheduleSummary = schedules.length
+    ? schedules
+        .map(
+          (schedule) =>
+            `${schedule.dita || ""} ${String(schedule.ora_fillimit || "").slice(
+              0,
+              5
+            )}-${String(schedule.ora_perfundimit || "").slice(0, 5)}${
+              schedule.salla ? `, ${schedule.salla}` : ""
+            }`.trim()
+        )
+        .join("; ")
+    : null;
 
   return {
     id: course.id,
@@ -27,6 +59,8 @@ function mapCourseResponse(course) {
     titulli: course.professor?.titulli || null,
     professor_name: course.professor?.user?.username || null,
     semester_name: course.semester?.emertimi || null,
+    schedules,
+    schedule_summary: scheduleSummary,
   };
 }
 
@@ -36,6 +70,7 @@ function buildCourseQuery() {
     .leftJoinAndSelect("course.professor", "professor")
     .leftJoinAndSelect("professor.user", "user")
     .leftJoinAndSelect("course.semester", "semester")
+    .leftJoinAndSelect("course.schedules", "schedule")
     .loadRelationCountAndMap(
       "course.enrolled_count",
       "course.enrollments",
@@ -100,7 +135,10 @@ async function validateCoursePayload({
 // GET all courses with professor and semester info
 router.get("/", optionalAuth, async (req, res) => {
   try {
-    const query = buildCourseQuery().orderBy("course.id", "DESC");
+    const query = buildCourseQuery()
+      .orderBy("course.id", "DESC")
+      .addOrderBy("schedule.dita", "ASC")
+      .addOrderBy("schedule.ora_fillimit", "ASC");
 
     if (req.user?.role === "professor") {
       query.where("user.id = :userId", { userId: req.user.id });
@@ -118,7 +156,10 @@ router.get("/:id", optionalAuth, async (req, res) => {
   const id = req.params.id;
 
   try {
-    const query = buildCourseQuery().where("course.id = :id", { id });
+    const query = buildCourseQuery()
+      .where("course.id = :id", { id })
+      .addOrderBy("schedule.dita", "ASC")
+      .addOrderBy("schedule.ora_fillimit", "ASC");
 
     if (req.user?.role === "professor") {
       query.andWhere("user.id = :userId", { userId: req.user.id });

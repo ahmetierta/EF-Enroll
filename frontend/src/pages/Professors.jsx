@@ -19,6 +19,14 @@ const initialFormData = {
   departamenti: "",
 };
 
+function formatSchedule(schedule) {
+  const start = String(schedule.ora_fillimit || "").slice(0, 5);
+  const end = String(schedule.ora_perfundimit || "").slice(0, 5);
+  const time = start && end ? `${start}-${end}` : "Time not set";
+
+  return [schedule.dita, time, schedule.salla].filter(Boolean).join(", ");
+}
+
 const Professors = () => {
   const [professors, setProfessors] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -184,6 +192,7 @@ const Professors = () => {
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">Title</th>
                   <th className="px-4 py-3">Department</th>
+                  <th className="px-4 py-3">Scheduled Courses</th>
                   <th className="px-4 py-3">Actions</th>
                 </tr>
               </thead>
@@ -200,6 +209,27 @@ const Professors = () => {
                       <td className="px-4 py-3">{professor.email}</td>
                       <td className="px-4 py-3">{professor.titulli}</td>
                       <td className="px-4 py-3">{professor.departamenti}</td>
+                      <td className="max-w-sm px-4 py-3 text-sm text-slate-600">
+                        {professor.scheduled_courses?.length ? (
+                          <div className="space-y-2">
+                            {professor.scheduled_courses.map((course) => (
+                              <div
+                                key={course.id}
+                                className="rounded border border-slate-200 bg-slate-50 px-3 py-2"
+                              >
+                                <p className="font-semibold text-slate-900">
+                                  {course.emertimi}
+                                </p>
+                                <p>
+                                  {course.schedules.map(formatSchedule).join("; ")}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          "No scheduled courses"
+                        )}
+                      </td>
 
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
@@ -224,7 +254,7 @@ const Professors = () => {
                   ))
                 ) : (
                   <tr>
-                    <td className="px-4 py-6 text-slate-500" colSpan="6">
+                    <td className="px-4 py-6 text-slate-500" colSpan="7">
                       No professors found.
                     </td>
                   </tr>

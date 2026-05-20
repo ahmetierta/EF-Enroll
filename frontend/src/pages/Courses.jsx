@@ -20,6 +20,26 @@ const initialFormData = {
   cmimi: "",
 };
 
+function formatSchedule(schedule) {
+  const start = String(schedule.ora_fillimit || "").slice(0, 5);
+  const end = String(schedule.ora_perfundimit || "").slice(0, 5);
+  const time = start && end ? `${start}-${end}` : "Time not set";
+
+  return [schedule.dita, time, schedule.salla].filter(Boolean).join(", ");
+}
+
+function getScheduleLabel(course) {
+  if (course.schedule_summary) {
+    return course.schedule_summary;
+  }
+
+  if (course.schedules?.length) {
+    return course.schedules.map(formatSchedule).join("; ");
+  }
+
+  return "No schedule set";
+}
+
 function getErrorMessage(err, fallback) {
   return err.response?.data?.message || err.response?.data?.error || fallback;
 }
@@ -160,7 +180,11 @@ const Courses = () => {
     });
   };
 
-  const totalCapacity = courses.reduce(
+  const displayedCourses =
+    authUser?.role === "professor"
+      ? courses.filter((course) => course.schedules?.length)
+      : courses;
+  const totalCapacity = displayedCourses.reduce(
     (sum, course) => sum + Number(course.kapaciteti || 0),
     0
   );
@@ -186,7 +210,9 @@ const Courses = () => {
             <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
               <div className="rounded-2xl border border-slate-200 bg-slate-900 p-5 text-white">
                 <p className="text-sm text-slate-300">Total Courses</p>
-                <p className="mt-2 text-3xl font-bold">{courses.length}</p>
+                <p className="mt-2 text-3xl font-bold">
+                  {displayedCourses.length}
+                </p>
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -329,7 +355,9 @@ const Courses = () => {
                   Courses List
                 </h2>
                 <p className="text-sm text-slate-500">
-                  Review, edit, and manage all course offers from one table.
+                  {authUser?.role === "professor"
+                    ? "Review courses that already have scheduled terms."
+                    : "Review, edit, and manage all course offers from one table."}
                 </p>
               </div>
             </div>
@@ -346,13 +374,14 @@ const Courses = () => {
                   <th className="px-4 py-3">Semester</th>
                   <th className="px-4 py-3">Capacity</th>
                   <th className="px-4 py-3">Price</th>
+                  <th className="px-4 py-3">Schedule</th>
                   <th className="px-4 py-3">Actions</th>
                 </tr>
               </thead>
 
               <tbody>
-                {courses.length > 0 ? (
-                  courses.map((course) => (
+                {displayedCourses.length > 0 ? (
+                  displayedCourses.map((course) => (
                     <tr
                       key={course.id}
                       className="rounded-2xl bg-slate-50 text-sm text-slate-700 transition hover:bg-blue-50"
@@ -380,6 +409,9 @@ const Courses = () => {
                       </td>
                       <td className="px-4 py-4">
                         {Number(course.cmimi || 0).toFixed(2)} EUR
+                      </td>
+                      <td className="max-w-xs px-4 py-4 text-slate-600">
+                        {getScheduleLabel(course)}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
@@ -413,7 +445,7 @@ const Courses = () => {
                   ))
                 ) : (
                   <tr>
-                    <td className="px-4 py-10 text-center text-slate-400" colSpan="9">
+                    <td className="px-4 py-10 text-center text-slate-400" colSpan="10">
                       No courses found.
                     </td>
                   </tr>

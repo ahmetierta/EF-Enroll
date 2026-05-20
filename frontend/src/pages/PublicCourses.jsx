@@ -19,6 +19,26 @@ const initialFilters = {
   sortBy: "name",
 };
 
+function formatSchedule(schedule) {
+  const start = String(schedule.ora_fillimit || "").slice(0, 5);
+  const end = String(schedule.ora_perfundimit || "").slice(0, 5);
+  const time = start && end ? `${start}-${end}` : "Time not set";
+
+  return [schedule.dita, time, schedule.salla].filter(Boolean).join(", ");
+}
+
+function getScheduleLabel(course) {
+  if (course.schedule_summary) {
+    return course.schedule_summary;
+  }
+
+  if (course.schedules?.length) {
+    return course.schedules.map(formatSchedule).join("; ");
+  }
+
+  return "No schedule set";
+}
+
 const PublicCourses = () => {
   const [courses, setCourses] = useState([]);
   const [myEnrollments, setMyEnrollments] = useState([]);
@@ -128,6 +148,7 @@ const PublicCourses = () => {
           course.pershkrimi,
           course.professor_name,
           course.semester_name,
+          course.schedule_summary,
         ]
           .join(" ")
           .toLowerCase();
@@ -686,6 +707,12 @@ const PublicCourses = () => {
                                 Price
                               </dt>
                               <dd>{Number(course.cmimi || 0).toFixed(2)} EUR</dd>
+                            </div>
+                            <div className="sm:col-span-2">
+                              <dt className="font-semibold text-slate-950">
+                                Schedule
+                              </dt>
+                              <dd>{getScheduleLabel(course)}</dd>
                             </div>
                           </dl>
                         </div>

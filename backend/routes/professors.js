@@ -10,6 +10,35 @@ router.use(authenticateToken);
 router.use(requireRole("admin"));
 
 function mapProfessor(professor) {
+  const scheduledCourses = (professor.courses || [])
+    .filter((course) => course.schedules?.length)
+    .map((course) => ({
+      id: course.id,
+      emertimi: course.emertimi,
+      cmimi: course.cmimi,
+      schedules: [...course.schedules]
+        .sort((a, b) => {
+          const dayCompare = String(a.dita || "").localeCompare(
+            String(b.dita || "")
+          );
+
+          if (dayCompare !== 0) {
+            return dayCompare;
+          }
+
+          return String(a.ora_fillimit || "").localeCompare(
+            String(b.ora_fillimit || "")
+          );
+        })
+        .map((schedule) => ({
+          id: schedule.id,
+          dita: schedule.dita,
+          ora_fillimit: schedule.ora_fillimit,
+          ora_perfundimit: schedule.ora_perfundimit,
+          salla: schedule.salla,
+        })),
+    }));
+
   return {
     id: professor.id,
     user_id: professor.user?.id || null,
@@ -18,6 +47,7 @@ function mapProfessor(professor) {
     username: professor.user?.username || null,
     email: professor.user?.email || null,
     status: professor.user?.status || null,
+    scheduled_courses: scheduledCourses,
   };
 }
 
@@ -27,8 +57,13 @@ router.get("/", async (req, res) => {
     const professors = await AppDataSource.getRepository("Professor")
       .createQueryBuilder("professor")
       .leftJoinAndSelect("professor.user", "user")
+      .leftJoinAndSelect("professor.courses", "course")
+      .leftJoinAndSelect("course.schedules", "schedule")
       .where("user.status = :status", { status: "approved" })
       .orderBy("professor.id", "DESC")
+      .addOrderBy("course.emertimi", "ASC")
+      .addOrderBy("schedule.dita", "ASC")
+      .addOrderBy("schedule.ora_fillimit", "ASC")
       .getMany();
 
     res.json(professors.map(mapProfessor));
@@ -43,8 +78,13 @@ router.get("/:id", async (req, res) => {
     const professor = await AppDataSource.getRepository("Professor")
       .createQueryBuilder("professor")
       .leftJoinAndSelect("professor.user", "user")
+      .leftJoinAndSelect("professor.courses", "course")
+      .leftJoinAndSelect("course.schedules", "schedule")
       .where("professor.id = :id", { id: Number(req.params.id) })
       .andWhere("user.status = :status", { status: "approved" })
+      .addOrderBy("course.emertimi", "ASC")
+      .addOrderBy("schedule.dita", "ASC")
+      .addOrderBy("schedule.ora_fillimit", "ASC")
       .getOne();
 
     res.json(professor ? [mapProfessor(professor)] : []);
