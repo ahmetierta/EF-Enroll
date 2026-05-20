@@ -148,7 +148,37 @@ router.post("/", requireRole("student"), async (req, res) => {
     const capacity = Number(course.kapaciteti || 0);
 
     if (capacity > 0 && enrolledCount >= capacity) {
-      return res.status(409).json({ message: "Course is full" });
+      const waitingRepository = AppDataSource.getRepository("WaitingList");
+      const existingWaitingListItem = await waitingRepository.findOne({
+        where: {
+          student: { id: student.id },
+          course: { id: Number(course_id) },
+        },
+      });
+
+      if (existingWaitingListItem) {
+        return res.status(409).json({
+          message: "Course is full and you are already on the waiting list",
+        });
+      }
+
+      const pozicioni =
+        (await waitingRepository.count({
+          where: { course: { id: Number(course_id) } },
+        })) + 1;
+
+      const waitingListItem = await waitingRepository.save({
+        student,
+        course,
+        data: new Date().toISOString().slice(0, 10),
+        pozicioni,
+      });
+
+      return res.status(202).json({
+        message: `Course is full. You were added to the waiting list at position ${pozicioni}.`,
+        waiting_list_id: waitingListItem.id,
+        pozicioni,
+      });
     }
 
     const enrollment = await enrollmentRepository.save({

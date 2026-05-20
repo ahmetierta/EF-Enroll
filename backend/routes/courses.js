@@ -8,6 +8,10 @@ const {
 } = require("../middleware/authMiddleware");
 
 function mapCourseResponse(course) {
+  const enrolledCount = Number(course.enrolled_count || 0);
+  const waitingCount = Number(course.waiting_count || 0);
+  const capacity = Number(course.kapaciteti || 0);
+
   return {
     id: course.id,
     emertimi: course.emertimi,
@@ -15,8 +19,11 @@ function mapCourseResponse(course) {
     kredite: course.kredite,
     professor_id: course.professor?.id || null,
     semester_id: course.semester?.id || null,
-    kapaciteti: course.kapaciteti,
+    kapaciteti: capacity,
     cmimi: course.cmimi,
+    enrolled_count: enrolledCount,
+    available_seats: Math.max(capacity - enrolledCount, 0),
+    waiting_count: waitingCount,
     titulli: course.professor?.titulli || null,
     professor_name: course.professor?.user?.username || null,
     semester_name: course.semester?.emertimi || null,
@@ -28,7 +35,14 @@ function buildCourseQuery() {
     .createQueryBuilder("course")
     .leftJoinAndSelect("course.professor", "professor")
     .leftJoinAndSelect("professor.user", "user")
-    .leftJoinAndSelect("course.semester", "semester");
+    .leftJoinAndSelect("course.semester", "semester")
+    .loadRelationCountAndMap(
+      "course.enrolled_count",
+      "course.enrollments",
+      "enrollment",
+      (qb) => qb.andWhere("enrollment.statusi = :status", { status: "active" })
+    )
+    .loadRelationCountAndMap("course.waiting_count", "course.waitingListItems");
 }
 
 async function validateCoursePayload({

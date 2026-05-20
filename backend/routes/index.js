@@ -13,6 +13,7 @@ const schedulesRoutes = require("./schedules");
 const semestersRoutes = require("./semesters");
 const studentsRoutes = require("./students");
 const usersRoutes = require("./users");
+const waitingListRoutes = require("./waitingList");
 
 const router = express.Router();
 
@@ -29,5 +30,6 @@ router.use("/schedules", schedulesRoutes);
 router.use("/semesters", semestersRoutes);
 router.use("/students", studentsRoutes);
 router.use("/users", usersRoutes);
+router.use("/waiting-list", waitingListRoutes);
 
 module.exports = router;
