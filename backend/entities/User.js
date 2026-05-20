@@ -21,6 +21,15 @@ const User = new EntitySchema({
       type: "varchar",
       length: 255,
     },
+    reset_password_token: {
+      type: "varchar",
+      length: 64,
+      nullable: true,
+    },
+    reset_password_expires: {
+      type: "timestamp",
+      nullable: true,
+    },
     role: {
       type: "enum",
       enum: ["admin", "professor", "student"],

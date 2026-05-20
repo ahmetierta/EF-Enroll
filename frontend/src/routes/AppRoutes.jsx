@@ -15,10 +15,12 @@ import Revenue from "../pages/Revenue";
 import Schedules from "../pages/Schedules";
 import Semesters from "../pages/Semesters";
 import Students from "../pages/Students";
+import ForgotPassword from "../pages/auth/ForgotPassword";
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
 import RegisterProfessor from "../pages/auth/RegisterProfessor";
 import RegisterStudent from "../pages/auth/RegisterStudent";
+import ResetPassword from "../pages/auth/ResetPassword";
 import ProtectedRoute from "./ProtectedRoute";
 
 const AppRoutes = () => {
@@ -26,6 +28,8 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<PublicCourses />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
       <Route path="/register" element={<Register />} />
       <Route path="/register/student" element={<RegisterStudent />} />
       <Route path="/register/professor" element={<RegisterProfessor />} />

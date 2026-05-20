@@ -1,7 +1,12 @@
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const AppDataSource = require("../data-source");
+const {
+  frontendUrl,
+  sendPasswordResetEmail,
+} = require("../config/email");
 const {
   JWT_EXPIRES_IN,
   JWT_REFRESH_EXPIRES_IN,
@@ -11,6 +16,7 @@ const {
 const { authenticateToken } = require("../middleware/authMiddleware");
 
 const router = express.Router();
+const RESET_TOKEN_EXPIRES_MS = 15 * 60 * 1000;
 
 const accessCookieOptions = {
   httpOnly: true,
@@ -59,6 +65,20 @@ function createRefreshToken(user) {
   return jwt.sign({ id: user.id }, JWT_REFRESH_SECRET, {
     expiresIn: JWT_REFRESH_EXPIRES_IN,
   });
+}
+
+function hashPasswordResetToken(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+function createPasswordResetToken() {
+  const token = crypto.randomBytes(32).toString("hex");
+
+  return {
+    token,
+    tokenHash: hashPasswordResetToken(token),
+    expiresAt: new Date(Date.now() + RESET_TOKEN_EXPIRES_MS),
+  };
 }
 
 function buildUserResponse(user) {
@@ -151,6 +171,92 @@ router.post("/refresh", async (req, res) => {
     });
   } catch (err) {
     res.status(403).json({ message: "Invalid refresh token" });
+  }
+});
+
+router.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  const responseBody = {
+    message: "If an account exists with this email, a reset link has been sent.",
+  };
+
+  try {
+    const userRepository = AppDataSource.getRepository("User");
+    const user = await userRepository.findOneBy({ email });
+
+    if (!user) {
+      return res.json(responseBody);
+    }
+
+    const { token, tokenHash, expiresAt } = createPasswordResetToken();
+
+    user.reset_password_token = tokenHash;
+    user.reset_password_expires = expiresAt;
+
+    await userRepository.save(user);
+
+    const resetLink = `${frontendUrl}/reset-password/${token}`;
+    const emailResult = await sendPasswordResetEmail(user.email, resetLink);
+
+    if (emailResult.previewLink && process.env.NODE_ENV !== "production") {
+      responseBody.devResetLink = emailResult.previewLink;
+    }
+
+    res.json(responseBody);
+  } catch (err) {
+    res.status(500).json({ message: "Password reset email could not be sent" });
+  }
+});
+
+router.post("/reset-password", async (req, res) => {
+  const { token, password } = req.body;
+
+  if (!token || !password) {
+    return res.status(400).json({ message: "Token and password are required" });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({
+      message: "Password must be at least 6 characters long",
+    });
+  }
+
+  try {
+    const userRepository = AppDataSource.getRepository("User");
+    const tokenHash = hashPasswordResetToken(token);
+    const user = await userRepository.findOneBy({
+      reset_password_token: tokenHash,
+    });
+
+    if (!user || !user.reset_password_expires) {
+      return res.status(400).json({ message: "Reset link is invalid or expired" });
+    }
+
+    if (new Date(user.reset_password_expires).getTime() <= Date.now()) {
+      user.reset_password_token = null;
+      user.reset_password_expires = null;
+      await userRepository.save(user);
+
+      return res.status(400).json({ message: "Reset link is invalid or expired" });
+    }
+
+    user.password_hash = bcrypt.hashSync(password, 10);
+    user.reset_password_token = null;
+    user.reset_password_expires = null;
+
+    await userRepository.save(user);
+
+    res.cookie("token", "", { ...accessCookieOptions, maxAge: 1 });
+    res.cookie("refreshToken", "", { ...refreshCookieOptions, maxAge: 1 });
+
+    res.json({ message: "Password reset successfully. You can log in now." });
+  } catch (err) {
+    res.status(500).json({ message: "Password could not be reset" });
   }
 });
 
