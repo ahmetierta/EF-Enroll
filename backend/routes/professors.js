@@ -1,6 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const AppDataSource = require("../data-source");
+const {
+  authenticateToken,
+  requireRole,
+} = require("../middleware/authMiddleware");
+
+router.use(authenticateToken);
+router.use(requireRole("admin"));
 
 function mapProfessor(professor) {
   return {

@@ -1,9 +1,15 @@
 const express = require("express");
 const router = express.Router();
 const AppDataSource = require("../data-source");
+const {
+  authenticateToken,
+  requireRole,
+} = require("../middleware/authMiddleware");
+
+router.use(authenticateToken);
 
 // GET all semesters
-router.get("/", async (req, res) => {
+router.get("/", requireRole("admin", "professor"), async (req, res) => {
   try {
     const semesterRepository = AppDataSource.getRepository("Semester");
     const semesters = await semesterRepository.find({
@@ -17,7 +23,7 @@ router.get("/", async (req, res) => {
 });
 
 // GET semester by id
-router.get("/:id", async (req, res) => {
+router.get("/:id", requireRole("admin", "professor"), async (req, res) => {
   try {
     const semesterRepository = AppDataSource.getRepository("Semester");
     const semester = await semesterRepository.findOneBy({
@@ -31,7 +37,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // POST create semester
-router.post("/", async (req, res) => {
+router.post("/", requireRole("admin"), async (req, res) => {
   const { emertimi, data_fillimit, data_perfundimit, statusi } = req.body;
 
   try {
@@ -51,7 +57,7 @@ router.post("/", async (req, res) => {
 });
 
 // PUT update semester
-router.put("/:id", async (req, res) => {
+router.put("/:id", requireRole("admin"), async (req, res) => {
   const { emertimi, data_fillimit, data_perfundimit, statusi } = req.body;
 
   try {
@@ -70,7 +76,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // DELETE semester
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", requireRole("admin"), async (req, res) => {
   const id = Number(req.params.id);
 
   try {

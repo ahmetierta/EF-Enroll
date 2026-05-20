@@ -29,18 +29,36 @@ router.get("/", requireRole("admin", "professor", "student"), async (req, res) =
       .leftJoinAndSelect("material.course", "course")
       .leftJoinAndSelect("material.professor", "professor")
       .leftJoinAndSelect("professor.user", "user")
+      .leftJoin("course.professor", "courseProfessor")
+      .leftJoin("courseProfessor.user", "courseProfessorUser")
       .orderBy("material.id", "DESC");
+    let hasWhere = false;
+
+    const addCondition = (condition, params) => {
+      if (hasWhere) {
+        query.andWhere(condition, params);
+      } else {
+        query.where(condition, params);
+        hasWhere = true;
+      }
+    };
 
     if (course_id) {
-      query.where("course.id = :courseId", { courseId: Number(course_id) });
+      addCondition("course.id = :courseId", { courseId: Number(course_id) });
     }
 
     if (req.user.role === "professor") {
-      if (course_id) {
-        query.andWhere("user.id = :userId", { userId: req.user.id });
-      } else {
-        query.where("user.id = :userId", { userId: req.user.id });
-      }
+      addCondition("courseProfessorUser.id = :userId", { userId: req.user.id });
+    }
+
+    if (req.user.role === "student") {
+      query
+        .innerJoin("course.enrollments", "enrollment")
+        .innerJoin("enrollment.student", "student")
+        .innerJoin("student.user", "studentUser");
+
+      addCondition("studentUser.id = :userId", { userId: req.user.id });
+      addCondition("enrollment.statusi = :status", { status: "active" });
     }
 
     const materials = await query.getMany();

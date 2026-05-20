@@ -23,15 +23,40 @@ function mapAnnouncement(announcement) {
 
 router.get("/", requireRole("admin", "professor", "student"), async (req, res) => {
   try {
-    const announcements = await AppDataSource.getRepository("Announcement").find({
-      relations: {
-        course: true,
-        professor: {
-          user: true,
-        },
-      },
-      order: { id: "DESC" },
-    });
+    const query = AppDataSource.getRepository("Announcement")
+      .createQueryBuilder("announcement")
+      .leftJoinAndSelect("announcement.course", "course")
+      .leftJoinAndSelect("announcement.professor", "professor")
+      .leftJoinAndSelect("professor.user", "user")
+      .leftJoin("course.professor", "courseProfessor")
+      .leftJoin("courseProfessor.user", "courseProfessorUser")
+      .orderBy("announcement.id", "DESC");
+    let hasWhere = false;
+
+    const addCondition = (condition, params) => {
+      if (hasWhere) {
+        query.andWhere(condition, params);
+      } else {
+        query.where(condition, params);
+        hasWhere = true;
+      }
+    };
+
+    if (req.user.role === "professor") {
+      addCondition("courseProfessorUser.id = :userId", { userId: req.user.id });
+    }
+
+    if (req.user.role === "student") {
+      query
+        .innerJoin("course.enrollments", "enrollment")
+        .innerJoin("enrollment.student", "student")
+        .innerJoin("student.user", "studentUser");
+
+      addCondition("studentUser.id = :userId", { userId: req.user.id });
+      addCondition("enrollment.statusi = :status", { status: "active" });
+    }
+
+    const announcements = await query.getMany();
 
     res.json(announcements.map(mapAnnouncement));
   } catch (err) {

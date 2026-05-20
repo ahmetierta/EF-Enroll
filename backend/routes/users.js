@@ -1,6 +1,25 @@
+const bcrypt = require("bcryptjs");
 const express = require("express");
 const router = express.Router();
 const AppDataSource = require("../data-source");
+const {
+  authenticateToken,
+  requireRole,
+} = require("../middleware/authMiddleware");
+
+router.use(authenticateToken);
+router.use(requireRole("admin"));
+
+function mapUser(user) {
+  return {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+    status: user.status,
+    created_at: user.created_at,
+  };
+}
 
 // GET all users
 router.get("/", async (req, res) => {
@@ -10,7 +29,7 @@ router.get("/", async (req, res) => {
       order: { id: "DESC" },
     });
 
-    res.json(users);
+    res.json(users.map(mapUser));
   } catch (err) {
     res.status(500).json(err);
   }
@@ -22,7 +41,7 @@ router.get("/:id", async (req, res) => {
     const userRepository = AppDataSource.getRepository("User");
     const user = await userRepository.findOneBy({ id: Number(req.params.id) });
 
-    res.json(user ? [user] : []);
+    res.json(user ? [mapUser(user)] : []);
   } catch (err) {
     res.status(500).json(err);
   }
@@ -30,20 +49,27 @@ router.get("/:id", async (req, res) => {
 
 // POST create user
 router.post("/", async (req, res) => {
-  const { username, email, password_hash, role, status } = req.body;
+  const { username, email, password, password_hash, role, status } = req.body;
+  const rawPassword = password || password_hash;
+
+  if (!username || !email || !rawPassword) {
+    return res.status(400).json({
+      message: "Username, email and password are required",
+    });
+  }
 
   try {
     const userRepository = AppDataSource.getRepository("User");
     const user = userRepository.create({
       username,
       email,
-      password_hash,
+      password_hash: bcrypt.hashSync(rawPassword, 10),
       role: role || "student",
       status: status || "pending",
     });
     const result = await userRepository.save(user);
 
-    res.json({ message: "User u krijua me sukses", result });
+    res.json({ message: "User u krijua me sukses", result: mapUser(result) });
   } catch (err) {
     res.status(500).json(err);
   }
@@ -51,15 +77,19 @@ router.post("/", async (req, res) => {
 
 // PUT update user
 router.put("/:id", async (req, res) => {
-  const { username, email, password_hash, role, status } = req.body;
+  const { username, email, password, password_hash, role, status } = req.body;
+  const rawPassword = password || password_hash;
 
   try {
     const userRepository = AppDataSource.getRepository("User");
     const updateData = {
       username,
       email,
-      password_hash,
     };
+
+    if (rawPassword) {
+      updateData.password_hash = bcrypt.hashSync(rawPassword, 10);
+    }
 
     if (role) updateData.role = role;
     if (status) updateData.status = status;

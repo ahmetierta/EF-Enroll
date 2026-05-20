@@ -1,3 +1,4 @@
+const bcrypt = require("bcryptjs");
 const express = require("express");
 const router = express.Router();
 const AppDataSource = require("../data-source");
@@ -86,11 +87,19 @@ router.post("/", requireRole("admin"), async (req, res) => {
   const {
     username,
     email,
+    password,
     password_hash,
     numri_studentit,
     programi,
     viti_studimit,
   } = req.body;
+  const rawPassword = password || password_hash;
+
+  if (!username || !email || !rawPassword) {
+    return res.status(400).json({
+      message: "Username, email and password are required",
+    });
+  }
 
   try {
     const { user, student } = await AppDataSource.transaction(async (manager) => {
@@ -100,7 +109,7 @@ router.post("/", requireRole("admin"), async (req, res) => {
       const savedUser = await userRepository.save({
         username,
         email,
-        password_hash,
+        password_hash: bcrypt.hashSync(rawPassword, 10),
         role: "student",
         status: "approved",
       });
@@ -131,11 +140,13 @@ router.put("/:id", requireRole("admin"), async (req, res) => {
   const {
     username,
     email,
+    password,
     password_hash,
     numri_studentit,
     programi,
     viti_studimit,
   } = req.body;
+  const rawPassword = password || password_hash;
 
   try {
     const result = await AppDataSource.transaction(async (manager) => {
@@ -150,11 +161,16 @@ router.put("/:id", requireRole("admin"), async (req, res) => {
         return null;
       }
 
-      const userResult = await userRepository.update(student.user.id, {
+      const userUpdateData = {
         username,
         email,
-        password_hash,
-      });
+      };
+
+      if (rawPassword) {
+        userUpdateData.password_hash = bcrypt.hashSync(rawPassword, 10);
+      }
+
+      const userResult = await userRepository.update(student.user.id, userUpdateData);
       const studentResult = await studentRepository.update(id, {
         numri_studentit,
         programi,

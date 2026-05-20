@@ -55,9 +55,11 @@ const Courses = () => {
 
   useEffect(() => {
     fetchCourses();
-    fetchProfessors();
-    fetchSemesters();
-  }, []);
+    if (canManageCourses) {
+      fetchProfessors();
+      fetchSemesters();
+    }
+  }, [canManageCourses]);
 
   const handleChange = (e) => {
     setFormData({

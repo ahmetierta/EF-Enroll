@@ -1,6 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const AppDataSource = require("../data-source");
+const {
+  authenticateToken,
+  requireRole,
+} = require("../middleware/authMiddleware");
 
 // GET all departments
 router.get("/", async (req, res) => {
@@ -31,7 +35,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // POST create department
-router.post("/", async (req, res) => {
+router.post("/", authenticateToken, requireRole("admin"), async (req, res) => {
   const { emertimi, pershkrimi, shefi_departamentit } = req.body;
 
   try {
@@ -50,7 +54,7 @@ router.post("/", async (req, res) => {
 });
 
 // PUT update department
-router.put("/:id", async (req, res) => {
+router.put("/:id", authenticateToken, requireRole("admin"), async (req, res) => {
   const { emertimi, pershkrimi, shefi_departamentit } = req.body;
 
   try {
@@ -68,7 +72,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // DELETE department
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", authenticateToken, requireRole("admin"), async (req, res) => {
   try {
     const departmentRepository = AppDataSource.getRepository("Department");
     const result = await departmentRepository.delete(Number(req.params.id));
