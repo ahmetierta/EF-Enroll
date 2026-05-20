@@ -4,13 +4,14 @@ import AuthContext from "../../context/AuthContext";
 import { navItems } from "../../routes/navigation";
 import { getAuthUser } from "../../utils/authStorage";
 
-const MainNavbar = () => {
+const MainNavbar = ({ navRoles }) => {
   const navigate = useNavigate();
   const authUser = getAuthUser();
   const { logout } = useContext(AuthContext);
   const userInitial = authUser?.username?.charAt(0)?.toUpperCase() || "U";
+  const activeRoles = navRoles?.length ? navRoles : [authUser?.role];
   const visibleItems = navItems.filter((item) =>
-    item.roles.includes(authUser?.role)
+    item.roles.some((role) => activeRoles.includes(role))
   );
 
   const handleLogout = async () => {

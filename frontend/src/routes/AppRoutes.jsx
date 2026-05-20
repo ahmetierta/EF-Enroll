@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import AppLayout from "../layouts/AppLayout";
+import DashboardLayout from "../layouts/DashboardLayout";
 import AdminApprovals from "../pages/admin/AdminApprovals";
 import Announcements from "../pages/Announcements";
 import Courses from "../pages/Courses";
@@ -34,7 +34,7 @@ const AppRoutes = () => {
       <Route path="/register/student" element={<RegisterStudent />} />
       <Route path="/register/professor" element={<RegisterProfessor />} />
 
-      <Route path="/" element={<AppLayout />}>
+      <Route path="/" element={<DashboardLayout />}>
         <Route
           path="admin/approvals"
           element={
