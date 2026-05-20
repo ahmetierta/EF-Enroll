@@ -4,6 +4,7 @@ import SelectInput from "../components/ui/SelectInput";
 import TextInput from "../components/ui/TextInput";
 import { courseService } from "../services/courseService";
 import { scheduleService } from "../services/scheduleService";
+import { getAuthUser } from "../utils/authStorage";
 
 const initialFormData = {
   course_id: "",
@@ -20,6 +21,8 @@ function timeOverlaps(startA, endA, startB, endB) {
 }
 
 const Schedules = () => {
+  const authUser = getAuthUser();
+  const canManageSchedules = authUser?.role === "admin";
   const [schedules, setSchedules] = useState([]);
   const [courses, setCourses] = useState([]);
   const [formData, setFormData] = useState(initialFormData);
@@ -222,7 +225,8 @@ const Schedules = () => {
           </div>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-3">
+        <div className={`grid gap-8 ${canManageSchedules ? "lg:grid-cols-3" : ""}`}>
+          {canManageSchedules && (
           <div className="rounded-[1.75rem] border border-blue-100 bg-white p-6 shadow-lg shadow-blue-100/40">
             <h2 className="mb-2 text-xl font-semibold text-slate-900">
               {editId ? "Edit Schedule" : "Add Schedule"}
@@ -324,8 +328,9 @@ const Schedules = () => {
               )}
             </div>
           </div>
+          )}
 
-          <div className="overflow-hidden rounded-[1.75rem] border border-blue-100 bg-white p-6 shadow-lg shadow-blue-100/40 lg:col-span-2">
+          <div className={`overflow-hidden rounded-[1.75rem] border border-blue-100 bg-white p-6 shadow-lg shadow-blue-100/40 ${canManageSchedules ? "lg:col-span-2" : ""}`}>
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-slate-900">
                 Schedules List
@@ -345,7 +350,9 @@ const Schedules = () => {
                     <th className="px-4 py-3">Start</th>
                     <th className="px-4 py-3">End</th>
                     <th className="px-4 py-3">Room</th>
-                    <th className="px-4 py-3">Actions</th>
+                    {canManageSchedules && (
+                      <th className="px-4 py-3">Actions</th>
+                    )}
                   </tr>
                 </thead>
 
@@ -374,31 +381,33 @@ const Schedules = () => {
                             {schedule.salla}
                           </span>
                         </td>
-                        <td className="px-4 py-4">
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={() => editSchedule(schedule)}
-                              className="rounded-xl border-slate-200 px-3 py-2 hover:border-blue-200 hover:bg-blue-50"
-                              variant="secondary"
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              onClick={() => deleteSchedule(schedule.id)}
-                              className="rounded-xl px-3 py-2"
-                              variant="danger"
-                            >
-                              Delete
-                            </Button>
-                          </div>
-                        </td>
+                        {canManageSchedules && (
+                          <td className="px-4 py-4">
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={() => editSchedule(schedule)}
+                                className="rounded-xl border-slate-200 px-3 py-2 hover:border-blue-200 hover:bg-blue-50"
+                                variant="secondary"
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                onClick={() => deleteSchedule(schedule.id)}
+                                className="rounded-xl px-3 py-2"
+                                variant="danger"
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     ))
                   ) : (
                     <tr>
                       <td
                         className="px-4 py-10 text-center text-slate-400"
-                        colSpan="7"
+                        colSpan={canManageSchedules ? "7" : "6"}
                       >
                         No schedules found.
                       </td>

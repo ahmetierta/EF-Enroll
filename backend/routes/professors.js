@@ -10,16 +10,19 @@ function mapProfessor(professor) {
     departamenti: professor.departamenti,
     username: professor.user?.username || null,
     email: professor.user?.email || null,
+    status: professor.user?.status || null,
   };
 }
 
-// GET all professors with user info
+// GET approved professors with user info
 router.get("/", async (req, res) => {
   try {
-    const professors = await AppDataSource.getRepository("Professor").find({
-      relations: { user: true },
-      order: { id: "DESC" },
-    });
+    const professors = await AppDataSource.getRepository("Professor")
+      .createQueryBuilder("professor")
+      .leftJoinAndSelect("professor.user", "user")
+      .where("user.status = :status", { status: "approved" })
+      .orderBy("professor.id", "DESC")
+      .getMany();
 
     res.json(professors.map(mapProfessor));
   } catch (err) {
@@ -27,13 +30,15 @@ router.get("/", async (req, res) => {
   }
 });
 
-// GET professor by id with user info
+// GET approved professor by id with user info
 router.get("/:id", async (req, res) => {
   try {
-    const professor = await AppDataSource.getRepository("Professor").findOne({
-      where: { id: Number(req.params.id) },
-      relations: { user: true },
-    });
+    const professor = await AppDataSource.getRepository("Professor")
+      .createQueryBuilder("professor")
+      .leftJoinAndSelect("professor.user", "user")
+      .where("professor.id = :id", { id: Number(req.params.id) })
+      .andWhere("user.status = :status", { status: "approved" })
+      .getOne();
 
     res.json(professor ? [mapProfessor(professor)] : []);
   } catch (err) {

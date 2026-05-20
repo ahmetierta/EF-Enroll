@@ -1,6 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const AppDataSource = require("../data-source");
+const {
+  authenticateToken,
+  requireRole,
+} = require("../middleware/authMiddleware");
+
+router.use(authenticateToken);
 
 function mapSchedule(schedule) {
   return {
@@ -14,13 +20,21 @@ function mapSchedule(schedule) {
   };
 }
 
-// GET all schedules with course info
-router.get("/", async (req, res) => {
+// GET all schedules for admin, or only own course schedules for professor
+router.get("/", requireRole("admin", "professor"), async (req, res) => {
   try {
-    const schedules = await AppDataSource.getRepository("Schedule").find({
-      relations: { course: true },
-      order: { id: "DESC" },
-    });
+    const query = AppDataSource.getRepository("Schedule")
+      .createQueryBuilder("schedule")
+      .leftJoinAndSelect("schedule.course", "course")
+      .leftJoin("course.professor", "professor")
+      .leftJoin("professor.user", "professorUser")
+      .orderBy("schedule.id", "DESC");
+
+    if (req.user.role === "professor") {
+      query.where("professorUser.id = :userId", { userId: req.user.id });
+    }
+
+    const schedules = await query.getMany();
 
     res.json(schedules.map(mapSchedule));
   } catch (err) {
@@ -29,12 +43,20 @@ router.get("/", async (req, res) => {
 });
 
 // GET schedule by id
-router.get("/:id", async (req, res) => {
+router.get("/:id", requireRole("admin", "professor"), async (req, res) => {
   try {
-    const schedule = await AppDataSource.getRepository("Schedule").findOne({
-      where: { id: Number(req.params.id) },
-      relations: { course: true },
-    });
+    const query = AppDataSource.getRepository("Schedule")
+      .createQueryBuilder("schedule")
+      .leftJoinAndSelect("schedule.course", "course")
+      .leftJoin("course.professor", "professor")
+      .leftJoin("professor.user", "professorUser")
+      .where("schedule.id = :id", { id: Number(req.params.id) });
+
+    if (req.user.role === "professor") {
+      query.andWhere("professorUser.id = :userId", { userId: req.user.id });
+    }
+
+    const schedule = await query.getOne();
 
     res.json(schedule ? [mapSchedule(schedule)] : []);
   } catch (err) {
@@ -43,7 +65,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // POST create schedule
-router.post("/", async (req, res) => {
+router.post("/", requireRole("admin"), async (req, res) => {
   const { course_id, dita, ora_fillimit, ora_perfundimit, salla } = req.body;
 
   if (!course_id || !dita || !ora_fillimit || !ora_perfundimit || !salla) {
@@ -73,7 +95,7 @@ router.post("/", async (req, res) => {
 });
 
 // PUT update schedule
-router.put("/:id", async (req, res) => {
+router.put("/:id", requireRole("admin"), async (req, res) => {
   const { course_id, dita, ora_fillimit, ora_perfundimit, salla } = req.body;
 
   if (!course_id || !dita || !ora_fillimit || !ora_perfundimit || !salla) {
@@ -111,7 +133,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // DELETE schedule
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", requireRole("admin"), async (req, res) => {
   try {
     const result = await AppDataSource.getRepository("Schedule").delete(
       Number(req.params.id)

@@ -6,6 +6,7 @@ import Button from "../components/ui/Button";
 import SelectInput from "../components/ui/SelectInput";
 import TextInput from "../components/ui/TextInput";
 import { studentService } from "../services/studentService";
+import { getAuthUser } from "../utils/authStorage";
 
 const initialFormData = {
   username: "",
@@ -20,13 +21,16 @@ const programOptions = [
   "Computer Science",
   "Software Engineering",
   "Information Systems",
-  "Cyber Security",
+  "Business Administration",
   "Data Science",
+  "Cybersecurity",
 ];
 
 const yearOptions = [1, 2, 3, 4, 5];
 
 const Students = () => {
+  const authUser = getAuthUser();
+  const canManageStudents = authUser?.role === "admin";
   const [students, setStudents] = useState([]);
   const [formData, setFormData] = useState(initialFormData);
   const [editId, setEditId] = useState(null);
@@ -111,8 +115,11 @@ const Students = () => {
   };
 
   return (
-    <PageContainer title="Students Management">
-      <div className="grid gap-8 lg:grid-cols-3">
+    <PageContainer
+      title={canManageStudents ? "Students Management" : "My Course Students"}
+    >
+      <div className={`grid gap-8 ${canManageStudents ? "lg:grid-cols-3" : ""}`}>
+        {canManageStudents && (
         <FormCard title={editId ? "Edit Student" : "Add Student"}>
           <div className="space-y-4">
             <TextInput
@@ -192,6 +199,7 @@ const Students = () => {
             )}
           </div>
         </FormCard>
+        )}
 
         <TableCard title="Students List">
           <table className="w-full border-collapse text-left">
@@ -203,7 +211,9 @@ const Students = () => {
                   <th className="px-4 py-3">Student Number</th>
                   <th className="px-4 py-3">Program</th>
                   <th className="px-4 py-3">Year</th>
-                  <th className="px-4 py-3">Actions</th>
+                  {canManageStudents && (
+                    <th className="px-4 py-3">Actions</th>
+                  )}
                 </tr>
               </thead>
 
@@ -220,29 +230,34 @@ const Students = () => {
                       <td className="px-4 py-3">{student.numri_studentit}</td>
                       <td className="px-4 py-3">{student.programi}</td>
                       <td className="px-4 py-3">{student.viti_studimit}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={() => editStudent(student)}
-                            className="px-3 py-2"
-                            variant="ghost"
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            onClick={() => deleteStudent(student.id)}
-                            className="px-3 py-2"
-                            variant="danger"
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                      </td>
+                      {canManageStudents && (
+                        <td className="px-4 py-3">
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => editStudent(student)}
+                              className="px-3 py-2"
+                              variant="ghost"
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              onClick={() => deleteStudent(student.id)}
+                              className="px-3 py-2"
+                              variant="danger"
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td className="px-4 py-6 text-slate-500" colSpan="7">
+                    <td
+                      className="px-4 py-6 text-slate-500"
+                      colSpan={canManageStudents ? "7" : "6"}
+                    >
                       No students found.
                     </td>
                   </tr>

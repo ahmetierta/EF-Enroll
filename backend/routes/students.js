@@ -1,6 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const AppDataSource = require("../data-source");
+const {
+  authenticateToken,
+  requireRole,
+} = require("../middleware/authMiddleware");
+
+router.use(authenticateToken);
 
 function mapStudent(student) {
   return {
@@ -14,13 +20,30 @@ function mapStudent(student) {
   };
 }
 
-// GET all students with user info
-router.get("/", async (req, res) => {
+// GET all students for admin, or only enrolled students for professor
+router.get("/", requireRole("admin", "professor"), async (req, res) => {
   try {
-    const students = await AppDataSource.getRepository("Student").find({
-      relations: { user: true },
-      order: { id: "DESC" },
-    });
+    const studentRepository = AppDataSource.getRepository("Student");
+    let students;
+
+    if (req.user.role === "professor") {
+      students = await studentRepository
+        .createQueryBuilder("student")
+        .leftJoinAndSelect("student.user", "user")
+        .innerJoin("student.enrollments", "enrollment")
+        .innerJoin("enrollment.course", "course")
+        .innerJoin("course.professor", "professor")
+        .innerJoin("professor.user", "professorUser")
+        .where("professorUser.id = :userId", { userId: req.user.id })
+        .distinct(true)
+        .orderBy("student.id", "DESC")
+        .getMany();
+    } else {
+      students = await studentRepository.find({
+        relations: { user: true },
+        order: { id: "DESC" },
+      });
+    }
 
     res.json(students.map(mapStudent));
   } catch (err) {
@@ -29,12 +52,28 @@ router.get("/", async (req, res) => {
 });
 
 // GET student by id with user info
-router.get("/:id", async (req, res) => {
+router.get("/:id", requireRole("admin", "professor"), async (req, res) => {
   try {
-    const student = await AppDataSource.getRepository("Student").findOne({
-      where: { id: Number(req.params.id) },
-      relations: { user: true },
-    });
+    const studentRepository = AppDataSource.getRepository("Student");
+    let student;
+
+    if (req.user.role === "professor") {
+      student = await studentRepository
+        .createQueryBuilder("student")
+        .leftJoinAndSelect("student.user", "user")
+        .innerJoin("student.enrollments", "enrollment")
+        .innerJoin("enrollment.course", "course")
+        .innerJoin("course.professor", "professor")
+        .innerJoin("professor.user", "professorUser")
+        .where("student.id = :studentId", { studentId: Number(req.params.id) })
+        .andWhere("professorUser.id = :userId", { userId: req.user.id })
+        .getOne();
+    } else {
+      student = await studentRepository.findOne({
+        where: { id: Number(req.params.id) },
+        relations: { user: true },
+      });
+    }
 
     res.json(student ? [mapStudent(student)] : []);
   } catch (err) {
@@ -43,7 +82,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // POST create user + student
-router.post("/", async (req, res) => {
+router.post("/", requireRole("admin"), async (req, res) => {
   const {
     username,
     email,
@@ -87,7 +126,7 @@ router.post("/", async (req, res) => {
 });
 
 // PUT update user + student
-router.put("/:id", async (req, res) => {
+router.put("/:id", requireRole("admin"), async (req, res) => {
   const id = Number(req.params.id);
   const {
     username,
@@ -139,7 +178,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // DELETE student + user
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", requireRole("admin"), async (req, res) => {
   const id = Number(req.params.id);
 
   try {

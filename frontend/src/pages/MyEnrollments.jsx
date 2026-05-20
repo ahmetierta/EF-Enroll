@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import PageContainer from "../components/layout/PageContainer";
 import Button from "../components/ui/Button";
 import { enrollmentService } from "../services/enrollmentService";
@@ -46,6 +47,15 @@ const MyEnrollments = () => {
 
   return (
     <PageContainer title="My Enrollments">
+      <div className="mb-6">
+        <Link
+          to="/"
+          className="inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+        >
+          Browse Courses
+        </Link>
+      </div>
+
       {error && (
         <p className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}

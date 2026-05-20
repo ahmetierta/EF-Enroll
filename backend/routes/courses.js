@@ -31,6 +31,58 @@ function buildCourseQuery() {
     .leftJoinAndSelect("course.semester", "semester");
 }
 
+async function validateCoursePayload({
+  emertimi,
+  kredite,
+  professor_id,
+  semester_id,
+  kapaciteti,
+}) {
+  if (!emertimi || !String(emertimi).trim()) {
+    return { status: 400, message: "Course name is required" };
+  }
+
+  if (!kredite || Number(kredite) <= 0) {
+    return { status: 400, message: "Credits must be greater than 0" };
+  }
+
+  if (!kapaciteti || Number(kapaciteti) <= 0) {
+    return { status: 400, message: "Capacity must be greater than 0" };
+  }
+
+  if (!professor_id) {
+    return { status: 400, message: "Professor is required" };
+  }
+
+  if (!semester_id) {
+    return { status: 400, message: "Semester is required" };
+  }
+
+  const professor = await AppDataSource.getRepository("Professor")
+    .createQueryBuilder("professor")
+    .leftJoinAndSelect("professor.user", "user")
+    .where("professor.id = :id", { id: Number(professor_id) })
+    .andWhere("user.status = :status", { status: "approved" })
+    .getOne();
+
+  if (!professor) {
+    return {
+      status: 400,
+      message: "Selected professor does not exist or is not approved",
+    };
+  }
+
+  const semester = await AppDataSource.getRepository("Semester").findOneBy({
+    id: Number(semester_id),
+  });
+
+  if (!semester) {
+    return { status: 400, message: "Selected semester does not exist" };
+  }
+
+  return null;
+}
+
 // GET all courses with professor and semester info
 router.get("/", optionalAuth, async (req, res) => {
   try {
@@ -78,21 +130,32 @@ router.post("/", authenticateToken, requireRole("admin"), async (req, res) => {
   } = req.body;
 
   try {
+    const validationError = await validateCoursePayload(req.body);
+
+    if (validationError) {
+      return res
+        .status(validationError.status)
+        .json({ message: validationError.message });
+    }
+
     const courseRepository = AppDataSource.getRepository("Course");
     const course = courseRepository.create({
-      emertimi,
+      emertimi: String(emertimi).trim(),
       pershkrimi,
-      kredite,
-      kapaciteti,
-      cmimi: cmimi || 0,
-      professor: professor_id ? { id: professor_id } : null,
-      semester: semester_id ? { id: semester_id } : null,
+      kredite: Number(kredite),
+      kapaciteti: Number(kapaciteti),
+      cmimi: Number(cmimi || 0),
+      professor: { id: Number(professor_id) },
+      semester: { id: Number(semester_id) },
     });
 
     const savedCourse = await courseRepository.save(course);
     res.json({ message: "Kursi u shtua me sukses", result: savedCourse });
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json({
+      message: "Failed to add course",
+      error: err.sqlMessage || err.message,
+    });
   }
 });
 
@@ -110,6 +173,14 @@ router.put("/:id", authenticateToken, requireRole("admin"), async (req, res) => 
   } = req.body;
 
   try {
+    const validationError = await validateCoursePayload(req.body);
+
+    if (validationError) {
+      return res
+        .status(validationError.status)
+        .json({ message: validationError.message });
+    }
+
     const courseRepository = AppDataSource.getRepository("Course");
     const course = await courseRepository.findOneBy({ id });
 
@@ -118,33 +189,60 @@ router.put("/:id", authenticateToken, requireRole("admin"), async (req, res) => 
     }
 
     courseRepository.merge(course, {
-      emertimi,
+      emertimi: String(emertimi).trim(),
       pershkrimi,
-      kredite,
-      kapaciteti,
-      cmimi: cmimi || 0,
-      professor: professor_id ? { id: professor_id } : null,
-      semester: semester_id ? { id: semester_id } : null,
+      kredite: Number(kredite),
+      kapaciteti: Number(kapaciteti),
+      cmimi: Number(cmimi || 0),
+      professor: { id: Number(professor_id) },
+      semester: { id: Number(semester_id) },
     });
 
     const savedCourse = await courseRepository.save(course);
     res.json({ message: "Kursi u perditesua me sukses", result: savedCourse });
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json({
+      message: "Failed to update course",
+      error: err.sqlMessage || err.message,
+    });
   }
 });
 
 // DELETE course
 router.delete("/:id", authenticateToken, requireRole("admin"), async (req, res) => {
-  const id = req.params.id;
+  const id = Number(req.params.id);
 
   try {
-    const courseRepository = AppDataSource.getRepository("Course");
-    const result = await courseRepository.delete(id);
+    const result = await AppDataSource.transaction(async (manager) => {
+      const course = await manager.getRepository("Course").findOneBy({ id });
+
+      if (!course) {
+        return null;
+      }
+
+      await manager.query(
+        "DELETE p FROM payments p INNER JOIN enrollments e ON e.id = p.enrollment_id WHERE e.course_id = ?",
+        [id]
+      );
+      await manager.query("DELETE FROM enrollments WHERE course_id = ?", [id]);
+      await manager.query("DELETE FROM schedules WHERE course_id = ?", [id]);
+      await manager.query("DELETE FROM waiting_list WHERE course_id = ?", [id]);
+      await manager.query("DELETE FROM announcements WHERE course_id = ?", [id]);
+      await manager.query("DELETE FROM course_materials WHERE course_id = ?", [id]);
+
+      return manager.getRepository("Course").delete(id);
+    });
+
+    if (!result) {
+      return res.status(404).json({ message: "Course not found" });
+    }
 
     res.json({ message: "Kursi u fshi me sukses", result });
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json({
+      message: "Failed to delete course",
+      error: err.sqlMessage || err.message,
+    });
   }
 });
 

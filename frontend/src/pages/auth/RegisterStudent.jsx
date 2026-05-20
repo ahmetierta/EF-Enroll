@@ -11,8 +11,8 @@ const programs = [
   "Software Engineering",
   "Information Systems",
   "Business Administration",
-  "Economics",
-  "Management",
+  "Data Science",
+  "Cybersecurity",
 ];
 
 const studyYears = [

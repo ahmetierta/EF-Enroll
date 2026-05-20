@@ -7,6 +7,7 @@ import TextInput from "../components/ui/TextInput";
 import { courseService } from "../services/courseService";
 import { professorService } from "../services/professorService";
 import { semesterService } from "../services/semesterService";
+import { getAuthUser } from "../utils/authStorage";
 
 const initialFormData = {
   emertimi: "",
@@ -18,7 +19,13 @@ const initialFormData = {
   cmimi: "",
 };
 
+function getErrorMessage(err, fallback) {
+  return err.response?.data?.message || err.response?.data?.error || fallback;
+}
+
 const Courses = () => {
+  const authUser = getAuthUser();
+  const canManageCourses = authUser?.role === "admin";
   const [courses, setCourses] = useState([]);
   const [professors, setProfessors] = useState([]);
   const [semesters, setSemesters] = useState([]);
@@ -65,6 +72,11 @@ const Courses = () => {
   };
 
   const addCourse = () => {
+    if (!canManageCourses) {
+      alert("Only admins can add courses.");
+      return;
+    }
+
     courseService
       .create(formData)
       .then(() => {
@@ -74,11 +86,16 @@ const Courses = () => {
       })
       .catch((err) => {
         console.log(err);
-        alert("Failed to add course.");
+        alert(getErrorMessage(err, "Failed to add course."));
       });
   };
 
   const updateCourse = () => {
+    if (!canManageCourses) {
+      alert("Only admins can update courses.");
+      return;
+    }
+
     courseService
       .update(editId, formData)
       .then(() => {
@@ -88,11 +105,16 @@ const Courses = () => {
       })
       .catch((err) => {
         console.log(err);
-        alert("Failed to update course.");
+        alert(getErrorMessage(err, "Failed to update course."));
       });
   };
 
   const deleteCourse = (id) => {
+    if (!canManageCourses) {
+      alert("Only admins can delete courses.");
+      return;
+    }
+
     if (!window.confirm("Do you want to delete this course?")) return;
 
     courseService
@@ -104,7 +126,7 @@ const Courses = () => {
       })
       .catch((err) => {
         console.log(err);
-        alert("Failed to delete course.");
+        alert(getErrorMessage(err, "Failed to delete course."));
       });
   };
 
@@ -167,7 +189,8 @@ const Courses = () => {
           </div>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-3">
+        <div className={`grid gap-8 ${canManageCourses ? "lg:grid-cols-3" : ""}`}>
+          {canManageCourses && (
           <div className="rounded-[1.75rem] border border-blue-100 bg-white p-6 shadow-lg shadow-blue-100/40">
             <h2 className="mb-2 text-xl font-semibold text-slate-900">
               {editId ? "Edit Course" : "Add Course"}
@@ -280,8 +303,9 @@ const Courses = () => {
               )}
             </div>
           </div>
+          )}
 
-          <div className="overflow-hidden rounded-[1.75rem] border border-blue-100 bg-white p-6 shadow-lg shadow-blue-100/40 lg:col-span-2">
+          <div className={`overflow-hidden rounded-[1.75rem] border border-blue-100 bg-white p-6 shadow-lg shadow-blue-100/40 ${canManageCourses ? "lg:col-span-2" : ""}`}>
             <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="text-xl font-semibold text-slate-900">
@@ -342,26 +366,30 @@ const Courses = () => {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
-                          <Button
-                            onClick={() => editCourse(course)}
-                            className="rounded-xl border-slate-200 px-3 py-2 hover:border-blue-200 hover:bg-blue-50"
-                            variant="secondary"
-                          >
-                            Edit
-                          </Button>
+                          {canManageCourses && (
+                            <Button
+                              onClick={() => editCourse(course)}
+                              className="rounded-xl border-slate-200 px-3 py-2 hover:border-blue-200 hover:bg-blue-50"
+                              variant="secondary"
+                            >
+                              Edit
+                            </Button>
+                          )}
                           <Link
                             to={`/materials?course_id=${course.id}`}
                             className="rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50"
                           >
                             Materials
                           </Link>
-                          <Button
-                            onClick={() => deleteCourse(course.id)}
-                            className="rounded-xl px-3 py-2"
-                            variant="danger"
-                          >
-                            Delete
-                          </Button>
+                          {canManageCourses && (
+                            <Button
+                              onClick={() => deleteCourse(course.id)}
+                              className="rounded-xl px-3 py-2"
+                              variant="danger"
+                            >
+                              Delete
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>

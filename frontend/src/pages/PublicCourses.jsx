@@ -1,16 +1,19 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button";
+import AuthContext from "../context/AuthContext";
 import { courseService } from "../services/courseService";
 import { enrollmentService } from "../services/enrollmentService";
 import { getAuthUser } from "../utils/authStorage";
 
 const PublicCourses = () => {
   const [courses, setCourses] = useState([]);
+  const [myEnrollments, setMyEnrollments] = useState([]);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [enrollingCourseId, setEnrollingCourseId] = useState(null);
   const navigate = useNavigate();
+  const { logout } = useContext(AuthContext);
   const authUser = getAuthUser();
   const userInitial = authUser?.username?.charAt(0)?.toUpperCase() || "U";
 
@@ -21,8 +24,21 @@ const PublicCourses = () => {
       .catch(() => setError("Courses could not be loaded."));
   }
 
+  function fetchMyEnrollments() {
+    if (authUser?.role !== "student") {
+      setMyEnrollments([]);
+      return;
+    }
+
+    enrollmentService
+      .getMine()
+      .then((res) => setMyEnrollments(res.data))
+      .catch(() => setMyEnrollments([]));
+  }
+
   useEffect(() => {
     fetchCourses();
+    fetchMyEnrollments();
   }, []);
 
   const handleEnroll = (courseId) => {
@@ -44,7 +60,11 @@ const PublicCourses = () => {
     enrollmentService
       .create(courseId)
       .then((res) => {
-        setMessage(res.data.message || "Enrollment created successfully.");
+        setMessage(
+          `${res.data.message || "Enrollment created successfully."} Continue to payment from My Enrollments.`
+        );
+        fetchMyEnrollments();
+        navigate("/my-enrollments");
       })
       .catch((err) => {
         setError(err.response?.data?.message || "Enrollment failed.");
@@ -52,6 +72,16 @@ const PublicCourses = () => {
       .finally(() => {
         setEnrollingCourseId(null);
       });
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch {
+      // Local logout still clears client state if the server is unreachable.
+    }
+
+    navigate("/login");
   };
 
   return (
@@ -100,6 +130,13 @@ const PublicCourses = () => {
                     <p className="capitalize text-slate-500">{authUser.role}</p>
                   </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Logout
+                </button>
               </>
             ) : (
               <>
@@ -150,55 +187,88 @@ const PublicCourses = () => {
 
         <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {courses.length > 0 ? (
-            courses.map((course) => (
-              <article
-                key={course.id}
-                className="flex min-h-64 flex-col justify-between rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-4">
-                    <h2 className="text-xl font-semibold text-slate-950">
-                      {course.emertimi}
-                    </h2>
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                      {course.kredite} credits
-                    </span>
+            courses.map((course) => {
+              const enrollment = myEnrollments.find(
+                (item) => Number(item.course_id) === Number(course.id)
+              );
+              const isEnrolled = Boolean(enrollment);
+              const isPaid = enrollment?.payment_status === "paid";
+
+              return (
+                <article
+                  key={course.id}
+                  className="flex min-h-64 flex-col justify-between rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-4">
+                      <h2 className="text-xl font-semibold text-slate-950">
+                        {course.emertimi}
+                      </h2>
+                      <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                        {course.kredite} credits
+                      </span>
+                    </div>
+
+                    {isEnrolled && (
+                      <span
+                        className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                          isPaid
+                            ? "bg-green-50 text-green-700"
+                            : "bg-yellow-50 text-yellow-700"
+                        }`}
+                      >
+                        {isPaid ? "Enrolled and paid" : "Enrolled - payment pending"}
+                      </span>
+                    )}
+
+                    <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
+                      {course.pershkrimi || "No description available."}
+                    </p>
+
+                    <dl className="mt-5 grid gap-3 text-sm text-slate-700">
+                      <div>
+                        <dt className="font-semibold text-slate-950">Professor</dt>
+                        <dd>{course.professor_name || "Not assigned"}</dd>
+                      </div>
+                      <div>
+                        <dt className="font-semibold text-slate-950">Semester</dt>
+                        <dd>{course.semester_name || "Not assigned"}</dd>
+                      </div>
+                      <div>
+                        <dt className="font-semibold text-slate-950">Capacity</dt>
+                        <dd>{course.kapaciteti || 0} seats</dd>
+                      </div>
+                      <div>
+                        <dt className="font-semibold text-slate-950">Price</dt>
+                        <dd>{Number(course.cmimi || 0).toFixed(2)} EUR</dd>
+                      </div>
+                    </dl>
                   </div>
 
-                  <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
-                    {course.pershkrimi || "No description available."}
-                  </p>
-
-                  <dl className="mt-5 grid gap-3 text-sm text-slate-700">
-                    <div>
-                      <dt className="font-semibold text-slate-950">Professor</dt>
-                      <dd>{course.professor_name || "Not assigned"}</dd>
-                    </div>
-                    <div>
-                      <dt className="font-semibold text-slate-950">Semester</dt>
-                      <dd>{course.semester_name || "Not assigned"}</dd>
-                    </div>
-                    <div>
-                      <dt className="font-semibold text-slate-950">Capacity</dt>
-                      <dd>{course.kapaciteti || 0} seats</dd>
-                    </div>
-                    <div>
-                      <dt className="font-semibold text-slate-950">Price</dt>
-                      <dd>{Number(course.cmimi || 0).toFixed(2)} EUR</dd>
-                    </div>
-                  </dl>
-                </div>
-
-                <Button
-                  onClick={() => handleEnroll(course.id)}
-                  className="mt-6"
-                  disabled={enrollingCourseId === course.id}
-                  fullWidth
-                >
-                  {enrollingCourseId === course.id ? "Enrolling..." : "Enroll"}
-                </Button>
-              </article>
-            ))
+                  {isEnrolled ? (
+                    <Link
+                      to="/my-enrollments"
+                      className={`mt-6 inline-flex w-full justify-center rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                        isPaid
+                          ? "bg-green-600 text-white hover:bg-green-700"
+                          : "bg-blue-600 text-white hover:bg-blue-700"
+                      }`}
+                    >
+                      {isPaid ? "View enrollment" : "Pay now"}
+                    </Link>
+                  ) : (
+                    <Button
+                      onClick={() => handleEnroll(course.id)}
+                      className="mt-6"
+                      disabled={enrollingCourseId === course.id}
+                      fullWidth
+                    >
+                      {enrollingCourseId === course.id ? "Enrolling..." : "Enroll"}
+                    </Button>
+                  )}
+                </article>
+              );
+            })
           ) : (
             <div className="rounded-xl border border-slate-200 bg-white p-8 text-slate-600 md:col-span-2 xl:col-span-3">
               No courses are available yet.
