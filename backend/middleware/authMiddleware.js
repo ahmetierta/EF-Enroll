@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const AppDataSource = require("../data-source");
 const { JWT_SECRET } = require("../config/auth");
 
 function getCookieValue(req, name) {
@@ -16,7 +17,42 @@ function getCookieValue(req, name) {
   return cookie ? decodeURIComponent(cookie.split("=")[1]) : null;
 }
 
-function authenticateToken(req, res, next) {
+function verifyAccessToken(token) {
+  return new Promise((resolve, reject) => {
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      resolve(user);
+    });
+  });
+}
+
+async function getApprovedUser(decodedUser) {
+  if (!decodedUser || decodedUser.token_type !== "access") {
+    return null;
+  }
+
+  const user = await AppDataSource.getRepository("User").findOneBy({
+    id: Number(decodedUser.id),
+  });
+
+  if (!user || user.status !== "approved") {
+    return null;
+  }
+
+  return {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+    status: user.status,
+  };
+}
+
+async function authenticateToken(req, res, next) {
   const authHeader = req.headers.authorization;
   const bearerToken = authHeader && authHeader.split(" ")[1];
   const token = getCookieValue(req, "token") || bearerToken;
@@ -25,26 +61,36 @@ function authenticateToken(req, res, next) {
     return res.status(401).json({ message: "Token is missing" });
   }
 
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
+  try {
+    const decodedUser = await verifyAccessToken(token);
+
+    if (decodedUser.token_type !== "access") {
+      return res.status(401).json({ message: "Invalid token type" });
+    }
+
+    const currentUser = await getApprovedUser(decodedUser);
+
+    if (!currentUser) {
       return res.status(401).json({
+        code: "ACCOUNT_NOT_APPROVED",
+        message: "Account is not active or no longer approved",
+      });
+    }
+
+    req.user = currentUser;
+    req.tokenPayload = decodedUser;
+    next();
+  } catch (err) {
+    return res.status(401).json({
         message:
           err.name === "TokenExpiredError"
             ? "Access token expired"
             : "Token is not valid",
-      });
-    }
-
-    if (user.token_type !== "access") {
-      return res.status(401).json({ message: "Invalid token type" });
-    }
-
-    req.user = user;
-    next();
-  });
+    });
+  }
 }
 
-function optionalAuth(req, res, next) {
+async function optionalAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   const bearerToken = authHeader && authHeader.split(" ")[1];
   const token = getCookieValue(req, "token") || bearerToken;
@@ -53,13 +99,19 @@ function optionalAuth(req, res, next) {
     return next();
   }
 
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (!err && user.token_type === "access") {
-      req.user = user;
-    }
+  try {
+    const decodedUser = await verifyAccessToken(token);
+    const currentUser = await getApprovedUser(decodedUser);
 
-    next();
-  });
+    if (currentUser) {
+      req.user = currentUser;
+      req.tokenPayload = decodedUser;
+    }
+  } catch {
+    // Optional auth should not block public routes when a token is missing/expired.
+  }
+
+  next();
 }
 
 function requireRole(...allowedRoles) {

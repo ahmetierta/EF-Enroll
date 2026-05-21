@@ -11,6 +11,8 @@ EF Enroll is a course enrollment platform with three roles: admin, professor, an
 - Waiting list management for full courses
 - Course materials organized by type, module, week, and requirement
 - JWT access tokens plus refresh token rotation and logout revocation
+- Live token validation against the current database user status
+- Session management with logout-all and revoke-other-sessions support
 - SQL-first database setup through `backend/database.sql`
 - No migration files required
 - Admin analytics with revenue, unpaid enrollments, top courses, and near-capacity courses
@@ -101,6 +103,7 @@ npm run start
 npm run check
 npm run seed:admin
 npm run seed:test
+npm run tokens:cleanup
 ```
 
 Frontend:
@@ -115,6 +118,8 @@ npm run build
 
 The project uses access tokens for protected requests and refresh tokens for session continuity. Refresh tokens are hashed in the database, rotated on refresh, and revoked on logout. This gives the project a more realistic authentication flow than storing one long-lived token in the browser.
 
+Protected routes also re-check the user in the database. If a user becomes pending, rejected, or deleted after login, old access tokens stop working.
+
 Database changes are managed with the normal SQL file `backend/database.sql`, so the project can be restored without migration scripts.
 
 ## Demo Data For Testing
@@ -127,6 +132,13 @@ npm run seed:test
 ```
 
 This adds extra courses, course materials, paid enrollments, unpaid enrollments, and waiting-list entries so the system can be tested with real data.
+
+To clean expired or old revoked refresh tokens:
+
+```bash
+cd backend
+npm run tokens:cleanup
+```
 
 ## API Documentation
 

@@ -6,9 +6,10 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "check": "node --check server.js && node --check routes/auth.js && node --check routes/payments.js && node --check routes/admin.js && node --check services/adminAnalyticsService.js && node --check scripts/createAdmin.js && node --check scripts/seedTestEnrollments.js",
+    "check": "node --check server.js && node --check routes/auth.js && node --check routes/payments.js && node --check routes/admin.js && node --check middleware/authMiddleware.js && node --check services/adminAnalyticsService.js && node --check scripts/createAdmin.js && node --check scripts/seedTestEnrollments.js && node --check scripts/cleanupExpiredTokens.js",
     "seed:admin": "node scripts/createAdmin.js",
     "seed:test": "node scripts/seedTestEnrollments.js",
+    "tokens:cleanup": "node scripts/cleanupExpiredTokens.js",
     "test": "npm run check"
   },
   "keywords": [],

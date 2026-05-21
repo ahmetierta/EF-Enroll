@@ -64,6 +64,11 @@ function createToken(user) {
   );
 }
 
+function clearAuthCookies(res) {
+  res.cookie("token", "", { ...accessCookieOptions, maxAge: 1 });
+  res.cookie("refreshToken", "", { ...refreshCookieOptions, maxAge: 1 });
+}
+
 function createRefreshToken(user, tokenId) {
   return jwt.sign({ id: user.id, token_type: "refresh" }, JWT_REFRESH_SECRET, {
     expiresIn: JWT_REFRESH_EXPIRES_IN,
@@ -157,6 +162,21 @@ async function revokeRefreshToken(refreshToken) {
   return refreshTokenRepository.save(tokenRecord);
 }
 
+async function revokeUserRefreshTokens(userId, exceptTokenHash = null) {
+  const query = AppDataSource.getRepository("RefreshToken")
+    .createQueryBuilder()
+    .update("RefreshToken")
+    .set({ revoked_at: new Date() })
+    .where("user_id = :userId", { userId })
+    .andWhere("revoked_at IS NULL");
+
+  if (exceptTokenHash) {
+    query.andWhere("token_hash != :exceptTokenHash", { exceptTokenHash });
+  }
+
+  return query.execute();
+}
+
 async function createStudentNumber(studentRepository) {
   const year = new Date().getFullYear();
   const count = await studentRepository.count();
@@ -238,17 +258,13 @@ router.post("/refresh", async (req, res) => {
       tokenRecord.user?.id !== decoded.id ||
       new Date(tokenRecord.expires_at).getTime() <= Date.now()
     ) {
+      clearAuthCookies(res);
       return res.status(401).json({ message: "Refresh token is not recognized" });
     }
 
     if (tokenRecord.revoked_at) {
-      await refreshTokenRepository
-        .createQueryBuilder()
-        .update("RefreshToken")
-        .set({ revoked_at: new Date() })
-        .where("user_id = :userId", { userId: decoded.id })
-        .andWhere("revoked_at IS NULL")
-        .execute();
+      await revokeUserRefreshTokens(decoded.id);
+      clearAuthCookies(res);
 
       return res.status(401).json({
         message: "Refresh token was already used. Please log in again.",
@@ -258,10 +274,15 @@ router.post("/refresh", async (req, res) => {
     const user = await userRepository.findOneBy({ id: decoded.id });
 
     if (!user) {
+      clearAuthCookies(res);
       return res.status(401).json({ message: "User not found" });
     }
 
     if (user.status !== "approved") {
+      tokenRecord.revoked_at = new Date();
+      await refreshTokenRepository.save(tokenRecord);
+      clearAuthCookies(res);
+
       return res.status(403).json({
         message: "Your account is waiting for admin approval",
         status: user.status,
@@ -275,7 +296,13 @@ router.post("/refresh", async (req, res) => {
       user: buildUserResponse(user),
     });
   } catch (err) {
-    res.status(401).json({ message: "Invalid refresh token" });
+    clearAuthCookies(res);
+    res.status(401).json({
+      message:
+        err.name === "TokenExpiredError"
+          ? "Refresh token expired"
+          : "Invalid refresh token",
+    });
   }
 });
 
@@ -364,8 +391,7 @@ router.post("/reset-password", async (req, res) => {
       .andWhere("revoked_at IS NULL")
       .execute();
 
-    res.cookie("token", "", { ...accessCookieOptions, maxAge: 1 });
-    res.cookie("refreshToken", "", { ...refreshCookieOptions, maxAge: 1 });
+    clearAuthCookies(res);
 
     res.json({ message: "Password reset successfully. You can log in now." });
   } catch (err) {
@@ -513,7 +539,12 @@ router.post("/register/professor", async (req, res) => {
 });
 
 router.get("/me", authenticateToken, (req, res) => {
-  res.json({ user: req.user });
+  res.json({
+    user: req.user,
+    access_token_expires_at: req.tokenPayload?.exp
+      ? new Date(req.tokenPayload.exp * 1000).toISOString()
+      : null,
+  });
 });
 
 router.get("/sessions", authenticateToken, async (req, res) => {
@@ -535,8 +566,13 @@ router.get("/sessions", authenticateToken, async (req, res) => {
         id: session.id,
         created_at: session.created_at,
         expires_at: session.expires_at,
+        expires_in_seconds: Math.max(
+          Math.floor((new Date(session.expires_at).getTime() - Date.now()) / 1000),
+          0
+        ),
         user_agent: session.user_agent,
         ip_address: session.ip_address,
+        status: "active",
         current: session.token_hash === currentRefreshTokenHash,
       }))
     );
@@ -545,8 +581,37 @@ router.get("/sessions", authenticateToken, async (req, res) => {
   }
 });
 
+router.delete("/sessions", authenticateToken, async (req, res) => {
+  try {
+    const currentRefreshToken = getCookieValue(req, "refreshToken");
+    const currentRefreshTokenHash = currentRefreshToken
+      ? hashToken(currentRefreshToken)
+      : null;
+
+    if (!currentRefreshTokenHash) {
+      return res.status(400).json({ message: "Current session is missing" });
+    }
+
+    const result = await revokeUserRefreshTokens(
+      req.user.id,
+      currentRefreshTokenHash
+    );
+
+    res.json({
+      message: "Other sessions revoked successfully",
+      revoked_count: result.affected || 0,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Sessions could not be revoked" });
+  }
+});
+
 router.delete("/sessions/:id", authenticateToken, async (req, res) => {
   try {
+    const currentRefreshToken = getCookieValue(req, "refreshToken");
+    const currentRefreshTokenHash = currentRefreshToken
+      ? hashToken(currentRefreshToken)
+      : null;
     const refreshTokenRepository = AppDataSource.getRepository("RefreshToken");
     const session = await refreshTokenRepository
       .createQueryBuilder("refreshToken")
@@ -561,9 +626,30 @@ router.delete("/sessions/:id", authenticateToken, async (req, res) => {
     session.revoked_at = new Date();
     await refreshTokenRepository.save(session);
 
-    res.json({ message: "Session revoked successfully" });
+    if (session.token_hash === currentRefreshTokenHash) {
+      clearAuthCookies(res);
+    }
+
+    res.json({
+      message: "Session revoked successfully",
+      current_session_revoked: session.token_hash === currentRefreshTokenHash,
+    });
   } catch (err) {
     res.status(500).json({ message: "Session could not be revoked" });
+  }
+});
+
+router.post("/logout-all", authenticateToken, async (req, res) => {
+  try {
+    const result = await revokeUserRefreshTokens(req.user.id);
+    clearAuthCookies(res);
+
+    res.json({
+      message: "Logged out from all sessions successfully",
+      revoked_count: result.affected || 0,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Sessions could not be revoked" });
   }
 });
 
@@ -576,8 +662,7 @@ router.post("/logout", async (req, res) => {
     // Logout should still clear local cookies even if revocation fails.
   }
 
-  res.cookie("token", "", { ...accessCookieOptions, maxAge: 1 });
-  res.cookie("refreshToken", "", { ...refreshCookieOptions, maxAge: 1 });
+  clearAuthCookies(res);
 
   res.json({ message: "Logged out successfully" });
 });

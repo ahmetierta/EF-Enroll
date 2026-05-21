@@ -69,6 +69,34 @@ Refreshes the access token using a refresh token cookie.
 
 Revokes the refresh token and clears cookies.
 
+### POST `/auth/logout-all`
+
+Revokes all active refresh-token sessions for the logged-in user and clears cookies.
+
+### GET `/auth/me`
+
+Returns the current approved user and access token expiration time.
+
+### GET `/auth/sessions`
+
+Returns active refresh-token sessions for the current user.
+
+### DELETE `/auth/sessions`
+
+Revokes all other sessions except the current one.
+
+### DELETE `/auth/sessions/:id`
+
+Revokes a specific session. If the current session is revoked, cookies are cleared.
+
+Token rules:
+
+- Access tokens expire quickly and are used only for protected requests.
+- Refresh tokens are stored as SHA-256 hashes in the database.
+- Refresh tokens rotate on every `/auth/refresh`.
+- Reuse of an already revoked refresh token revokes all user sessions.
+- Protected routes re-check the current user in the database, so rejected or pending users cannot keep using old access tokens.
+
 ## Admin
 
 ### GET `/admin/dashboard-summary`
@@ -255,3 +283,14 @@ This creates:
 - unpaid enrollments
 - waiting list entries
 - a small-capacity testing course
+
+## Token Cleanup
+
+Run:
+
+```bash
+cd backend
+npm run tokens:cleanup
+```
+
+This removes expired refresh tokens and revoked refresh tokens older than 30 days.
