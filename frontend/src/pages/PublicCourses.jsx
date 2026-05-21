@@ -8,7 +8,11 @@ import { courseService } from "../services/courseService";
 import { enrollmentService } from "../services/enrollmentService";
 import { waitingListService } from "../services/waitingListService";
 import { getAuthUser } from "../utils/authStorage";
-import { getCourseImage } from "../utils/courseVisuals";
+import {
+  formatCoursePrice,
+  getCourseImage,
+  getCourseScheduleLabel,
+} from "../utils/courseVisuals";
 
 const initialFilters = {
   search: "",
@@ -38,26 +42,6 @@ function calculateOffer(course, durationMonths, isFirstTimeStudent) {
     discountPercent,
     finalAmount: Math.max(baseAmount - discountAmount, 0),
   };
-}
-
-function formatSchedule(schedule) {
-  const start = String(schedule.ora_fillimit || "").slice(0, 5);
-  const end = String(schedule.ora_perfundimit || "").slice(0, 5);
-  const time = start && end ? `${start}-${end}` : "Time not set";
-
-  return [schedule.dita, time, schedule.salla].filter(Boolean).join(", ");
-}
-
-function getScheduleLabel(course) {
-  if (course.schedule_summary) {
-    return course.schedule_summary;
-  }
-
-  if (course.schedules?.length) {
-    return course.schedules.map(formatSchedule).join("; ");
-  }
-
-  return "No schedule set";
 }
 
 const PublicCourses = () => {
@@ -251,17 +235,14 @@ const PublicCourses = () => {
     const capacity = Number(course.kapaciteti || 0);
     return capacity === 0 || Number(course.available_seats || 0) > 0;
   }).length;
-  const activeFilterLabels = [
-    filters.search && `Search: ${filters.search}`,
-    filters.semester && `Semester: ${filters.semester}`,
-    filters.professor && `Professor: ${filters.professor}`,
-    filters.credits && `${filters.credits} credits`,
-    filters.price && (filters.price === "free" ? "Free courses" : "Paid courses"),
-    authRole === "student" &&
-      filters.status !== "all" &&
-      `Status: ${filters.status}`,
-  ].filter(Boolean);
-  const hasActiveFilters = activeFilterLabels.length > 0;
+  const hasActiveFilters = [
+    filters.search,
+    filters.semester,
+    filters.professor,
+    filters.credits,
+    filters.price,
+    authRole === "student" && filters.status !== "all",
+  ].some(Boolean);
 
   const handleFilterChange = (e) => {
     setFilters({
@@ -351,468 +332,491 @@ const PublicCourses = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f2f3f5] text-slate-900">
-      <header className="border-b border-slate-300 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 lg:px-8">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <Link to="/" className="text-xl font-bold text-slate-950">
-              EF Enroll
-            </Link>
+    <div className="min-h-screen bg-[#eef2f7] text-slate-900">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 lg:px-8">
+          <Link to="/" className="text-xl font-bold text-slate-950">
+            EF Enroll
+          </Link>
 
-            <nav className="flex flex-wrap items-center gap-2 text-sm">
+          <nav className="flex flex-wrap items-center gap-2 text-sm">
+            <Link
+              to="/"
+              className="rounded border border-slate-300 bg-white px-3 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Home
+            </Link>
+            <Link
+              to="/catalog"
+              className="rounded border border-blue-200 bg-blue-50 px-3 py-2 font-semibold text-blue-700"
+            >
+              Catalog
+            </Link>
+            {authUser?.role === "student" && (
               <Link
-                to="/"
+                to="/my-enrollments"
                 className="rounded border border-slate-300 bg-white px-3 py-2 font-semibold text-slate-700 hover:bg-slate-50"
               >
-                Home
+                My courses
               </Link>
+            )}
+            {authUser && authUser.role !== "student" && (
               <Link
-                to="/catalog"
-                className="rounded border border-slate-300 bg-slate-100 px-3 py-2 font-semibold text-slate-800"
+                to="/courses"
+                className="rounded border border-slate-300 bg-white px-3 py-2 font-semibold text-slate-700 hover:bg-slate-50"
               >
-                Catalog
+                Dashboard
               </Link>
-              {authUser?.role === "student" && (
-                <Link
-                  to="/my-enrollments"
-                  className="rounded border border-slate-300 bg-white px-3 py-2 font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  My courses
-                </Link>
-              )}
-              {authUser && authUser.role !== "student" && (
-                <Link
-                  to="/courses"
-                  className="rounded border border-slate-300 bg-white px-3 py-2 font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  Dashboard
-                </Link>
-              )}
-            </nav>
+            )}
+          </nav>
 
-            <div className="flex flex-wrap items-center gap-2">
-              {authUser ? (
-                <>
-                  <div className="flex items-center gap-2 rounded border border-slate-300 bg-slate-50 px-2 py-1">
-                    <div className="flex h-8 w-8 items-center justify-center rounded bg-blue-700 text-sm font-bold text-white">
-                      {userInitial}
-                    </div>
-                    <div className="text-xs leading-tight">
-                      <p className="font-semibold text-slate-900">
-                        {authUser.username}
-                      </p>
-                      <p className="capitalize text-slate-500">{authUser.role}</p>
-                    </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {authUser ? (
+              <>
+                <div className="flex items-center gap-2 rounded border border-slate-300 bg-slate-50 px-2 py-1">
+                  <div className="flex h-8 w-8 items-center justify-center rounded bg-blue-700 text-sm font-bold text-white">
+                    {userInitial}
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link
-                    to="/login"
-                    className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="rounded bg-blue-700 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-800"
-                  >
-                    Sign up
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-            <Link to="/" className="font-semibold text-slate-700 hover:text-blue-700">
-              Home
-            </Link>{" "}
-            / Catalog
+                  <div className="text-xs leading-tight">
+                    <p className="font-semibold text-slate-900">
+                      {authUser.username}
+                    </p>
+                    <p className="capitalize text-slate-500">{authUser.role}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="rounded bg-blue-700 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-800"
+                >
+                  Sign up
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <section className="mb-5 border border-slate-300 bg-white p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
-            Course enrollment platform
-          </p>
-          <h1 className="mt-2 text-3xl font-bold text-slate-950">
-            Catalog
-          </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            Browse available courses, filter by semester, professor, credits, or
-            price, and continue directly to enrollment from your account.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-x-8 gap-y-3 border-t border-slate-200 pt-4 text-sm">
-            <div>
-              <span className="block font-bold text-slate-950">{courses.length}</span>
-              <span className="text-slate-500">Courses</span>
+      <main>
+        <section
+          className="relative overflow-hidden bg-slate-950 text-white"
+          style={{
+            backgroundImage: `linear-gradient(90deg, rgba(15,23,42,0.92), rgba(15,23,42,0.74)), url(${getCourseImage(
+              { id: 4 },
+              4
+            )})`,
+            backgroundPosition: "center",
+            backgroundSize: "cover",
+          }}
+        >
+          <div className="mx-auto max-w-7xl px-4 py-10 lg:px-8">
+            <div className="max-w-3xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200">
+                Course catalog
+              </p>
+              <h1 className="mt-3 text-4xl font-bold text-white lg:text-5xl">
+                Find the course that fits your schedule
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-100 lg:text-base">
+                Compare courses by professor, price, schedule and available
+                seats, then choose the duration before enrollment.
+              </p>
             </div>
-            <div>
-              <span className="block font-bold text-slate-950">{semesters.length}</span>
-              <span className="text-slate-500">Semesters</span>
+
+            <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {[
+                ["Courses", courses.length],
+                ["Available", availableCount],
+                ["Professors", professors.length],
+                ["My courses", enrolledCount],
+                ["Waiting list", waitingCount],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  className="border border-white/20 bg-white/10 px-4 py-3 backdrop-blur"
+                >
+                  <p className="text-2xl font-bold text-white">{value}</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-200">
+                    {label}
+                  </p>
+                </div>
+              ))}
             </div>
-            <div>
-              <span className="block font-bold text-slate-950">{professors.length}</span>
-              <span className="text-slate-500">Professors</span>
+          </div>
+        </section>
+
+        <section className="border-b border-slate-200 bg-white">
+          <div className="mx-auto max-w-7xl px-4 py-4 lg:px-8">
+            <div className="grid gap-3 lg:grid-cols-[minmax(220px,1.3fr)_repeat(4,minmax(140px,1fr))_160px]">
+              <TextInput
+                name="search"
+                placeholder="Search courses, professors, schedules"
+                value={filters.search}
+                onChange={handleFilterChange}
+                className="rounded border-slate-300 bg-white"
+              />
+
+              <SelectInput
+                name="professor"
+                value={filters.professor}
+                onChange={handleFilterChange}
+                className="rounded border-slate-300 bg-white"
+              >
+                <option value="">All professors</option>
+                {professors.map((professor) => (
+                  <option key={professor} value={professor}>
+                    {professor}
+                  </option>
+                ))}
+              </SelectInput>
+
+              <SelectInput
+                name="credits"
+                value={filters.credits}
+                onChange={handleFilterChange}
+                className="rounded border-slate-300 bg-white"
+              >
+                <option value="">Any credits</option>
+                {creditOptions.map((credits) => (
+                  <option key={credits} value={credits}>
+                    {credits} credits
+                  </option>
+                ))}
+              </SelectInput>
+
+              <SelectInput
+                name="price"
+                value={filters.price}
+                onChange={handleFilterChange}
+                className="rounded border-slate-300 bg-white"
+              >
+                <option value="">Any price</option>
+                <option value="free">Free</option>
+                <option value="paid">Paid</option>
+              </SelectInput>
+
+              <SelectInput
+                name="sortBy"
+                value={filters.sortBy}
+                onChange={handleFilterChange}
+                className="rounded border-slate-300 bg-white"
+              >
+                <option value="name">Name</option>
+                <option value="credits">Credits</option>
+                <option value="price-low">Price low</option>
+                <option value="price-high">Price high</option>
+              </SelectInput>
+
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="rounded border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-white"
+              >
+                Reset
+              </button>
             </div>
+
             {authRole === "student" && (
-              <div>
-                <span className="block font-bold text-slate-950">
-                  {enrolledCount}
-                </span>
-                <span className="text-slate-500">My courses</span>
-              </div>
-            )}
-            {authRole === "student" && (
-              <div>
-                <span className="block font-bold text-slate-950">
-                  {waitingCount}
-                </span>
-                <span className="text-slate-500">Waiting list</span>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {["all", "available", "enrolled", "waitlisted", "paid"].map(
+                  (status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() =>
+                        setFilters((currentFilters) => ({
+                          ...currentFilters,
+                          status,
+                        }))
+                      }
+                      className={`rounded border px-3 py-2 text-xs font-semibold capitalize ${
+                        filters.status === status
+                          ? "border-blue-200 bg-blue-50 text-blue-700"
+                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      {status === "paid" ? "paid courses" : status}
+                    </button>
+                  )
+                )}
               </div>
             )}
           </div>
         </section>
 
-        {error && (
-          <p className="mb-5 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </p>
-        )}
-
-        {message && (
-          <p className="mb-5 border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-            {message}
-          </p>
-        )}
-
-        <div className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)_260px]">
-          <aside className="space-y-5">
-            <section className="border border-slate-300 bg-white">
-              <h2 className="border-b border-slate-200 bg-slate-100 px-4 py-3 text-sm font-bold text-slate-900">
-                Course categories
-              </h2>
-              <div className="space-y-3 p-4">
+        <div className="mx-auto grid max-w-7xl gap-5 px-4 py-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:px-8">
+          <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+            <section className="border border-slate-200 bg-white">
+              <div className="border-b border-slate-200 px-4 py-3">
+                <h2 className="text-sm font-bold text-slate-950">Semesters</h2>
+              </div>
+              <div className="space-y-2 p-3">
                 <button
                   type="button"
                   onClick={() => selectSemester("")}
-                  className={`block w-full rounded border px-3 py-2 text-left text-sm font-semibold ${
+                  className={`flex w-full items-center justify-between rounded px-3 py-2 text-left text-sm font-semibold ${
                     filters.semester
-                      ? "border-slate-200 bg-white text-slate-700"
-                      : "border-blue-200 bg-blue-50 text-blue-700"
+                      ? "bg-white text-slate-700 hover:bg-slate-50"
+                      : "bg-blue-50 text-blue-700"
                   }`}
                 >
-                  All courses ({courses.length})
+                  <span>All courses</span>
+                  <span>{courses.length}</span>
                 </button>
                 {semesters.map((semester) => (
                   <button
                     key={semester}
                     type="button"
                     onClick={() => selectSemester(semester)}
-                    className={`block w-full rounded border px-3 py-2 text-left text-sm font-semibold ${
+                    className={`flex w-full items-center justify-between rounded px-3 py-2 text-left text-sm font-semibold ${
                       filters.semester === semester
-                        ? "border-blue-200 bg-blue-50 text-blue-700"
-                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                        ? "bg-blue-50 text-blue-700"
+                        : "bg-white text-slate-700 hover:bg-slate-50"
                     }`}
                   >
-                    {semester} ({categoryCounts[semester] || 0})
+                    <span>{semester}</span>
+                    <span>{categoryCounts[semester] || 0}</span>
                   </button>
                 ))}
-                {!semesters.length && (
-                  <p className="text-sm text-slate-500">
-                    No course categories yet.
-                  </p>
-                )}
               </div>
             </section>
 
-            <section className="border border-slate-300 bg-white">
-              <h2 className="border-b border-slate-200 bg-slate-100 px-4 py-3 text-sm font-bold text-slate-900">
-                Course filters
-              </h2>
-              <div className="space-y-3 p-4">
-                <TextInput
-                  name="search"
-                  placeholder="Search courses"
-                  value={filters.search}
-                  onChange={handleFilterChange}
-                  className="rounded border-slate-300 bg-white"
-                />
+            {isFirstTimeStudent && (
+              <section className="border border-emerald-200 bg-emerald-50 p-4">
+                <p className="text-sm font-bold text-emerald-800">
+                  First-time offer
+                </p>
+                <p className="mt-2 text-sm leading-6 text-emerald-700">
+                  Your first enrollment gets {firstTimeDiscountPercent}% off.
+                </p>
+              </section>
+            )}
 
-                <SelectInput
-                  name="professor"
-                  value={filters.professor}
-                  onChange={handleFilterChange}
-                  className="rounded border-slate-300 bg-white"
-                >
-                  <option value="">All professors</option>
-                  {professors.map((professor) => (
-                    <option key={professor} value={professor}>
-                      {professor}
-                    </option>
-                  ))}
-                </SelectInput>
-
-                <SelectInput
-                  name="credits"
-                  value={filters.credits}
-                  onChange={handleFilterChange}
-                  className="rounded border-slate-300 bg-white"
-                >
-                  <option value="">Any credits</option>
-                  {creditOptions.map((credits) => (
-                    <option key={credits} value={credits}>
-                      {credits} credits
-                    </option>
-                  ))}
-                </SelectInput>
-
-                <SelectInput
-                  name="price"
-                  value={filters.price}
-                  onChange={handleFilterChange}
-                  className="rounded border-slate-300 bg-white"
-                >
-                  <option value="">Any price</option>
-                  <option value="free">Free</option>
-                  <option value="paid">Paid</option>
-                </SelectInput>
-
-                {authRole === "student" && (
-                  <SelectInput
-                    name="status"
-                    value={filters.status}
-                    onChange={handleFilterChange}
-                    className="rounded border-slate-300 bg-white"
-                  >
-                    <option value="all">All statuses</option>
-                    <option value="available">Available</option>
-                    <option value="enrolled">Enrolled</option>
-                    <option value="waitlisted">Waitlisted</option>
-                    <option value="paid">Enrolled and paid</option>
-                  </SelectInput>
-                )}
-
-                <button
-                  type="button"
-                  onClick={resetFilters}
-                  className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  Reset filters
-                </button>
+            <section className="border border-slate-200 bg-white p-4 text-sm">
+              <div className="flex justify-between border-b border-slate-100 pb-2">
+                <span>Showing</span>
+                <strong>{filteredCourses.length}</strong>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 py-2">
+                <span>Paid</span>
+                <strong>{paidCount}</strong>
+              </div>
+              <div className="flex justify-between pt-2">
+                <span>Filters</span>
+                <strong>{hasActiveFilters ? "Active" : "Clear"}</strong>
               </div>
             </section>
           </aside>
 
           <section className="space-y-4">
-            <div className="border border-slate-300 bg-white">
-              <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-100 px-4 py-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">
-                    Available courses
-                  </h2>
-                  <p className="text-sm text-slate-600">
-                    Showing {filteredCourses.length} of {courses.length} courses
-                  </p>
-                </div>
+            {error && (
+              <p className="border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {error}
+              </p>
+            )}
 
-                <SelectInput
-                  name="sortBy"
-                  value={filters.sortBy}
-                  onChange={handleFilterChange}
-                  className="max-w-xs rounded border-slate-300 bg-white"
-                >
-                  <option value="name">Sort by course name</option>
-                  <option value="credits">Sort by credits</option>
-                  <option value="price-low">Price low to high</option>
-                  <option value="price-high">Price high to low</option>
-                </SelectInput>
+            {message && (
+              <p className="border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                {message}
+              </p>
+            )}
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-950">
+                  Available courses
+                </h2>
+                <p className="text-sm text-slate-600">
+                  Showing {filteredCourses.length} of {courses.length} courses
+                </p>
               </div>
-
               {hasActiveFilters && (
-                <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-white px-4 py-3 text-xs">
-                  {activeFilterLabels.map((label) => (
-                    <span
-                      key={label}
-                      className="rounded border border-blue-100 bg-blue-50 px-2 py-1 font-semibold text-blue-700"
-                    >
-                      {label}
-                    </span>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={resetFilters}
-                    className="rounded border border-slate-200 px-2 py-1 font-semibold text-slate-600 hover:bg-slate-50"
-                  >
-                    Clear
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Clear all filters
+                </button>
               )}
+            </div>
 
-              <div className="divide-y divide-slate-200">
-                {filteredCourses.length > 0 ? (
-                  filteredCourses.map((course) => {
-                    const enrollment = enrollmentByCourse[Number(course.id)];
-                    const waitingListItem = waitingListByCourse[Number(course.id)];
-                    const isEnrolled = Boolean(enrollment);
-                    const isWaitlisted = Boolean(waitingListItem);
-                    const isPaid = enrollment?.payment_status === "paid";
-                    const capacity = Number(course.kapaciteti || 0);
-                    const availableSeats = Number(course.available_seats || 0);
-                    const isFull = capacity > 0 && availableSeats <= 0;
-                    const selectedDuration = getSelectedDuration(course.id);
-                    const offer = calculateOffer(
-                      course,
-                      selectedDuration,
-                      isFirstTimeStudent
-                    );
+            <div className="grid gap-5 xl:grid-cols-2">
+              {filteredCourses.length > 0 ? (
+                filteredCourses.map((course, index) => {
+                  const enrollment = enrollmentByCourse[Number(course.id)];
+                  const waitingListItem = waitingListByCourse[Number(course.id)];
+                  const isEnrolled = Boolean(enrollment);
+                  const isWaitlisted = Boolean(waitingListItem);
+                  const isPaid = enrollment?.payment_status === "paid";
+                  const capacity = Number(course.kapaciteti || 0);
+                  const availableSeats = Number(course.available_seats || 0);
+                  const isFull = capacity > 0 && availableSeats <= 0;
+                  const selectedDuration = getSelectedDuration(course.id);
+                  const offer = calculateOffer(
+                    course,
+                    selectedDuration,
+                    isFirstTimeStudent
+                  );
 
-                    return (
-                      <article
-                        key={course.id}
-                        className="grid gap-4 bg-white p-4 hover:bg-slate-50 md:grid-cols-[180px_minmax(0,1fr)_auto]"
-                      >
-                        <Link
-                          to={`/catalog/${course.id}`}
-                          className="block overflow-hidden rounded border border-slate-200 bg-slate-100"
-                        >
-                          <img
-                            src={getCourseImage(course)}
-                            alt=""
-                            className="h-40 w-full object-cover md:h-full"
-                          />
-                        </Link>
+                  return (
+                    <article
+                      key={course.id}
+                      className="overflow-hidden border border-slate-200 bg-white shadow-sm"
+                    >
+                      <Link to={`/catalog/${course.id}`} className="block">
+                        <img
+                          src={getCourseImage(course, index)}
+                          alt=""
+                          className="h-44 w-full object-cover"
+                        />
+                      </Link>
 
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
+                      <div className="space-y-4 p-4">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
                             <Link
                               to={`/catalog/${course.id}`}
-                              className="text-lg font-bold text-blue-800 hover:text-blue-950"
+                              className="text-xl font-bold text-slate-950 hover:text-blue-700"
                             >
                               {course.emertimi}
                             </Link>
-                            <span className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-600">
-                              {course.kredite || 0} credits
-                            </span>
-                            <span className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-600">
-                              {Number(course.cmimi || 0) === 0
-                                ? "Free"
-                                : `${Number(course.cmimi || 0).toFixed(2)} EUR`}
-                            </span>
-                            {isEnrolled && (
-                              <span
-                                className={`rounded px-2 py-1 text-xs font-semibold ${
-                                  isPaid
-                                    ? "bg-green-100 text-green-700"
-                                    : "bg-yellow-100 text-yellow-800"
-                                }`}
-                              >
-                                {isPaid ? "Paid" : "Payment pending"}
-                              </span>
-                            )}
-                            {isWaitlisted && (
-                              <span className="rounded bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-700">
-                                Waiting list #{waitingListItem.pozicioni}
-                              </span>
-                            )}
+                            <p className="mt-1 text-sm text-slate-600">
+                              {getProfessorLabel(course)}
+                            </p>
                           </div>
-
-                          <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">
-                            {course.pershkrimi || "No description available."}
-                          </p>
-
-                          <dl className="mt-4 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
-                            <div>
-                              <dt className="font-semibold text-slate-950">
-                                Professor
-                              </dt>
-                              <dd>{getProfessorLabel(course)}</dd>
-                            </div>
-                            <div>
-                              <dt className="font-semibold text-slate-950">
-                                Semester
-                              </dt>
-                              <dd>{course.semester_name || "Not assigned"}</dd>
-                            </div>
-                            <div>
-                              <dt className="font-semibold text-slate-950">
-                                Credits
-                              </dt>
-                              <dd>{course.kredite || 0}</dd>
-                            </div>
-                            <div>
-                              <dt className="font-semibold text-slate-950">
-                                Capacity
-                              </dt>
-                              <dd>
-                                {availableSeats} of {capacity || 0} seats available
-                              </dd>
-                            </div>
-                            <div>
-                              <dt className="font-semibold text-slate-950">
-                                Waiting list
-                              </dt>
-                              <dd>{course.waiting_count || 0} students</dd>
-                            </div>
-                            <div>
-                              <dt className="font-semibold text-slate-950">
-                                Price
-                              </dt>
-                              <dd>{Number(course.cmimi || 0).toFixed(2)} EUR</dd>
-                            </div>
-                            <div className="sm:col-span-2">
-                              <dt className="font-semibold text-slate-950">
-                                Schedule
-                              </dt>
-                              <dd>{getScheduleLabel(course)}</dd>
-                            </div>
-                          </dl>
+                          <span className="rounded bg-slate-950 px-3 py-1 text-sm font-bold text-white">
+                            {formatCoursePrice(course)}
+                          </span>
                         </div>
 
-                        <div className="flex min-w-44 flex-col justify-center gap-2">
-                          <Link
-                            to={`/catalog/${course.id}`}
-                            className="rounded border border-slate-300 bg-white px-3 py-2 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                          >
-                            View details
-                          </Link>
-                          <Link
-                            to={`/materials?course_id=${course.id}`}
-                            className="rounded border border-slate-300 bg-white px-3 py-2 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                          >
-                            Course materials
-                          </Link>
+                        <p className="line-clamp-2 text-sm leading-6 text-slate-600">
+                          {course.pershkrimi || "No description available."}
+                        </p>
 
-                          {isEnrolled ? (
-                            <Link
-                              to="/my-enrollments"
-                              className={`rounded px-3 py-2 text-center text-sm font-semibold text-white ${
+                        <div className="grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
+                          <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2">
+                            <span className="block text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                              Schedule
+                            </span>
+                            <span className="font-semibold text-slate-900">
+                              {getCourseScheduleLabel(course)}
+                            </span>
+                          </div>
+                          <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2">
+                            <span className="block text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                              Seats
+                            </span>
+                            <span className="font-semibold text-slate-900">
+                              {availableSeats} / {capacity || 0} available
+                            </span>
+                          </div>
+                          <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2">
+                            <span className="block text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                              Credits
+                            </span>
+                            <span className="font-semibold text-slate-900">
+                              {course.kredite || 0} credits
+                            </span>
+                          </div>
+                          <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2">
+                            <span className="block text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                              Semester
+                            </span>
+                            <span className="font-semibold text-slate-900">
+                              {course.semester_name || "Not assigned"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          {isEnrolled && (
+                            <span
+                              className={`rounded px-2 py-1 text-xs font-bold ${
                                 isPaid
-                                  ? "bg-green-700 hover:bg-green-800"
-                                  : "bg-blue-700 hover:bg-blue-800"
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-yellow-100 text-yellow-800"
                               }`}
                             >
-                              {isPaid ? "View enrollment" : "Pay now"}
-                            </Link>
+                              {isPaid ? "Paid" : "Payment pending"}
+                            </span>
+                          )}
+                          {isWaitlisted && (
+                            <span className="rounded bg-orange-100 px-2 py-1 text-xs font-bold text-orange-700">
+                              Waiting list #{waitingListItem.pozicioni}
+                            </span>
+                          )}
+                          {isFull && !isWaitlisted && !isEnrolled && (
+                            <span className="rounded bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">
+                              Full course
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="border-t border-slate-200 pt-4">
+                          {isEnrolled ? (
+                            <div className="grid gap-2 sm:grid-cols-3">
+                              <Link
+                                to="/my-enrollments"
+                                className={`rounded px-3 py-2 text-center text-sm font-semibold text-white ${
+                                  isPaid
+                                    ? "bg-green-700 hover:bg-green-800"
+                                    : "bg-blue-700 hover:bg-blue-800"
+                                }`}
+                              >
+                                {isPaid ? "View enrollment" : "Pay now"}
+                              </Link>
+                              <Link
+                                to={`/catalog/${course.id}`}
+                                className="rounded border border-slate-300 bg-white px-3 py-2 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                              >
+                                Details
+                              </Link>
+                              <Link
+                                to={`/materials?course_id=${course.id}`}
+                                className="rounded border border-slate-300 bg-white px-3 py-2 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                              >
+                                Materials
+                              </Link>
+                            </div>
                           ) : isWaitlisted ? (
-                            <Link
-                              to="/waiting-list"
-                              className="rounded bg-orange-600 px-3 py-2 text-center text-sm font-semibold text-white hover:bg-orange-700"
-                            >
-                              View waiting list
-                            </Link>
+                            <div className="grid gap-2 sm:grid-cols-3">
+                              <Link
+                                to="/waiting-list"
+                                className="rounded bg-orange-600 px-3 py-2 text-center text-sm font-semibold text-white hover:bg-orange-700"
+                              >
+                                Waiting list
+                              </Link>
+                              <Link
+                                to={`/catalog/${course.id}`}
+                                className="rounded border border-slate-300 bg-white px-3 py-2 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                              >
+                                Details
+                              </Link>
+                              <Link
+                                to={`/materials?course_id=${course.id}`}
+                                className="rounded border border-slate-300 bg-white px-3 py-2 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                              >
+                                Materials
+                              </Link>
+                            </div>
                           ) : (
-                            <>
+                            <div className="grid gap-3 lg:grid-cols-[130px_minmax(0,1fr)_140px]">
                               <SelectInput
                                 value={selectedDuration}
                                 onChange={(e) =>
@@ -828,18 +832,12 @@ const PublicCourses = () => {
                               </SelectInput>
 
                               <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
-                                <p className="font-semibold text-slate-950">
+                                <p className="font-bold text-slate-950">
                                   {offer.finalAmount.toFixed(2)} EUR total
                                 </p>
                                 {isFirstTimeStudent && (
-                                  <p className="mt-1 text-green-700">
-                                    First-time offer: {offer.discountPercent}% off
-                                  </p>
-                                )}
-                                {offer.discountPercent > 0 && (
-                                  <p className="mt-1 text-slate-500">
-                                    Before discount:{" "}
-                                    {offer.baseAmount.toFixed(2)} EUR
+                                  <p className="mt-1 text-emerald-700">
+                                    {offer.discountPercent}% first-time discount
                                   </p>
                                 )}
                               </div>
@@ -853,109 +851,23 @@ const PublicCourses = () => {
                                 {enrollingCourseId === course.id
                                   ? "Enrolling..."
                                   : isFull
-                                    ? "Join waiting list"
+                                    ? "Join list"
                                     : "Enroll"}
                               </Button>
-                            </>
+                            </div>
                           )}
                         </div>
-                      </article>
-                    );
-                  })
-                ) : (
-                  <div className="p-8 text-sm text-slate-500">
-                    No courses match the selected filters.
-                  </div>
-                )}
-              </div>
+                      </div>
+                    </article>
+                  );
+                })
+              ) : (
+                <div className="border border-slate-200 bg-white p-8 text-sm text-slate-500 xl:col-span-2">
+                  No courses match the selected filters.
+                </div>
+              )}
             </div>
           </section>
-
-          <aside className="space-y-5">
-            <section className="border border-slate-300 bg-white">
-              <h2 className="border-b border-slate-200 bg-slate-100 px-4 py-3 text-sm font-bold text-slate-900">
-                Course overview
-              </h2>
-              <div className="grid gap-3 p-4 text-sm">
-                <div className="flex justify-between border-b border-slate-100 pb-2">
-                  <span>Filtered</span>
-                  <strong>{filteredCourses.length}</strong>
-                </div>
-                <div className="flex justify-between border-b border-slate-100 pb-2">
-                  <span>Total courses</span>
-                  <strong>{courses.length}</strong>
-                </div>
-                <div className="flex justify-between border-b border-slate-100 pb-2">
-                  <span>Available</span>
-                  <strong>{Math.max(availableCount, 0)}</strong>
-                </div>
-                <div className="flex justify-between border-b border-slate-100 pb-2">
-                  <span>My enrollments</span>
-                  <strong>{enrolledCount}</strong>
-                </div>
-                <div className="flex justify-between border-b border-slate-100 pb-2">
-                  <span>Waiting list</span>
-                  <strong>{waitingCount}</strong>
-                </div>
-                <div className="flex justify-between">
-                  <span>Paid courses</span>
-                  <strong>{paidCount}</strong>
-                </div>
-              </div>
-            </section>
-
-            <section className="border border-slate-300 bg-white">
-              <h2 className="border-b border-slate-200 bg-slate-100 px-4 py-3 text-sm font-bold text-slate-900">
-                Account actions
-              </h2>
-              <div className="space-y-3 p-4 text-sm">
-                {authUser ? (
-                  <>
-                    <p className="text-slate-600">
-                      You are logged in as{" "}
-                      <span className="font-semibold text-slate-900">
-                        {authUser.username}
-                      </span>
-                      .
-                    </p>
-                    {authUser.role === "student" ? (
-                      <Link
-                        to="/my-enrollments"
-                        className="block rounded bg-blue-700 px-3 py-2 text-center font-semibold text-white hover:bg-blue-800"
-                      >
-                        Open my courses
-                      </Link>
-                    ) : (
-                      <Link
-                        to="/courses"
-                        className="block rounded bg-blue-700 px-3 py-2 text-center font-semibold text-white hover:bg-blue-800"
-                      >
-                        Open dashboard
-                      </Link>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <p className="text-slate-600">
-                      Log in or create a student account to enroll in a course.
-                    </p>
-                    <Link
-                      to="/login"
-                      className="block rounded bg-blue-700 px-3 py-2 text-center font-semibold text-white hover:bg-blue-800"
-                    >
-                      Login
-                    </Link>
-                    <Link
-                      to="/register/student"
-                      className="block rounded border border-slate-300 bg-white px-3 py-2 text-center font-semibold text-slate-700 hover:bg-slate-50"
-                    >
-                      Register as student
-                    </Link>
-                  </>
-                )}
-              </div>
-            </section>
-          </aside>
         </div>
       </main>
     </div>

@@ -1,19 +1,19 @@
-const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+const { email, frontendUrl } = require("./env");
 
 function hasSmtpConfig() {
-  return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+  return Boolean(email.smtpHost && email.smtpUser && email.smtpPass);
 }
 
 function createTransporter() {
   const nodemailer = require("nodemailer");
 
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === "true",
+    host: email.smtpHost,
+    port: email.smtpPort,
+    secure: email.smtpSecure,
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user: email.smtpUser,
+      pass: email.smtpPass,
     },
   });
 }
@@ -27,7 +27,7 @@ async function sendPasswordResetEmail(email, resetLink) {
   const transporter = createTransporter();
 
   await transporter.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    from: email.smtpFrom,
     to: email,
     subject: "Reset your EF Enroll password",
     text: `Use this link to reset your password: ${resetLink}`,

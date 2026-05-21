@@ -86,17 +86,26 @@ async function validateCoursePayload({
   professor_id,
   semester_id,
   kapaciteti,
+  cmimi,
 }) {
+  const credits = Number(kredite);
+  const capacity = Number(kapaciteti);
+  const price = cmimi === undefined || cmimi === "" ? 0 : Number(cmimi);
+
   if (!emertimi || !String(emertimi).trim()) {
     return { status: 400, message: "Course name is required" };
   }
 
-  if (!kredite || Number(kredite) <= 0) {
+  if (!Number.isFinite(credits) || credits <= 0) {
     return { status: 400, message: "Credits must be greater than 0" };
   }
 
-  if (!kapaciteti || Number(kapaciteti) <= 0) {
+  if (!Number.isFinite(capacity) || capacity <= 0) {
     return { status: 400, message: "Capacity must be greater than 0" };
+  }
+
+  if (!Number.isFinite(price) || price < 0) {
+    return { status: 400, message: "Price cannot be negative" };
   }
 
   if (!professor_id) {
@@ -153,7 +162,11 @@ router.get("/", optionalAuth, async (req, res) => {
 
 // GET course by id with professor and semester info
 router.get("/:id", optionalAuth, async (req, res) => {
-  const id = req.params.id;
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ message: "Course id is not valid" });
+  }
 
   try {
     const query = buildCourseQuery()
@@ -216,7 +229,7 @@ router.post("/", authenticateToken, requireRole("admin"), async (req, res) => {
 
 // PUT update course
 router.put("/:id", authenticateToken, requireRole("admin"), async (req, res) => {
-  const id = req.params.id;
+  const id = Number(req.params.id);
   const {
     emertimi,
     pershkrimi,

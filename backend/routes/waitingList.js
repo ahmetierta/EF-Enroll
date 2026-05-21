@@ -5,6 +5,7 @@ const {
   authenticateToken,
   requireRole,
 } = require("../middleware/authMiddleware");
+const { calculateEnrollmentPricing } = require("../utils/pricing");
 
 router.use(authenticateToken);
 
@@ -364,6 +365,21 @@ router.post(
           };
         }
 
+        const firstWaitingItem = await waitingRepository.findOne({
+          where: { course: { id: item.course.id } },
+          order: { pozicioni: "ASC", id: "ASC" },
+        });
+
+        if (firstWaitingItem && firstWaitingItem.id !== item.id) {
+          return {
+            status: 409,
+            body: {
+              message:
+                "Only the first student in the waiting list can be promoted",
+            },
+          };
+        }
+
         const existingEnrollment = await enrollmentRepository.findOne({
           where: {
             student: { id: item.student.id },
@@ -372,11 +388,28 @@ router.post(
         });
 
         if (!existingEnrollment) {
+          const existingStudentEnrollments = await enrollmentRepository.count({
+            where: {
+              student: { id: item.student.id },
+            },
+          });
+          const durationMonths = 1;
+          const pricing = calculateEnrollmentPricing(
+            availability.course,
+            durationMonths,
+            existingStudentEnrollments > 0
+          );
+
           await enrollmentRepository.save({
             student: item.student,
             course: item.course,
             data_regjistrimit: new Date().toISOString().slice(0, 10),
             statusi: "active",
+            kohezgjatja_muaj: durationMonths,
+            cmimi_baze: pricing.baseAmount,
+            zbritja_perqindje: pricing.discountPercent,
+            cmimi_final: pricing.finalAmount,
+            oferta_fillestare: pricing.isFirstTimeOffer,
           });
         }
 

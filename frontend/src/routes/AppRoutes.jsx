@@ -10,6 +10,7 @@ import Enrollments from "../pages/Enrollments";
 import Home from "../pages/Home";
 import Materials from "../pages/Materials";
 import MyEnrollments from "../pages/MyEnrollments";
+import NotFound from "../pages/NotFound";
 import Payments from "../pages/Payments";
 import ProfessorDashboard from "../pages/professor/ProfessorDashboard";
 import Professors from "../pages/Professors";
@@ -179,6 +180,8 @@ const AppRoutes = () => {
           }
         />
       </Route>
+
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };

@@ -154,12 +154,13 @@ router.post("/", requireRole("student"), async (req, res) => {
     payer_email,
     notes,
   } = req.body;
+  const normalizedPaymentMethod = String(payment_method || "simulated").trim();
 
   if (!enrollment_id) {
     return res.status(400).json({ message: "Enrollment is required" });
   }
 
-  if (!PAYMENT_METHODS.includes(payment_method)) {
+  if (!PAYMENT_METHODS.includes(normalizedPaymentMethod)) {
     return res.status(400).json({
       message: "Payment method is not supported",
       supported_methods: PAYMENT_METHODS,
@@ -188,6 +189,12 @@ router.post("/", requireRole("student"), async (req, res) => {
       return res.status(404).json({ message: "Enrollment not found" });
     }
 
+    if (enrollment.statusi !== "active") {
+      return res.status(409).json({
+        message: "Only active enrollments can be paid",
+      });
+    }
+
     const existingPayment = await paymentRepository.findOne({
       where: {
         enrollment: { id: Number(enrollment_id) },
@@ -206,9 +213,9 @@ router.post("/", requireRole("student"), async (req, res) => {
       enrollment,
       amount,
       statusi: "paid",
-      payment_method,
+      payment_method: normalizedPaymentMethod,
       invoice_number: createInvoiceNumber(enrollment.id),
-      transaction_id: createTransactionId(payment_method),
+      transaction_id: createTransactionId(normalizedPaymentMethod),
       currency: "EUR",
       payer_name:
         payer_name || enrollment.student?.user?.username || req.user.username || null,

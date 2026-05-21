@@ -163,6 +163,14 @@ async function createStudentNumber(studentRepository) {
   return `STU-${year}-${String(count + 1).padStart(4, "0")}`;
 }
 
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function isValidPassword(password) {
+  return typeof password === "string" && password.length >= 6;
+}
+
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
   const normalizedEmail = String(email || "").trim().toLowerCase();
@@ -381,6 +389,16 @@ router.post("/register/student", async (req, res) => {
     return res.status(400).json({ message: "Username, email and password are required" });
   }
 
+  if (!isValidEmail(normalizedEmail)) {
+    return res.status(400).json({ message: "Email format is not valid" });
+  }
+
+  if (!isValidPassword(password)) {
+    return res.status(400).json({
+      message: "Password must be at least 6 characters long",
+    });
+  }
+
   const passwordHash = bcrypt.hashSync(password, 10);
 
   try {
@@ -437,6 +455,16 @@ router.post("/register/professor", async (req, res) => {
 
   if (!trimmedUsername || !normalizedEmail || !password) {
     return res.status(400).json({ message: "Username, email and password are required" });
+  }
+
+  if (!isValidEmail(normalizedEmail)) {
+    return res.status(400).json({ message: "Email format is not valid" });
+  }
+
+  if (!isValidPassword(password)) {
+    return res.status(400).json({
+      message: "Password must be at least 6 characters long",
+    });
   }
 
   const passwordHash = bcrypt.hashSync(password, 10);

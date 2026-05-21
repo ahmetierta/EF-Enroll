@@ -48,9 +48,34 @@ function getBooleanValue(value, fallback = true) {
 
 function buildMaterialPayload(body) {
   const materialType = body.material_type || "resource";
+  const weekNumber =
+    body.java !== undefined && body.java !== "" ? Number(body.java) : null;
+  const durationMinutes =
+    body.duration_minutes !== undefined && body.duration_minutes !== ""
+      ? Number(body.duration_minutes)
+      : 0;
+  const orderIndex =
+    body.order_index !== undefined && body.order_index !== ""
+      ? Number(body.order_index)
+      : 0;
 
   if (!MATERIAL_TYPES.includes(materialType)) {
     return { error: "Material type is not supported" };
+  }
+
+  if (
+    weekNumber !== null &&
+    (!Number.isInteger(weekNumber) || weekNumber < 1)
+  ) {
+    return { error: "Week must be a positive number" };
+  }
+
+  if (!Number.isFinite(durationMinutes) || durationMinutes < 0) {
+    return { error: "Duration cannot be negative" };
+  }
+
+  if (!Number.isFinite(orderIndex) || orderIndex < 0) {
+    return { error: "Order cannot be negative" };
   }
 
   return {
@@ -60,12 +85,10 @@ function buildMaterialPayload(body) {
       material_type: materialType,
       pershkrimi: body.pershkrimi ? String(body.pershkrimi).trim() : null,
       moduli: body.moduli ? String(body.moduli).trim() : null,
-      java: body.java ? Number(body.java) : null,
-      duration_minutes: body.duration_minutes
-        ? Number(body.duration_minutes)
-        : 0,
+      java: weekNumber,
+      duration_minutes: durationMinutes,
       is_required: getBooleanValue(body.is_required, true),
-      order_index: body.order_index ? Number(body.order_index) : 0,
+      order_index: orderIndex,
     },
   };
 }
