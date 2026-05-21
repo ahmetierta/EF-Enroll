@@ -4,11 +4,24 @@ const {
   authenticateToken,
   requireRole,
 } = require("../middleware/authMiddleware");
+const { getAdminDashboardSummary } = require("../services/adminAnalyticsService");
 
 const router = express.Router();
 
 router.use(authenticateToken);
 router.use(requireRole("admin"));
+
+router.get("/dashboard-summary", async (req, res) => {
+  try {
+    const summary = await getAdminDashboardSummary(AppDataSource.manager);
+    res.json(summary);
+  } catch (err) {
+    res.status(500).json({
+      message: "Dashboard summary could not be loaded",
+      error: err.message,
+    });
+  }
+});
 
 router.get("/pending-professors", async (req, res) => {
   try {

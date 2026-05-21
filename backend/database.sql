@@ -403,3 +403,178 @@ WHERE emertimi = 'Business Management'
     SELECT 1 FROM schedules
     WHERE course_id = courses.id AND dita = 'Friday' AND ora_fillimit = '09:00:00'
   );
+
+INSERT INTO courses (emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi)
+SELECT 'Python for Data Science', 'Python, notebooks, data cleaning, visualization, and practical analysis projects.', 6, p.id, s.id, 24, 160.00
+FROM professors p
+JOIN users u ON u.id = p.user_id
+JOIN semesters s ON s.emertimi = 'Spring 2026'
+WHERE u.email = 'nora.professor@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM courses WHERE emertimi = 'Python for Data Science');
+
+INSERT INTO courses (emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi)
+SELECT 'UI UX Design', 'User research, wireframes, prototypes, usability testing, and interface design.', 5, p.id, s.id, 18, 140.00
+FROM professors p
+JOIN users u ON u.id = p.user_id
+JOIN semesters s ON s.emertimi = 'Spring 2026'
+WHERE u.email = 'elira.professor@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM courses WHERE emertimi = 'UI UX Design');
+
+INSERT INTO courses (emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi)
+SELECT 'Cybersecurity Fundamentals', 'Security basics, authentication, network risks, OWASP concepts, and safe systems.', 6, p.id, s.id, 20, 180.00
+FROM professors p
+JOIN users u ON u.id = p.user_id
+JOIN semesters s ON s.emertimi = 'Spring 2026'
+WHERE u.email = 'arben.professor@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM courses WHERE emertimi = 'Cybersecurity Fundamentals');
+
+INSERT INTO courses (emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi)
+SELECT 'Cloud Computing', 'Cloud services, deployment models, scaling, storage, containers, and monitoring.', 5, p.id, s.id, 22, 190.00
+FROM professors p
+JOIN users u ON u.id = p.user_id
+JOIN semesters s ON s.emertimi = 'Spring 2026'
+WHERE u.email = 'ilir.professor@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM courses WHERE emertimi = 'Cloud Computing');
+
+INSERT INTO courses (emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi)
+SELECT 'Digital Marketing', 'Campaign planning, audience research, SEO, analytics, and marketing funnels.', 4, p.id, s.id, 28, 110.00
+FROM professors p
+JOIN users u ON u.id = p.user_id
+JOIN semesters s ON s.emertimi = 'Spring 2026'
+WHERE u.email = 'besart.professor@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM courses WHERE emertimi = 'Digital Marketing');
+
+INSERT INTO schedules (course_id, dita, ora_fillimit, ora_perfundimit, salla)
+SELECT id, 'Monday', '14:00:00', '15:30:00', 'Data Lab'
+FROM courses
+WHERE emertimi = 'Python for Data Science'
+  AND NOT EXISTS (
+    SELECT 1 FROM schedules
+    WHERE course_id = courses.id AND dita = 'Monday' AND ora_fillimit = '14:00:00'
+  );
+
+INSERT INTO schedules (course_id, dita, ora_fillimit, ora_perfundimit, salla)
+SELECT id, 'Tuesday', '12:00:00', '13:30:00', 'Design Studio'
+FROM courses
+WHERE emertimi = 'UI UX Design'
+  AND NOT EXISTS (
+    SELECT 1 FROM schedules
+    WHERE course_id = courses.id AND dita = 'Tuesday' AND ora_fillimit = '12:00:00'
+  );
+
+INSERT INTO schedules (course_id, dita, ora_fillimit, ora_perfundimit, salla)
+SELECT id, 'Wednesday', '15:00:00', '16:30:00', 'Security Lab'
+FROM courses
+WHERE emertimi = 'Cybersecurity Fundamentals'
+  AND NOT EXISTS (
+    SELECT 1 FROM schedules
+    WHERE course_id = courses.id AND dita = 'Wednesday' AND ora_fillimit = '15:00:00'
+  );
+
+INSERT INTO schedules (course_id, dita, ora_fillimit, ora_perfundimit, salla)
+SELECT id, 'Thursday', '10:00:00', '11:30:00', 'Cloud Lab'
+FROM courses
+WHERE emertimi = 'Cloud Computing'
+  AND NOT EXISTS (
+    SELECT 1 FROM schedules
+    WHERE course_id = courses.id AND dita = 'Thursday' AND ora_fillimit = '10:00:00'
+  );
+
+INSERT INTO schedules (course_id, dita, ora_fillimit, ora_perfundimit, salla)
+SELECT id, 'Friday', '12:00:00', '13:30:00', 'Room 6'
+FROM courses
+WHERE emertimi = 'Digital Marketing'
+  AND NOT EXISTS (
+    SELECT 1 FROM schedules
+    WHERE course_id = courses.id AND dita = 'Friday' AND ora_fillimit = '12:00:00'
+  );
+
+INSERT INTO course_materials (course_id, professor_id, titulli, file_url, material_type, pershkrimi, moduli, java, duration_minutes, is_required, order_index)
+SELECT c.id, c.professor_id, 'Week 1 Slides - Variables and Control Flow', 'https://example.com/materials/programming-week-1-slides.pdf', 'slides', 'Programming Basics material for Introduction to Programming.', 'Programming Basics', 1, 45, 1, 1
+FROM courses c
+WHERE c.emertimi = 'Introduction to Programming'
+  AND NOT EXISTS (SELECT 1 FROM course_materials WHERE course_id = c.id AND titulli = 'Week 1 Slides - Variables and Control Flow');
+
+INSERT INTO course_materials (course_id, professor_id, titulli, file_url, material_type, pershkrimi, moduli, java, duration_minutes, is_required, order_index)
+SELECT c.id, c.professor_id, 'Assignment - Build a Console Calculator', 'https://example.com/materials/programming-calculator-assignment.pdf', 'assignment', 'Practice material for Introduction to Programming.', 'Practice', 2, 120, 1, 2
+FROM courses c
+WHERE c.emertimi = 'Introduction to Programming'
+  AND NOT EXISTS (SELECT 1 FROM course_materials WHERE course_id = c.id AND titulli = 'Assignment - Build a Console Calculator');
+
+INSERT INTO course_materials (course_id, professor_id, titulli, file_url, material_type, pershkrimi, moduli, java, duration_minutes, is_required, order_index)
+SELECT c.id, c.professor_id, 'HTML CSS Starter Pack', 'https://example.com/materials/web-html-css-starter.zip', 'resource', 'Frontend Foundations material for Web Development.', 'Frontend Foundations', 1, 60, 1, 1
+FROM courses c
+WHERE c.emertimi = 'Web Development'
+  AND NOT EXISTS (SELECT 1 FROM course_materials WHERE course_id = c.id AND titulli = 'HTML CSS Starter Pack');
+
+INSERT INTO course_materials (course_id, professor_id, titulli, file_url, material_type, pershkrimi, moduli, java, duration_minutes, is_required, order_index)
+SELECT c.id, c.professor_id, 'React Components Reading', 'https://example.com/materials/react-components-reading.pdf', 'reading', 'React material for Web Development.', 'React', 3, 50, 1, 2
+FROM courses c
+WHERE c.emertimi = 'Web Development'
+  AND NOT EXISTS (SELECT 1 FROM course_materials WHERE course_id = c.id AND titulli = 'React Components Reading');
+
+INSERT INTO course_materials (course_id, professor_id, titulli, file_url, material_type, pershkrimi, moduli, java, duration_minutes, is_required, order_index)
+SELECT c.id, c.professor_id, 'ER Diagram Workshop', 'https://example.com/materials/database-er-diagram-workshop.pdf', 'slides', 'Data Modeling material for Database Systems.', 'Data Modeling', 2, 70, 1, 1
+FROM courses c
+WHERE c.emertimi = 'Database Systems'
+  AND NOT EXISTS (SELECT 1 FROM course_materials WHERE course_id = c.id AND titulli = 'ER Diagram Workshop');
+
+INSERT INTO course_materials (course_id, professor_id, titulli, file_url, material_type, pershkrimi, moduli, java, duration_minutes, is_required, order_index)
+SELECT c.id, c.professor_id, 'SQL Joins Quiz', 'https://example.com/materials/sql-joins-quiz', 'quiz', 'SQL material for Database Systems.', 'SQL', 4, 30, 1, 2
+FROM courses c
+WHERE c.emertimi = 'Database Systems'
+  AND NOT EXISTS (SELECT 1 FROM course_materials WHERE course_id = c.id AND titulli = 'SQL Joins Quiz');
+
+INSERT INTO course_materials (course_id, professor_id, titulli, file_url, material_type, pershkrimi, moduli, java, duration_minutes, is_required, order_index)
+SELECT c.id, c.professor_id, 'Dashboard Design Checklist', 'https://example.com/materials/dashboard-design-checklist.pdf', 'resource', 'Dashboards material for Data Analytics.', 'Dashboards', 3, 40, 0, 1
+FROM courses c
+WHERE c.emertimi = 'Data Analytics'
+  AND NOT EXISTS (SELECT 1 FROM course_materials WHERE course_id = c.id AND titulli = 'Dashboard Design Checklist');
+
+INSERT INTO course_materials (course_id, professor_id, titulli, file_url, material_type, pershkrimi, moduli, java, duration_minutes, is_required, order_index)
+SELECT c.id, c.professor_id, 'Case Study - Team Planning', 'https://example.com/materials/business-team-planning-case.pdf', 'reading', 'Management Cases material for Business Management.', 'Management Cases', 2, 55, 1, 1
+FROM courses c
+WHERE c.emertimi = 'Business Management'
+  AND NOT EXISTS (SELECT 1 FROM course_materials WHERE course_id = c.id AND titulli = 'Case Study - Team Planning');
+
+INSERT INTO course_materials (course_id, professor_id, titulli, file_url, material_type, pershkrimi, moduli, java, duration_minutes, is_required, order_index)
+SELECT c.id, c.professor_id, 'Python Notebook Setup', 'https://example.com/materials/python-notebook-setup.pdf', 'resource', 'Environment Setup material for Python for Data Science.', 'Environment Setup', 1, 35, 1, 1
+FROM courses c
+WHERE c.emertimi = 'Python for Data Science'
+  AND NOT EXISTS (SELECT 1 FROM course_materials WHERE course_id = c.id AND titulli = 'Python Notebook Setup');
+
+INSERT INTO course_materials (course_id, professor_id, titulli, file_url, material_type, pershkrimi, moduli, java, duration_minutes, is_required, order_index)
+SELECT c.id, c.professor_id, 'Pandas Cleaning Assignment', 'https://example.com/materials/pandas-cleaning-assignment.ipynb', 'assignment', 'Data Cleaning material for Python for Data Science.', 'Data Cleaning', 3, 120, 1, 2
+FROM courses c
+WHERE c.emertimi = 'Python for Data Science'
+  AND NOT EXISTS (SELECT 1 FROM course_materials WHERE course_id = c.id AND titulli = 'Pandas Cleaning Assignment');
+
+INSERT INTO course_materials (course_id, professor_id, titulli, file_url, material_type, pershkrimi, moduli, java, duration_minutes, is_required, order_index)
+SELECT c.id, c.professor_id, 'Wireframe Template Pack', 'https://example.com/materials/wireframe-template-pack.fig', 'resource', 'Wireframes material for UI UX Design.', 'Wireframes', 2, 45, 0, 1
+FROM courses c
+WHERE c.emertimi = 'UI UX Design'
+  AND NOT EXISTS (SELECT 1 FROM course_materials WHERE course_id = c.id AND titulli = 'Wireframe Template Pack');
+
+INSERT INTO course_materials (course_id, professor_id, titulli, file_url, material_type, pershkrimi, moduli, java, duration_minutes, is_required, order_index)
+SELECT c.id, c.professor_id, 'Usability Testing Guide', 'https://example.com/materials/usability-testing-guide.pdf', 'reading', 'Testing material for UI UX Design.', 'Testing', 4, 65, 1, 2
+FROM courses c
+WHERE c.emertimi = 'UI UX Design'
+  AND NOT EXISTS (SELECT 1 FROM course_materials WHERE course_id = c.id AND titulli = 'Usability Testing Guide');
+
+INSERT INTO course_materials (course_id, professor_id, titulli, file_url, material_type, pershkrimi, moduli, java, duration_minutes, is_required, order_index)
+SELECT c.id, c.professor_id, 'OWASP Top 10 Overview', 'https://example.com/materials/owasp-top-10-overview.pdf', 'slides', 'Web Security material for Cybersecurity Fundamentals.', 'Web Security', 3, 75, 1, 1
+FROM courses c
+WHERE c.emertimi = 'Cybersecurity Fundamentals'
+  AND NOT EXISTS (SELECT 1 FROM course_materials WHERE course_id = c.id AND titulli = 'OWASP Top 10 Overview');
+
+INSERT INTO course_materials (course_id, professor_id, titulli, file_url, material_type, pershkrimi, moduli, java, duration_minutes, is_required, order_index)
+SELECT c.id, c.professor_id, 'Deployment Architecture Video', 'https://example.com/materials/cloud-deployment-architecture-video', 'video', 'Cloud Architecture material for Cloud Computing.', 'Cloud Architecture', 2, 50, 1, 1
+FROM courses c
+WHERE c.emertimi = 'Cloud Computing'
+  AND NOT EXISTS (SELECT 1 FROM course_materials WHERE course_id = c.id AND titulli = 'Deployment Architecture Video');
+
+INSERT INTO course_materials (course_id, professor_id, titulli, file_url, material_type, pershkrimi, moduli, java, duration_minutes, is_required, order_index)
+SELECT c.id, c.professor_id, 'SEO Audit Checklist', 'https://example.com/materials/seo-audit-checklist.pdf', 'resource', 'SEO material for Digital Marketing.', 'SEO', 3, 40, 1, 1
+FROM courses c
+WHERE c.emertimi = 'Digital Marketing'
+  AND NOT EXISTS (SELECT 1 FROM course_materials WHERE course_id = c.id AND titulli = 'SEO Audit Checklist');

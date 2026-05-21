@@ -6,8 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "check": "node --check server.js && node --check routes/auth.js && node --check routes/payments.js && node --check scripts/createAdmin.js",
+    "check": "node --check server.js && node --check routes/auth.js && node --check routes/payments.js && node --check routes/admin.js && node --check services/adminAnalyticsService.js && node --check scripts/createAdmin.js && node --check scripts/seedTestEnrollments.js",
     "seed:admin": "node scripts/createAdmin.js",
+    "seed:test": "node scripts/seedTestEnrollments.js",
     "test": "npm run check"
   },
   "keywords": [],

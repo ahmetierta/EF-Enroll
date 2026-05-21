@@ -24,6 +24,39 @@ const benefits = [
   },
 ];
 
+const pageLinks = [
+  { href: "#offers", label: "What we offer" },
+  { href: "#courses", label: "Courses" },
+  { href: "#how-it-works", label: "How it works" },
+  { href: "#stats", label: "Stats" },
+];
+
+const courseOfferings = [
+  {
+    title: "Scheduled learning",
+    text: "Every course shows professor, day, room, and time so students can plan before enrolling.",
+  },
+  {
+    title: "Materials by week",
+    text: "Slides, readings, assignments, quizzes, videos, and resources can be organized by module.",
+  },
+  {
+    title: "Duration choices",
+    text: "Students can choose 1, 3, 6, or 12 months and see the final price before enrollment.",
+  },
+  {
+    title: "Payments and invoices",
+    text: "Enrollments can be paid with invoice number, transaction id, method, and refund support.",
+  },
+];
+
+const processSteps = [
+  "Browse the catalog and compare courses.",
+  "Choose duration and enroll as a student.",
+  "Pay the enrollment or join the waiting list if the course is full.",
+  "Open materials and follow course updates from your dashboard.",
+];
+
 const Home = () => {
   const [courses, setCourses] = useState([]);
   const authUser = getAuthUser();
@@ -155,8 +188,31 @@ const Home = () => {
         </div>
       </section>
 
+      <nav className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 lg:px-8">
+          <p className="text-sm font-bold text-slate-950">Explore EF Enroll</p>
+          <div className="flex flex-wrap gap-2">
+            {pageLinks.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-white hover:text-blue-700"
+              >
+                {link.label}
+              </a>
+            ))}
+            <Link
+              to="/catalog"
+              className="rounded bg-blue-700 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-800"
+            >
+              Open Catalog
+            </Link>
+          </div>
+        </div>
+      </nav>
+
       <main className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
-        <section className="grid gap-4 md:grid-cols-3">
+        <section id="offers" className="grid scroll-mt-24 gap-4 md:grid-cols-3">
           {benefits.map((benefit) => (
             <article
               key={benefit.title}
@@ -172,7 +228,23 @@ const Home = () => {
           ))}
         </section>
 
-        <section className="mt-8 border border-slate-300 bg-white">
+        <section className="mt-8 grid scroll-mt-24 gap-4 lg:grid-cols-4">
+          {courseOfferings.map((offering) => (
+            <article
+              key={offering.title}
+              className="border border-slate-300 bg-white p-5"
+            >
+              <h2 className="text-lg font-bold text-slate-950">
+                {offering.title}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                {offering.text}
+              </p>
+            </article>
+          ))}
+        </section>
+
+        <section id="courses" className="mt-8 scroll-mt-24 border border-slate-300 bg-white">
           <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-100 px-5 py-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-xl font-bold text-slate-950">
@@ -240,7 +312,43 @@ const Home = () => {
           </div>
         </section>
 
-        <section className="mt-8 grid gap-4 md:grid-cols-3">
+        <section
+          id="how-it-works"
+          className="mt-8 scroll-mt-24 border border-slate-300 bg-white p-5"
+        >
+          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-slate-950">
+                How enrollment works
+              </h2>
+              <p className="text-sm text-slate-600">
+                A simple flow for students, professors, and admins.
+              </p>
+            </div>
+            <Link
+              to="/register/student"
+              className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+            >
+              Start as student
+            </Link>
+          </div>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-4">
+            {processSteps.map((step, index) => (
+              <div
+                key={step}
+                className="border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700"
+              >
+                <span className="flex h-8 w-8 items-center justify-center rounded bg-blue-700 text-sm font-bold text-white">
+                  {index + 1}
+                </span>
+                <p className="mt-3 font-semibold text-slate-900">{step}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="stats" className="mt-8 grid scroll-mt-24 gap-4 md:grid-cols-3">
           <div className="border border-slate-300 bg-white p-5">
             <p className="text-sm text-slate-500">Courses</p>
             <p className="mt-2 text-3xl font-bold text-slate-950">
