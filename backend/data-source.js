@@ -8,6 +8,7 @@ const Department = require("./entities/Department");
 const Enrollment = require("./entities/Enrollment");
 const Payment = require("./entities/Payment");
 const Professor = require("./entities/Professor");
+const RefreshToken = require("./entities/RefreshToken");
 const Schedule = require("./entities/Schedule");
 const Semester = require("./entities/Semester");
 const Student = require("./entities/Student");
@@ -33,6 +34,7 @@ const AppDataSource = new DataSource({
     Schedule,
     Enrollment,
     Payment,
+    RefreshToken,
     WaitingList,
     Announcement,
     CourseMaterial,

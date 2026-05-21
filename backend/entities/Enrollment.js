@@ -22,6 +22,32 @@ const Enrollment = new EntitySchema({
       type: "int",
       nullable: true,
     },
+    kohezgjatja_muaj: {
+      type: "int",
+      default: 1,
+    },
+    cmimi_baze: {
+      type: "decimal",
+      precision: 10,
+      scale: 2,
+      default: 0,
+    },
+    zbritja_perqindje: {
+      type: "decimal",
+      precision: 5,
+      scale: 2,
+      default: 0,
+    },
+    cmimi_final: {
+      type: "decimal",
+      precision: 10,
+      scale: 2,
+      default: 0,
+    },
+    oferta_fillestare: {
+      type: "boolean",
+      default: false,
+    },
   },
   relations: {
     student: {

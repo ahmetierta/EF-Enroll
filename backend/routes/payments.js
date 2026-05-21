@@ -1,4 +1,5 @@
 const express = require("express");
+const crypto = require("crypto");
 const router = express.Router();
 const AppDataSource = require("../data-source");
 const {
@@ -8,6 +9,22 @@ const {
 
 router.use(authenticateToken);
 
+const PAYMENT_METHODS = ["simulated", "card", "bank_transfer", "cash"];
+
+function createInvoiceNumber(enrollmentId) {
+  const year = new Date().getFullYear();
+  const randomPart = crypto.randomBytes(3).toString("hex").toUpperCase();
+
+  return `INV-${year}-${String(enrollmentId).padStart(6, "0")}-${randomPart}`;
+}
+
+function createTransactionId(method) {
+  return `${String(method || "SIM").toUpperCase()}-${crypto
+    .randomBytes(6)
+    .toString("hex")
+    .toUpperCase()}`;
+}
+
 function mapPayment(payment) {
   return {
     id: payment.id,
@@ -15,6 +32,13 @@ function mapPayment(payment) {
     amount: payment.amount,
     statusi: payment.statusi,
     payment_method: payment.payment_method,
+    invoice_number: payment.invoice_number,
+    transaction_id: payment.transaction_id,
+    currency: payment.currency || "EUR",
+    payer_name: payment.payer_name,
+    payer_email: payment.payer_email,
+    notes: payment.notes,
+    refunded_at: payment.refunded_at,
     data_pageses: payment.data_pageses,
     student_id: payment.enrollment?.student?.id || null,
     course_id: payment.enrollment?.course?.id || null,
@@ -23,6 +47,9 @@ function mapPayment(payment) {
     student_email: payment.enrollment?.student?.user?.email || null,
     course_name: payment.enrollment?.course?.emertimi || null,
     course_price: payment.enrollment?.course?.cmimi || 0,
+    duration_months: payment.enrollment?.kohezgjatja_muaj || 1,
+    discount_percent: payment.enrollment?.zbritja_perqindje || 0,
+    final_amount: payment.enrollment?.cmimi_final || payment.amount,
   };
 }
 
@@ -33,8 +60,14 @@ function mapStudentPayment(payment) {
     amount: payment.amount,
     statusi: payment.statusi,
     payment_method: payment.payment_method,
+    invoice_number: payment.invoice_number,
+    transaction_id: payment.transaction_id,
+    currency: payment.currency || "EUR",
+    refunded_at: payment.refunded_at,
     data_pageses: payment.data_pageses,
     course_name: payment.enrollment?.course?.emertimi || null,
+    duration_months: payment.enrollment?.kohezgjatja_muaj || 1,
+    discount_percent: payment.enrollment?.zbritja_perqindje || 0,
   };
 }
 
@@ -114,10 +147,23 @@ router.get("/mine", requireRole("student"), async (req, res) => {
 
 // POST simulated payment for logged-in student's enrollment
 router.post("/", requireRole("student"), async (req, res) => {
-  const { enrollment_id } = req.body;
+  const {
+    enrollment_id,
+    payment_method = "simulated",
+    payer_name,
+    payer_email,
+    notes,
+  } = req.body;
 
   if (!enrollment_id) {
     return res.status(400).json({ message: "Enrollment is required" });
+  }
+
+  if (!PAYMENT_METHODS.includes(payment_method)) {
+    return res.status(400).json({
+      message: "Payment method is not supported",
+      supported_methods: PAYMENT_METHODS,
+    });
   }
 
   try {
@@ -155,18 +201,71 @@ router.post("/", requireRole("student"), async (req, res) => {
       });
     }
 
-    const amount = Number(enrollment.course?.cmimi || 0);
+    const amount = Number(enrollment.cmimi_final || enrollment.course?.cmimi || 0);
     const payment = await paymentRepository.save({
       enrollment,
       amount,
       statusi: "paid",
-      payment_method: "simulated",
+      payment_method,
+      invoice_number: createInvoiceNumber(enrollment.id),
+      transaction_id: createTransactionId(payment_method),
+      currency: "EUR",
+      payer_name:
+        payer_name || enrollment.student?.user?.username || req.user.username || null,
+      payer_email:
+        payer_email || enrollment.student?.user?.email || req.user.email || null,
+      notes: notes ? String(notes).trim() : null,
     });
 
     res.status(201).json({
       message: "Payment completed successfully",
       payment_id: payment.id,
       amount,
+      currency: payment.currency,
+      invoice_number: payment.invoice_number,
+      transaction_id: payment.transaction_id,
+    });
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+router.put("/:id/refund", requireRole("admin"), async (req, res) => {
+  const id = Number(req.params.id);
+
+  try {
+    const paymentRepository = AppDataSource.getRepository("Payment");
+    const payment = await paymentRepository.findOne({
+      where: { id },
+      relations: {
+        enrollment: {
+          student: {
+            user: true,
+          },
+          course: true,
+        },
+      },
+    });
+
+    if (!payment) {
+      return res.status(404).json({ message: "Payment not found" });
+    }
+
+    if (payment.statusi === "refunded") {
+      return res.status(409).json({ message: "Payment is already refunded" });
+    }
+
+    payment.statusi = "refunded";
+    payment.refunded_at = new Date();
+    payment.notes = req.body.notes
+      ? String(req.body.notes).trim()
+      : payment.notes || "Refunded by admin";
+
+    const savedPayment = await paymentRepository.save(payment);
+
+    res.json({
+      message: "Payment refunded successfully",
+      payment: mapPayment(savedPayment),
     });
   } catch (err) {
     res.status(500).json(err);

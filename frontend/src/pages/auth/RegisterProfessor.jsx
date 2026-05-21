@@ -40,8 +40,8 @@ const RegisterProfessor = () => {
     setError("");
 
     const payload = {
-      username,
-      email,
+      username: username.trim(),
+      email: email.trim().toLowerCase(),
       password,
       titulli,
       departamenti,

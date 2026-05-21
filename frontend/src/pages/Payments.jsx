@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import PageContainer from "../components/layout/PageContainer";
 import TableCard from "../components/layout/TableCard";
+import Button from "../components/ui/Button";
 import { paymentService } from "../services/paymentService";
 
 const Payments = () => {
   const [payments, setPayments] = useState([]);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [processingId, setProcessingId] = useState(null);
 
   function fetchPayments() {
     paymentService
@@ -21,14 +24,37 @@ const Payments = () => {
   }, []);
 
   const totalRevenue = payments.reduce(
-    (sum, payment) => sum + Number(payment.amount || 0),
+    (sum, payment) =>
+      payment.statusi === "paid" ? sum + Number(payment.amount || 0) : sum,
     0
   );
   const paidPayments = payments.filter((payment) => payment.statusi === "paid").length;
+  const refundedPayments = payments.filter(
+    (payment) => payment.statusi === "refunded"
+  ).length;
+
+  const refundPayment = (paymentId) => {
+    if (!window.confirm("Do you want to refund this payment?")) return;
+
+    setError("");
+    setMessage("");
+    setProcessingId(paymentId);
+
+    paymentService
+      .refund(paymentId, "Refunded from admin dashboard")
+      .then((res) => {
+        setMessage(res.data.message || "Payment refunded successfully.");
+        fetchPayments();
+      })
+      .catch((err) => {
+        setError(err.response?.data?.message || "Refund failed.");
+      })
+      .finally(() => setProcessingId(null));
+  };
 
   return (
     <PageContainer title="Payments">
-      <div className="mb-8 grid gap-4 md:grid-cols-3">
+      <div className="mb-8 grid gap-4 md:grid-cols-4">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-slate-500">Total Revenue</p>
           <p className="mt-2 text-3xl font-bold text-green-700">
@@ -49,6 +75,13 @@ const Payments = () => {
             {paidPayments}
           </p>
         </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-slate-500">Refunded</p>
+          <p className="mt-2 text-3xl font-bold text-red-700">
+            {refundedPayments}
+          </p>
+        </div>
       </div>
 
       <TableCard title="Payment List">
@@ -58,16 +91,25 @@ const Payments = () => {
           </p>
         )}
 
+        {message && (
+          <p className="mb-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
+            {message}
+          </p>
+        )}
+
         <table className="w-full border-collapse text-left">
           <thead>
             <tr className="border-b border-slate-200 text-blue-700">
               <th className="px-4 py-3">ID</th>
+              <th className="px-4 py-3">Invoice</th>
               <th className="px-4 py-3">Student</th>
               <th className="px-4 py-3">Course</th>
+              <th className="px-4 py-3">Duration</th>
               <th className="px-4 py-3">Amount</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Method</th>
               <th className="px-4 py-3">Date</th>
+              <th className="px-4 py-3">Actions</th>
             </tr>
           </thead>
 
@@ -81,6 +123,14 @@ const Payments = () => {
                   <td className="px-4 py-3">{payment.id}</td>
                   <td className="px-4 py-3">
                     <div className="font-semibold text-slate-900">
+                      {payment.invoice_number || "-"}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {payment.transaction_id || "No transaction"}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="font-semibold text-slate-900">
                       {payment.student_name}
                     </div>
                     <div className="text-xs text-slate-500">
@@ -89,10 +139,24 @@ const Payments = () => {
                   </td>
                   <td className="px-4 py-3">{payment.course_name}</td>
                   <td className="px-4 py-3">
-                    {Number(payment.amount || 0).toFixed(2)} EUR
+                    {payment.duration_months || 1} month(s)
                   </td>
                   <td className="px-4 py-3">
-                    <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
+                    <div>{Number(payment.amount || 0).toFixed(2)} EUR</div>
+                    {Number(payment.discount_percent || 0) > 0 && (
+                      <div className="text-xs font-semibold text-green-700">
+                        {Number(payment.discount_percent || 0).toFixed(0)}% off
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        payment.statusi === "refunded"
+                          ? "bg-red-50 text-red-700"
+                          : "bg-green-50 text-green-700"
+                      }`}
+                    >
                       {payment.statusi}
                     </span>
                   </td>
@@ -102,11 +166,24 @@ const Payments = () => {
                       ? new Date(payment.data_pageses).toLocaleDateString()
                       : "Not set"}
                   </td>
+                  <td className="px-4 py-3">
+                    <Button
+                      onClick={() => refundPayment(payment.id)}
+                      disabled={
+                        processingId === payment.id ||
+                        payment.statusi === "refunded"
+                      }
+                      className="px-3 py-2 text-sm"
+                      variant="secondary"
+                    >
+                      Refund
+                    </Button>
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td className="px-4 py-6 text-slate-500" colSpan="7">
+                <td className="px-4 py-6 text-slate-500" colSpan="10">
                   No payments found.
                 </td>
               </tr>

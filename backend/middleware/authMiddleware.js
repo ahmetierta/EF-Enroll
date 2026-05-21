@@ -27,7 +27,16 @@ function authenticateToken(req, res, next) {
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
-      return res.status(403).json({ message: "Token is not valid" });
+      return res.status(401).json({
+        message:
+          err.name === "TokenExpiredError"
+            ? "Access token expired"
+            : "Token is not valid",
+      });
+    }
+
+    if (user.token_type !== "access") {
+      return res.status(401).json({ message: "Invalid token type" });
     }
 
     req.user = user;
@@ -45,7 +54,7 @@ function optionalAuth(req, res, next) {
   }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (!err) {
+    if (!err && user.token_type === "access") {
       req.user = user;
     }
 

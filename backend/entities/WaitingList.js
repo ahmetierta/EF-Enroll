@@ -17,6 +17,32 @@ const WaitingList = new EntitySchema({
       type: "int",
       nullable: true,
     },
+    statusi: {
+      type: "varchar",
+      length: 30,
+      default: "waiting",
+    },
+    prioriteti: {
+      type: "varchar",
+      length: 30,
+      default: "normal",
+    },
+    arsyeja: {
+      type: "text",
+      nullable: true,
+    },
+    njofto_me_email: {
+      type: "boolean",
+      default: true,
+    },
+    data_njoftimit: {
+      type: "timestamp",
+      nullable: true,
+    },
+    afati_pergjigjes: {
+      type: "timestamp",
+      nullable: true,
+    },
   },
   relations: {
     student: {

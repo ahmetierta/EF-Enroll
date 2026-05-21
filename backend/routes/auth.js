@@ -8,7 +8,9 @@ const {
   sendPasswordResetEmail,
 } = require("../config/email");
 const {
+  ACCESS_TOKEN_MAX_AGE_MS,
   JWT_EXPIRES_IN,
+  REFRESH_TOKEN_MAX_AGE_MS,
   JWT_REFRESH_EXPIRES_IN,
   JWT_REFRESH_SECRET,
   JWT_SECRET,
@@ -22,14 +24,14 @@ const accessCookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "strict",
-  maxAge: 15 * 60 * 1000,
+  maxAge: ACCESS_TOKEN_MAX_AGE_MS,
 };
 
 const refreshCookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "strict",
-  maxAge: 60 * 60 * 1000,
+  maxAge: REFRESH_TOKEN_MAX_AGE_MS,
 };
 
 function getCookieValue(req, name) {
@@ -55,20 +57,26 @@ function createToken(user) {
       email: user.email,
       role: user.role,
       status: user.status,
+      token_type: "access",
     },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }
   );
 }
 
-function createRefreshToken(user) {
-  return jwt.sign({ id: user.id }, JWT_REFRESH_SECRET, {
+function createRefreshToken(user, tokenId) {
+  return jwt.sign({ id: user.id, token_type: "refresh" }, JWT_REFRESH_SECRET, {
     expiresIn: JWT_REFRESH_EXPIRES_IN,
+    jwtid: tokenId,
   });
 }
 
-function hashPasswordResetToken(token) {
+function hashToken(token) {
   return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+function hashPasswordResetToken(token) {
+  return hashToken(token);
 }
 
 function createPasswordResetToken() {
@@ -91,6 +99,64 @@ function buildUserResponse(user) {
   };
 }
 
+function getRequestIp(req) {
+  const forwardedFor = req.headers["x-forwarded-for"];
+
+  if (forwardedFor) {
+    return String(forwardedFor).split(",")[0].trim();
+  }
+
+  return req.ip || req.socket?.remoteAddress || null;
+}
+
+async function issueAuthCookies(res, req, user, oldRefreshTokenRecord = null) {
+  const refreshTokenRepository = AppDataSource.getRepository("RefreshToken");
+  const refreshTokenId = crypto.randomUUID();
+  const token = createToken(user);
+  const refreshToken = createRefreshToken(user, refreshTokenId);
+  const refreshTokenHash = hashToken(refreshToken);
+
+  const refreshRecord = refreshTokenRepository.create({
+    user,
+    token_hash: refreshTokenHash,
+    expires_at: new Date(Date.now() + REFRESH_TOKEN_MAX_AGE_MS),
+    user_agent: String(req.headers["user-agent"] || "").slice(0, 255) || null,
+    ip_address: getRequestIp(req),
+  });
+
+  await refreshTokenRepository.save(refreshRecord);
+
+  if (oldRefreshTokenRecord) {
+    oldRefreshTokenRecord.revoked_at = new Date();
+    oldRefreshTokenRecord.replaced_by_token_hash = refreshTokenHash;
+    await refreshTokenRepository.save(oldRefreshTokenRecord);
+  }
+
+  res.cookie("token", token, accessCookieOptions);
+  res.cookie("refreshToken", refreshToken, refreshCookieOptions);
+
+  return { token, refreshToken };
+}
+
+async function revokeRefreshToken(refreshToken) {
+  if (!refreshToken) {
+    return null;
+  }
+
+  const refreshTokenRepository = AppDataSource.getRepository("RefreshToken");
+  const tokenHash = hashToken(refreshToken);
+  const tokenRecord = await refreshTokenRepository.findOne({
+    where: { token_hash: tokenHash },
+  });
+
+  if (!tokenRecord || tokenRecord.revoked_at) {
+    return tokenRecord;
+  }
+
+  tokenRecord.revoked_at = new Date();
+  return refreshTokenRepository.save(tokenRecord);
+}
+
 async function createStudentNumber(studentRepository) {
   const year = new Date().getFullYear();
   const count = await studentRepository.count();
@@ -99,14 +165,15 @@ async function createStudentNumber(studentRepository) {
 
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
+  const normalizedEmail = String(email || "").trim().toLowerCase();
 
-  if (!email || !password) {
+  if (!normalizedEmail || !password) {
     return res.status(400).json({ message: "Email and password are required" });
   }
 
   try {
     const userRepository = AppDataSource.getRepository("User");
-    const user = await userRepository.findOneBy({ email });
+    const user = await userRepository.findOneBy({ email: normalizedEmail });
 
     if (!user) {
       return res.status(401).json({ message: "Invalid email or password" });
@@ -125,11 +192,7 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const token = createToken(user);
-    const refreshToken = createRefreshToken(user);
-
-    res.cookie("token", token, accessCookieOptions);
-    res.cookie("refreshToken", refreshToken, refreshCookieOptions);
+    await issueAuthCookies(res, req, user);
 
     res.json({
       message: "Login successful",
@@ -149,7 +212,41 @@ router.post("/refresh", async (req, res) => {
 
   try {
     const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
+    const refreshTokenRepository = AppDataSource.getRepository("RefreshToken");
     const userRepository = AppDataSource.getRepository("User");
+    const refreshTokenHash = hashToken(refreshToken);
+
+    if (decoded.token_type !== "refresh") {
+      return res.status(401).json({ message: "Invalid refresh token type" });
+    }
+
+    const tokenRecord = await refreshTokenRepository.findOne({
+      where: { token_hash: refreshTokenHash },
+      relations: { user: true },
+    });
+
+    if (
+      !tokenRecord ||
+      tokenRecord.user?.id !== decoded.id ||
+      new Date(tokenRecord.expires_at).getTime() <= Date.now()
+    ) {
+      return res.status(401).json({ message: "Refresh token is not recognized" });
+    }
+
+    if (tokenRecord.revoked_at) {
+      await refreshTokenRepository
+        .createQueryBuilder()
+        .update("RefreshToken")
+        .set({ revoked_at: new Date() })
+        .where("user_id = :userId", { userId: decoded.id })
+        .andWhere("revoked_at IS NULL")
+        .execute();
+
+      return res.status(401).json({
+        message: "Refresh token was already used. Please log in again.",
+      });
+    }
+
     const user = await userRepository.findOneBy({ id: decoded.id });
 
     if (!user) {
@@ -163,21 +260,22 @@ router.post("/refresh", async (req, res) => {
       });
     }
 
-    res.cookie("token", createToken(user), accessCookieOptions);
+    await issueAuthCookies(res, req, user, tokenRecord);
 
     res.json({
       message: "Token refreshed",
       user: buildUserResponse(user),
     });
   } catch (err) {
-    res.status(403).json({ message: "Invalid refresh token" });
+    res.status(401).json({ message: "Invalid refresh token" });
   }
 });
 
 router.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
+  const normalizedEmail = String(email || "").trim().toLowerCase();
 
-  if (!email) {
+  if (!normalizedEmail) {
     return res.status(400).json({ message: "Email is required" });
   }
 
@@ -187,7 +285,7 @@ router.post("/forgot-password", async (req, res) => {
 
   try {
     const userRepository = AppDataSource.getRepository("User");
-    const user = await userRepository.findOneBy({ email });
+    const user = await userRepository.findOneBy({ email: normalizedEmail });
 
     if (!user) {
       return res.json(responseBody);
@@ -250,6 +348,13 @@ router.post("/reset-password", async (req, res) => {
     user.reset_password_expires = null;
 
     await userRepository.save(user);
+    await AppDataSource.getRepository("RefreshToken")
+      .createQueryBuilder()
+      .update("RefreshToken")
+      .set({ revoked_at: new Date() })
+      .where("user_id = :userId", { userId: user.id })
+      .andWhere("revoked_at IS NULL")
+      .execute();
 
     res.cookie("token", "", { ...accessCookieOptions, maxAge: 1 });
     res.cookie("refreshToken", "", { ...refreshCookieOptions, maxAge: 1 });
@@ -269,8 +374,10 @@ router.post("/register/student", async (req, res) => {
     programi,
     viti_studimit,
   } = req.body;
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const trimmedUsername = String(username || "").trim();
 
-  if (!username || !email || !password) {
+  if (!trimmedUsername || !normalizedEmail || !password) {
     return res.status(400).json({ message: "Username, email and password are required" });
   }
 
@@ -280,12 +387,22 @@ router.post("/register/student", async (req, res) => {
     const { user, student } = await AppDataSource.transaction(async (manager) => {
       const userRepository = manager.getRepository("User");
       const studentRepository = manager.getRepository("Student");
+      const existingUser = await userRepository.findOneBy({
+        email: normalizedEmail,
+      });
+
+      if (existingUser) {
+        const error = new Error("Email already exists");
+        error.status = 409;
+        throw error;
+      }
+
       const studentNumber =
         numri_studentit || (await createStudentNumber(studentRepository));
 
       const savedUser = await userRepository.save({
-        username,
-        email,
+        username: trimmedUsername,
+        email: normalizedEmail,
         password_hash: passwordHash,
         role: "student",
         status: "approved",
@@ -307,14 +424,18 @@ router.post("/register/student", async (req, res) => {
       student_id: student.id,
     });
   } catch (err) {
-    res.status(500).json(err);
+    res.status(err.status || 500).json({
+      message: err.status ? err.message : "Student account could not be created",
+    });
   }
 });
 
 router.post("/register/professor", async (req, res) => {
   const { username, email, password, titulli, departamenti } = req.body;
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const trimmedUsername = String(username || "").trim();
 
-  if (!username || !email || !password) {
+  if (!trimmedUsername || !normalizedEmail || !password) {
     return res.status(400).json({ message: "Username, email and password are required" });
   }
 
@@ -324,10 +445,19 @@ router.post("/register/professor", async (req, res) => {
     const { user, professor } = await AppDataSource.transaction(async (manager) => {
       const userRepository = manager.getRepository("User");
       const professorRepository = manager.getRepository("Professor");
+      const existingUser = await userRepository.findOneBy({
+        email: normalizedEmail,
+      });
+
+      if (existingUser) {
+        const error = new Error("Email already exists");
+        error.status = 409;
+        throw error;
+      }
 
       const savedUser = await userRepository.save({
-        username,
-        email,
+        username: trimmedUsername,
+        email: normalizedEmail,
         password_hash: passwordHash,
         role: "professor",
         status: "pending",
@@ -348,7 +478,9 @@ router.post("/register/professor", async (req, res) => {
       professor_id: professor.id,
     });
   } catch (err) {
-    res.status(500).json(err);
+    res.status(err.status || 500).json({
+      message: err.status ? err.message : "Professor account could not be created",
+    });
   }
 });
 
@@ -356,7 +488,66 @@ router.get("/me", authenticateToken, (req, res) => {
   res.json({ user: req.user });
 });
 
-router.post("/logout", (req, res) => {
+router.get("/sessions", authenticateToken, async (req, res) => {
+  try {
+    const currentRefreshToken = getCookieValue(req, "refreshToken");
+    const currentRefreshTokenHash = currentRefreshToken
+      ? hashToken(currentRefreshToken)
+      : null;
+    const sessions = await AppDataSource.getRepository("RefreshToken")
+      .createQueryBuilder("refreshToken")
+      .where("refreshToken.user_id = :userId", { userId: req.user.id })
+      .andWhere("refreshToken.revoked_at IS NULL")
+      .andWhere("refreshToken.expires_at > :now", { now: new Date() })
+      .orderBy("refreshToken.created_at", "DESC")
+      .getMany();
+
+    res.json(
+      sessions.map((session) => ({
+        id: session.id,
+        created_at: session.created_at,
+        expires_at: session.expires_at,
+        user_agent: session.user_agent,
+        ip_address: session.ip_address,
+        current: session.token_hash === currentRefreshTokenHash,
+      }))
+    );
+  } catch (err) {
+    res.status(500).json({ message: "Sessions could not be loaded" });
+  }
+});
+
+router.delete("/sessions/:id", authenticateToken, async (req, res) => {
+  try {
+    const refreshTokenRepository = AppDataSource.getRepository("RefreshToken");
+    const session = await refreshTokenRepository
+      .createQueryBuilder("refreshToken")
+      .where("refreshToken.id = :id", { id: Number(req.params.id) })
+      .andWhere("refreshToken.user_id = :userId", { userId: req.user.id })
+      .getOne();
+
+    if (!session) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    session.revoked_at = new Date();
+    await refreshTokenRepository.save(session);
+
+    res.json({ message: "Session revoked successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Session could not be revoked" });
+  }
+});
+
+router.post("/logout", async (req, res) => {
+  const refreshToken = getCookieValue(req, "refreshToken");
+
+  try {
+    await revokeRefreshToken(refreshToken);
+  } catch {
+    // Logout should still clear local cookies even if revocation fails.
+  }
+
   res.cookie("token", "", { ...accessCookieOptions, maxAge: 1 });
   res.cookie("refreshToken", "", { ...refreshCookieOptions, maxAge: 1 });
 

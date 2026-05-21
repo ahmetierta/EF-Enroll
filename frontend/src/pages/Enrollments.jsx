@@ -73,6 +73,8 @@ const Enrollments = () => {
               <th className="px-4 py-3">Student</th>
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Course</th>
+              <th className="px-4 py-3">Duration</th>
+              <th className="px-4 py-3">Final Price</th>
               <th className="px-4 py-3">Registered</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Grade</th>
@@ -98,6 +100,19 @@ const Enrollments = () => {
                   <td className="px-4 py-3">{enrollment.student_email}</td>
                   <td className="px-4 py-3">{enrollment.course_name}</td>
                   <td className="px-4 py-3">
+                    {enrollment.duration_months || 1} month(s)
+                  </td>
+                  <td className="px-4 py-3">
+                    <div>
+                      {Number(enrollment.final_amount || 0).toFixed(2)} EUR
+                    </div>
+                    {Number(enrollment.discount_percent || 0) > 0 && (
+                      <div className="text-xs font-semibold text-green-700">
+                        {Number(enrollment.discount_percent || 0).toFixed(0)}% off
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
                     {enrollment.data_regjistrimit
                       ? new Date(enrollment.data_regjistrimit).toLocaleDateString()
                       : "Not set"}
@@ -112,7 +127,7 @@ const Enrollments = () => {
               ))
             ) : (
               <tr>
-                <td className="px-4 py-6 text-slate-500" colSpan="7">
+                <td className="px-4 py-6 text-slate-500" colSpan="9">
                   No enrollments found.
                 </td>
               </tr>

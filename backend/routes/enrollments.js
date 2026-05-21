@@ -8,10 +8,39 @@ const {
 
 router.use(authenticateToken);
 
+const DURATION_OPTIONS = [1, 3, 6, 12];
+const FIRST_TIME_DISCOUNT_PERCENT = 20;
+
 async function getStudentForUser(userId) {
   return AppDataSource.getRepository("Student").findOne({
     where: { user: { id: userId } },
   });
+}
+
+function normalizeDurationMonths(durationMonths) {
+  const parsedDuration = Number(durationMonths || 1);
+
+  if (!DURATION_OPTIONS.includes(parsedDuration)) {
+    return null;
+  }
+
+  return parsedDuration;
+}
+
+function calculateEnrollmentPricing(course, durationMonths, hasExistingEnrollments) {
+  const monthlyPrice = Number(course.cmimi || 0);
+  const baseAmount = monthlyPrice * durationMonths;
+  const isFirstTimeOffer = !hasExistingEnrollments;
+  const discountPercent = isFirstTimeOffer ? FIRST_TIME_DISCOUNT_PERCENT : 0;
+  const discountAmount = (baseAmount * discountPercent) / 100;
+  const finalAmount = Math.max(baseAmount - discountAmount, 0);
+
+  return {
+    baseAmount: Number(baseAmount.toFixed(2)),
+    discountPercent,
+    finalAmount: Number(finalAmount.toFixed(2)),
+    isFirstTimeOffer,
+  };
 }
 
 function mapEnrollment(enrollment) {
@@ -22,6 +51,11 @@ function mapEnrollment(enrollment) {
     data_regjistrimit: enrollment.data_regjistrimit,
     statusi: enrollment.statusi,
     nota: enrollment.nota,
+    duration_months: enrollment.kohezgjatja_muaj,
+    base_amount: enrollment.cmimi_baze,
+    discount_percent: enrollment.zbritja_perqindje,
+    final_amount: enrollment.cmimi_final,
+    first_time_offer: Boolean(enrollment.oferta_fillestare),
     numri_studentit: enrollment.student?.numri_studentit || null,
     student_name: enrollment.student?.user?.username || null,
     student_email: enrollment.student?.user?.email || null,
@@ -41,6 +75,11 @@ function mapStudentEnrollment(enrollment) {
     data_regjistrimit: enrollment.data_regjistrimit,
     statusi: enrollment.statusi,
     nota: enrollment.nota,
+    duration_months: enrollment.kohezgjatja_muaj,
+    base_amount: enrollment.cmimi_baze,
+    discount_percent: enrollment.zbritja_perqindje,
+    final_amount: enrollment.cmimi_final,
+    first_time_offer: Boolean(enrollment.oferta_fillestare),
     course_name: enrollment.course?.emertimi || null,
     kredite: enrollment.course?.kredite || null,
     cmimi: enrollment.course?.cmimi || 0,
@@ -48,6 +87,9 @@ function mapStudentEnrollment(enrollment) {
     payment_id: payment?.id || null,
     payment_status: payment?.statusi || null,
     paid_amount: payment?.amount || null,
+    invoice_number: payment?.invoice_number || null,
+    transaction_id: payment?.transaction_id || null,
+    payment_method: payment?.payment_method || null,
     payment_date: payment?.data_pageses || null,
   };
 }
@@ -105,10 +147,20 @@ router.get("/mine", requireRole("student"), async (req, res) => {
 
 // POST enroll logged-in student in a course
 router.post("/", requireRole("student"), async (req, res) => {
-  const { course_id } = req.body;
+  const { course_id, duration_months } = req.body;
 
   if (!course_id) {
     return res.status(400).json({ message: "Course is required" });
+  }
+
+  const durationMonths = normalizeDurationMonths(duration_months);
+
+  if (!durationMonths) {
+    return res.status(400).json({
+      message: `Duration must be one of these options: ${DURATION_OPTIONS.join(
+        ", "
+      )} months`,
+    });
   }
 
   try {
@@ -172,6 +224,9 @@ router.post("/", requireRole("student"), async (req, res) => {
         course,
         data: new Date().toISOString().slice(0, 10),
         pozicioni,
+        statusi: "waiting",
+        prioriteti: "normal",
+        njofto_me_email: true,
       });
 
       return res.status(202).json({
@@ -181,16 +236,37 @@ router.post("/", requireRole("student"), async (req, res) => {
       });
     }
 
+    const existingStudentEnrollments = await enrollmentRepository.count({
+      where: {
+        student: { id: student.id },
+      },
+    });
+    const pricing = calculateEnrollmentPricing(
+      course,
+      durationMonths,
+      existingStudentEnrollments > 0
+    );
+
     const enrollment = await enrollmentRepository.save({
       student,
       course,
       data_regjistrimit: new Date().toISOString().slice(0, 10),
       statusi: "active",
+      kohezgjatja_muaj: durationMonths,
+      cmimi_baze: pricing.baseAmount,
+      zbritja_perqindje: pricing.discountPercent,
+      cmimi_final: pricing.finalAmount,
+      oferta_fillestare: pricing.isFirstTimeOffer,
     });
 
     res.status(201).json({
       message: "Enrollment created successfully",
       enrollment_id: enrollment.id,
+      duration_months: durationMonths,
+      base_amount: pricing.baseAmount,
+      discount_percent: pricing.discountPercent,
+      final_amount: pricing.finalAmount,
+      first_time_offer: pricing.isFirstTimeOffer,
     });
   } catch (err) {
     res.status(500).json(err);

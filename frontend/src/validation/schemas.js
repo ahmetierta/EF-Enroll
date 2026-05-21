@@ -149,6 +149,25 @@ export const materialSchema = yup.object({
   course_id: requiredText("Course"),
   titulli: requiredText("Material title"),
   file_url: requiredText("File link or path"),
+  material_type: requiredText("Material type"),
+  pershkrimi: yup.string().nullable(),
+  moduli: yup.string().nullable(),
+  java: yup
+    .number()
+    .transform((value, originalValue) => (originalValue === "" ? null : value))
+    .nullable()
+    .integer("Week must be a whole number.")
+    .min(1, "Week must be greater than 0."),
+  duration_minutes: yup
+    .number()
+    .transform((value, originalValue) => (originalValue === "" ? 0 : value))
+    .integer("Duration must be a whole number.")
+    .min(0, "Duration cannot be negative."),
+  order_index: yup
+    .number()
+    .transform((value, originalValue) => (originalValue === "" ? 0 : value))
+    .integer("Order must be a whole number.")
+    .min(0, "Order cannot be negative."),
 });
 
 export const announcementSchema = yup.object({

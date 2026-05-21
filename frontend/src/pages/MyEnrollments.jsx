@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PageContainer from "../components/layout/PageContainer";
 import Button from "../components/ui/Button";
+import SelectInput from "../components/ui/SelectInput";
 import { enrollmentService } from "../services/enrollmentService";
 import { paymentService } from "../services/paymentService";
 
@@ -10,6 +11,7 @@ const MyEnrollments = () => {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [payingEnrollmentId, setPayingEnrollmentId] = useState(null);
+  const [paymentMethodByEnrollment, setPaymentMethodByEnrollment] = useState({});
 
   function fetchEnrollments() {
     enrollmentService
@@ -29,11 +31,15 @@ const MyEnrollments = () => {
     setMessage("");
     setPayingEnrollmentId(enrollmentId);
 
+    const paymentMethod = paymentMethodByEnrollment[enrollmentId] || "simulated";
+
     paymentService
-      .create(enrollmentId)
+      .create(enrollmentId, { payment_method: paymentMethod })
       .then((res) => {
         setMessage(
-          `${res.data.message} Amount: ${Number(res.data.amount || 0).toFixed(2)} EUR`
+          `${res.data.message} Invoice: ${res.data.invoice_number}. Amount: ${Number(
+            res.data.amount || 0
+          ).toFixed(2)} ${res.data.currency || "EUR"}`
         );
         fetchEnrollments();
       })
@@ -49,7 +55,7 @@ const MyEnrollments = () => {
     <PageContainer title="My Enrollments">
       <div className="mb-6">
         <Link
-          to="/"
+          to="/catalog"
           className="inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
         >
           Browse Courses
@@ -104,9 +110,57 @@ const MyEnrollments = () => {
                       <dd>{enrollment.kredite || 0}</dd>
                     </div>
                     <div>
-                      <dt className="font-semibold text-slate-950">Price</dt>
+                      <dt className="font-semibold text-slate-950">Duration</dt>
+                      <dd>{enrollment.duration_months || 1} month(s)</dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold text-slate-950">Monthly price</dt>
                       <dd>{Number(enrollment.cmimi || 0).toFixed(2)} EUR</dd>
                     </div>
+                    <div>
+                      <dt className="font-semibold text-slate-950">Total price</dt>
+                      <dd>
+                        {Number(enrollment.final_amount || enrollment.cmimi || 0).toFixed(2)} EUR
+                      </dd>
+                    </div>
+                    {Number(enrollment.discount_percent || 0) > 0 && (
+                      <div>
+                        <dt className="font-semibold text-slate-950">Offer</dt>
+                        <dd>
+                          {Number(enrollment.discount_percent || 0).toFixed(0)}%
+                          first-time discount
+                        </dd>
+                      </div>
+                    )}
+                    {Number(enrollment.base_amount || 0) >
+                      Number(enrollment.final_amount || 0) && (
+                      <div>
+                        <dt className="font-semibold text-slate-950">Before discount</dt>
+                        <dd>
+                          {Number(enrollment.base_amount || 0).toFixed(2)} EUR
+                        </dd>
+                      </div>
+                    )}
+                    <div>
+                      <dt className="font-semibold text-slate-950">Paid amount</dt>
+                      <dd>
+                        {isPaid
+                          ? `${Number(enrollment.paid_amount || 0).toFixed(2)} EUR`
+                          : "Not paid yet"}
+                      </dd>
+                    </div>
+                    {isPaid && (
+                      <div>
+                        <dt className="font-semibold text-slate-950">Payment</dt>
+                        <dd>
+                          {enrollment.payment_id
+                            ? `${enrollment.invoice_number || `Receipt #${enrollment.payment_id}`} - ${
+                                enrollment.payment_method || "paid"
+                              }`
+                            : "Payment recorded"}
+                        </dd>
+                      </div>
+                    )}
                     <div>
                       <dt className="font-semibold text-slate-950">Registered</dt>
                       <dd>
@@ -123,14 +177,35 @@ const MyEnrollments = () => {
                     Paid
                   </Button>
                 ) : (
-                  <Button
-                    onClick={() => payEnrollment(enrollment.id)}
-                    className="mt-6"
-                    disabled={payingEnrollmentId === enrollment.id}
-                    fullWidth
-                  >
-                    {payingEnrollmentId === enrollment.id ? "Paying..." : "Pay"}
-                  </Button>
+                  <div className="mt-6 space-y-3">
+                    <SelectInput
+                      value={
+                        paymentMethodByEnrollment[enrollment.id] || "simulated"
+                      }
+                      onChange={(e) =>
+                        setPaymentMethodByEnrollment((current) => ({
+                          ...current,
+                          [enrollment.id]: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="simulated">Simulated payment</option>
+                      <option value="card">Card</option>
+                      <option value="bank_transfer">Bank transfer</option>
+                      <option value="cash">Cash</option>
+                    </SelectInput>
+                    <Button
+                      onClick={() => payEnrollment(enrollment.id)}
+                      disabled={payingEnrollmentId === enrollment.id}
+                      fullWidth
+                    >
+                      {payingEnrollmentId === enrollment.id
+                        ? "Paying..."
+                        : `Pay ${Number(
+                            enrollment.final_amount || enrollment.cmimi || 0
+                          ).toFixed(2)} EUR`}
+                    </Button>
+                  </div>
                 )}
               </article>
             );

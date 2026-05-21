@@ -1,5 +1,10 @@
 export const navItems = [
+  { to: "/admin/dashboard", label: "Dashboard", roles: ["admin"] },
   { to: "/admin/approvals", label: "Approvals", roles: ["admin"] },
+  { to: "/professor/dashboard", label: "Dashboard", roles: ["professor"] },
+  { to: "/student/dashboard", label: "Dashboard", roles: ["student"] },
+  { to: "/", label: "Home", roles: ["student"] },
+  { to: "/catalog", label: "Catalog", roles: ["student"] },
   { to: "/my-enrollments", label: "My Enrollments", roles: ["student"] },
   { to: "/courses", label: "Courses", roles: ["admin", "professor"] },
   { to: "/students", label: "Students", roles: ["admin", "professor"] },

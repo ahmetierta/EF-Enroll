@@ -1,4 +1,4 @@
-const SESSION_DURATION_MS = 60 * 60 * 1000;
+const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function saveAuth(user) {
   localStorage.setItem("user", JSON.stringify(user));

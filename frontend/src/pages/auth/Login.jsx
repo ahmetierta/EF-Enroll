@@ -3,14 +3,9 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import TextInput from "../../components/ui/TextInput";
 import AuthContext from "../../context/AuthContext";
+import { getRoleHomePath } from "../../routes/roleRedirects";
 import { loginSchema, validateForm } from "../../validation/schemas";
 import AuthShell from "./AuthShell";
-
-const roleRedirects = {
-  admin: "/admin/approvals",
-  professor: "/courses",
-  student: "/",
-};
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -36,11 +31,11 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const data = await login(email, password);
+      const data = await login(email.trim().toLowerCase(), password);
       const user = data.user;
       const redirectPath = location.state?.from
         ? `${location.state.from.pathname}${location.state.from.search || ""}`
-        : roleRedirects[user.role] || "/";
+        : getRoleHomePath(user.role);
 
       navigate(redirectPath);
     } catch (err) {

@@ -31,6 +31,7 @@ const MainNavbar = ({ navRoles }) => {
           <NavLink
             key={item.to}
             to={item.to}
+            end={item.to === "/"}
             className={({ isActive }) =>
               `border-b-2 px-1 pb-3 text-sm font-semibold transition ${
                 isActive

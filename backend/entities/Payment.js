@@ -24,6 +24,40 @@ const Payment = new EntitySchema({
       length: 50,
       default: "simulated",
     },
+    invoice_number: {
+      type: "varchar",
+      length: 50,
+      nullable: true,
+      unique: true,
+    },
+    transaction_id: {
+      type: "varchar",
+      length: 100,
+      nullable: true,
+    },
+    currency: {
+      type: "varchar",
+      length: 10,
+      default: "EUR",
+    },
+    payer_name: {
+      type: "varchar",
+      length: 150,
+      nullable: true,
+    },
+    payer_email: {
+      type: "varchar",
+      length: 150,
+      nullable: true,
+    },
+    notes: {
+      type: "text",
+      nullable: true,
+    },
+    refunded_at: {
+      type: "timestamp",
+      nullable: true,
+    },
     data_pageses: {
       type: "timestamp",
       createDate: true,

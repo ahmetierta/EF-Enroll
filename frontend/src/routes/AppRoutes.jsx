@@ -1,19 +1,24 @@
 import { Route, Routes } from "react-router-dom";
+import AdminDashboard from "../pages/admin/AdminDashboard";
 import DashboardLayout from "../layouts/DashboardLayout";
 import AdminApprovals from "../pages/admin/AdminApprovals";
 import Announcements from "../pages/Announcements";
+import CourseDetails from "../pages/CourseDetails";
 import Courses from "../pages/Courses";
 import Departments from "../pages/Departments";
 import Enrollments from "../pages/Enrollments";
+import Home from "../pages/Home";
 import Materials from "../pages/Materials";
 import MyEnrollments from "../pages/MyEnrollments";
 import Payments from "../pages/Payments";
+import ProfessorDashboard from "../pages/professor/ProfessorDashboard";
 import Professors from "../pages/Professors";
 import PublicCourses from "../pages/PublicCourses";
 import Revenue from "../pages/Revenue";
 import Schedules from "../pages/Schedules";
 import Semesters from "../pages/Semesters";
 import Students from "../pages/Students";
+import StudentDashboard from "../pages/student/StudentDashboard";
 import WaitingList from "../pages/WaitingList";
 import ForgotPassword from "../pages/auth/ForgotPassword";
 import Login from "../pages/auth/Login";
@@ -26,7 +31,9 @@ import ProtectedRoute from "./ProtectedRoute";
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<PublicCourses />} />
+      <Route path="/" element={<Home />} />
+      <Route path="/catalog" element={<PublicCourses />} />
+      <Route path="/catalog/:id" element={<CourseDetails />} />
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password/:token" element={<ResetPassword />} />
@@ -36,10 +43,34 @@ const AppRoutes = () => {
 
       <Route path="/" element={<DashboardLayout />}>
         <Route
+          path="admin/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="admin/approvals"
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
               <AdminApprovals />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="professor/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["professor"]}>
+              <ProfessorDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="student/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["student"]}>
+              <StudentDashboard />
             </ProtectedRoute>
           }
         />

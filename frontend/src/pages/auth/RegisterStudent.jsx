@@ -43,8 +43,8 @@ const RegisterStudent = () => {
     setError("");
 
     const payload = {
-      username,
-      email,
+      username: username.trim(),
+      email: email.trim().toLowerCase(),
       password,
       programi,
       viti_studimit: vitiStudimit,

@@ -8,6 +8,7 @@ import { courseService } from "../services/courseService";
 import { enrollmentService } from "../services/enrollmentService";
 import { waitingListService } from "../services/waitingListService";
 import { getAuthUser } from "../utils/authStorage";
+import { getCourseImage } from "../utils/courseVisuals";
 
 const initialFilters = {
   search: "",
@@ -18,6 +19,26 @@ const initialFilters = {
   status: "all",
   sortBy: "name",
 };
+
+const durationOptions = [
+  { value: 1, label: "1 month" },
+  { value: 3, label: "3 months" },
+  { value: 6, label: "6 months" },
+  { value: 12, label: "12 months" },
+];
+const firstTimeDiscountPercent = 20;
+
+function calculateOffer(course, durationMonths, isFirstTimeStudent) {
+  const baseAmount = Number(course.cmimi || 0) * Number(durationMonths || 1);
+  const discountPercent = isFirstTimeStudent ? firstTimeDiscountPercent : 0;
+  const discountAmount = (baseAmount * discountPercent) / 100;
+
+  return {
+    baseAmount,
+    discountPercent,
+    finalAmount: Math.max(baseAmount - discountAmount, 0),
+  };
+}
 
 function formatSchedule(schedule) {
   const start = String(schedule.ora_fillimit || "").slice(0, 5);
@@ -47,6 +68,7 @@ const PublicCourses = () => {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [enrollingCourseId, setEnrollingCourseId] = useState(null);
+  const [selectedDurationByCourse, setSelectedDurationByCourse] = useState({});
   const navigate = useNavigate();
   const { logout } = useContext(AuthContext);
   const authUser = getAuthUser();
@@ -224,6 +246,7 @@ const PublicCourses = () => {
   const paidCount = myEnrollments.filter(
     (enrollment) => enrollment.payment_status === "paid"
   ).length;
+  const isFirstTimeStudent = authRole === "student" && myEnrollments.length === 0;
   const availableCount = courses.filter((course) => {
     const capacity = Number(course.kapaciteti || 0);
     return capacity === 0 || Number(course.available_seats || 0) > 0;
@@ -266,6 +289,16 @@ const PublicCourses = () => {
     return [course.titulli, course.professor_name].filter(Boolean).join(" ");
   };
 
+  const getSelectedDuration = (courseId) =>
+    Number(selectedDurationByCourse[courseId] || 1);
+
+  const handleDurationChange = (courseId, durationMonths) => {
+    setSelectedDurationByCourse((currentDurations) => ({
+      ...currentDurations,
+      [courseId]: Number(durationMonths),
+    }));
+  };
+
   const handleEnroll = (courseId) => {
     setError("");
     setMessage("");
@@ -283,7 +316,7 @@ const PublicCourses = () => {
     setEnrollingCourseId(courseId);
 
     enrollmentService
-      .create(courseId)
+      .create(courseId, getSelectedDuration(courseId))
       .then((res) => {
         setMessage(
           res.data.message || "Enrollment request completed successfully."
@@ -329,9 +362,15 @@ const PublicCourses = () => {
             <nav className="flex flex-wrap items-center gap-2 text-sm">
               <Link
                 to="/"
+                className="rounded border border-slate-300 bg-white px-3 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Home
+              </Link>
+              <Link
+                to="/catalog"
                 className="rounded border border-slate-300 bg-slate-100 px-3 py-2 font-semibold text-slate-800"
               >
-                Course catalog
+                Catalog
               </Link>
               {authUser?.role === "student" && (
                 <Link
@@ -393,7 +432,10 @@ const PublicCourses = () => {
           </div>
 
           <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-            Home / Courses / Course catalog
+            <Link to="/" className="font-semibold text-slate-700 hover:text-blue-700">
+              Home
+            </Link>{" "}
+            / Catalog
           </div>
         </div>
       </header>
@@ -404,7 +446,7 @@ const PublicCourses = () => {
             Course enrollment platform
           </p>
           <h1 className="mt-2 text-3xl font-bold text-slate-950">
-            Course catalog
+            Catalog
           </h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
             Browse available courses, filter by semester, professor, credits, or
@@ -628,17 +670,37 @@ const PublicCourses = () => {
                     const capacity = Number(course.kapaciteti || 0);
                     const availableSeats = Number(course.available_seats || 0);
                     const isFull = capacity > 0 && availableSeats <= 0;
+                    const selectedDuration = getSelectedDuration(course.id);
+                    const offer = calculateOffer(
+                      course,
+                      selectedDuration,
+                      isFirstTimeStudent
+                    );
 
                     return (
                       <article
                         key={course.id}
-                        className="grid gap-4 bg-white p-4 hover:bg-slate-50 md:grid-cols-[1fr_auto]"
+                        className="grid gap-4 bg-white p-4 hover:bg-slate-50 md:grid-cols-[180px_minmax(0,1fr)_auto]"
                       >
+                        <Link
+                          to={`/catalog/${course.id}`}
+                          className="block overflow-hidden rounded border border-slate-200 bg-slate-100"
+                        >
+                          <img
+                            src={getCourseImage(course)}
+                            alt=""
+                            className="h-40 w-full object-cover md:h-full"
+                          />
+                        </Link>
+
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-lg font-bold text-blue-800">
+                            <Link
+                              to={`/catalog/${course.id}`}
+                              className="text-lg font-bold text-blue-800 hover:text-blue-950"
+                            >
                               {course.emertimi}
-                            </h3>
+                            </Link>
                             <span className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-600">
                               {course.kredite || 0} credits
                             </span>
@@ -719,6 +781,12 @@ const PublicCourses = () => {
 
                         <div className="flex min-w-44 flex-col justify-center gap-2">
                           <Link
+                            to={`/catalog/${course.id}`}
+                            className="rounded border border-slate-300 bg-white px-3 py-2 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                          >
+                            View details
+                          </Link>
+                          <Link
                             to={`/materials?course_id=${course.id}`}
                             className="rounded border border-slate-300 bg-white px-3 py-2 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50"
                           >
@@ -744,18 +812,51 @@ const PublicCourses = () => {
                               View waiting list
                             </Link>
                           ) : (
-                            <Button
-                              onClick={() => handleEnroll(course.id)}
-                              disabled={enrollingCourseId === course.id}
-                              className="rounded py-2"
-                              fullWidth
-                            >
-                              {enrollingCourseId === course.id
-                                ? "Enrolling..."
-                                : isFull
-                                  ? "Join waiting list"
-                                  : "Enroll"}
-                            </Button>
+                            <>
+                              <SelectInput
+                                value={selectedDuration}
+                                onChange={(e) =>
+                                  handleDurationChange(course.id, e.target.value)
+                                }
+                                className="rounded border-slate-300 bg-white text-sm"
+                              >
+                                {durationOptions.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </SelectInput>
+
+                              <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                                <p className="font-semibold text-slate-950">
+                                  {offer.finalAmount.toFixed(2)} EUR total
+                                </p>
+                                {isFirstTimeStudent && (
+                                  <p className="mt-1 text-green-700">
+                                    First-time offer: {offer.discountPercent}% off
+                                  </p>
+                                )}
+                                {offer.discountPercent > 0 && (
+                                  <p className="mt-1 text-slate-500">
+                                    Before discount:{" "}
+                                    {offer.baseAmount.toFixed(2)} EUR
+                                  </p>
+                                )}
+                              </div>
+
+                              <Button
+                                onClick={() => handleEnroll(course.id)}
+                                disabled={enrollingCourseId === course.id}
+                                className="rounded py-2"
+                                fullWidth
+                              >
+                                {enrollingCourseId === course.id
+                                  ? "Enrolling..."
+                                  : isFull
+                                    ? "Join waiting list"
+                                    : "Enroll"}
+                              </Button>
+                            </>
                           )}
                         </div>
                       </article>

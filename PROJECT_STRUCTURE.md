@@ -626,16 +626,17 @@ Backend changes status to approved
 Professor can log in
 ```
 
-#### `backend/migrations/001_add_auth_fields.sql`
+#### `backend/database.sql`
 
-Ky file duhet ekzekutuar ne MySQL.
+Projekti nuk perdor me migration files.
 
-Ai shton ne tabelen `users`:
+`database.sql` eshte file kryesor qe ekzekutohet ne MySQL per me kriju tabelat dhe demo data. Aty jane te perfshira edhe fushat per auth, role, admin approval, pagesa, waiting list, materials dhe refresh tokens.
 
-- `role`: admin/professor/student
-- `status`: pending/approved/rejected
+Per admin helper perdoret:
 
-Keto fusha duhen per login, register dhe admin approval.
+```text
+backend/scripts/createAdmin.js
+```
 
 ### Frontend Auth Files
 

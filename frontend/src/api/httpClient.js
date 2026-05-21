@@ -11,6 +11,8 @@ const refreshClient = axios.create({
   withCredentials: true,
 });
 
+let refreshPromise = null;
+
 httpClient.interceptors.request.use((config) => {
   if (config.skipAuth) {
     config.withCredentials = false;
@@ -25,7 +27,7 @@ httpClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     const shouldRefresh =
-      [401, 403].includes(error.response?.status) &&
+      error.response?.status === 401 &&
       !originalRequest?._retry &&
       !originalRequest?.url?.includes("/auth/login") &&
       !originalRequest?.url?.includes("/auth/refresh");
@@ -34,14 +36,22 @@ httpClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const res = await refreshClient.post("/auth/refresh");
+        if (!refreshPromise) {
+          refreshPromise = refreshClient
+            .post("/auth/refresh")
+            .finally(() => {
+              refreshPromise = null;
+            });
+        }
+
+        const res = await refreshPromise;
 
         saveAuth(res.data.user);
         return httpClient(originalRequest);
       } catch {
         clearAuth();
       }
-    } else if ([401, 403].includes(error.response?.status)) {
+    } else if (error.response?.status === 401) {
       clearAuth();
     }
 

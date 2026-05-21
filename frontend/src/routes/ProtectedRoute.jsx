@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { getAuthUser } from "../utils/authStorage";
+import { getRoleHomePath } from "./roleRedirects";
 
 const ProtectedRoute = ({ allowedRoles, children }) => {
   const authUser = getAuthUser();
@@ -10,7 +11,7 @@ const ProtectedRoute = ({ allowedRoles, children }) => {
   }
 
   if (!allowedRoles.includes(authUser.role)) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={getRoleHomePath(authUser.role)} replace />;
   }
 
   return children;

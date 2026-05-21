@@ -8,6 +8,9 @@ const {
 
 router.use(authenticateToken);
 
+const WAITING_STATUSES = ["waiting", "notified", "paused"];
+const WAITING_PRIORITIES = ["normal", "high"];
+
 async function getStudentForUser(userId) {
   return AppDataSource.getRepository("Student").findOne({
     where: { user: { id: userId } },
@@ -25,6 +28,12 @@ function mapWaitingListItem(item) {
     course_id: course?.id || null,
     data: item.data,
     pozicioni: item.pozicioni,
+    statusi: item.statusi || "waiting",
+    prioriteti: item.prioriteti || "normal",
+    arsyeja: item.arsyeja || null,
+    njofto_me_email: Boolean(item.njofto_me_email),
+    data_njoftimit: item.data_njoftimit || null,
+    afati_pergjigjes: item.afati_pergjigjes || null,
     numri_studentit: item.student?.numri_studentit || null,
     student_name: item.student?.user?.username || null,
     student_email: item.student?.user?.email || null,
@@ -33,6 +42,10 @@ function mapWaitingListItem(item) {
     kapaciteti: capacity,
     enrolled_count: enrolledCount,
     available_seats: Math.max(capacity - enrolledCount, 0),
+    estimated_wait_days:
+      Math.max(capacity - enrolledCount, 0) > 0
+        ? 0
+        : Math.max(Number(item.pozicioni || 1) - 1, 0) * 7,
     professor_user_id: course?.professor?.user?.id || null,
     professor_name: course?.professor?.user?.username || null,
   };
@@ -141,7 +154,7 @@ router.get("/", requireRole("admin", "professor", "student"), async (req, res) =
 });
 
 router.post("/", requireRole("student"), async (req, res) => {
-  const { course_id } = req.body;
+  const { course_id, arsyeja, njofto_me_email } = req.body;
 
   if (!course_id) {
     return res.status(400).json({ message: "Course is required" });
@@ -204,12 +217,101 @@ router.post("/", requireRole("student"), async (req, res) => {
       course: availability.course,
       data: new Date().toISOString().slice(0, 10),
       pozicioni,
+      statusi: "waiting",
+      prioriteti: "normal",
+      arsyeja: arsyeja ? String(arsyeja).trim() : null,
+      njofto_me_email: njofto_me_email !== false,
     });
 
     res.status(201).json({
       message: `Course is full. You were added to the waiting list at position ${pozicioni}.`,
       waiting_list_id: waitingListItem.id,
       pozicioni,
+    });
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+router.patch("/:id", requireRole("admin", "professor", "student"), async (req, res) => {
+  const id = Number(req.params.id);
+
+  try {
+    const waitingRepository = AppDataSource.getRepository("WaitingList");
+    const item = await waitingRepository.findOne({
+      where: { id },
+      relations: {
+        student: {
+          user: true,
+        },
+        course: {
+          professor: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    if (!item) {
+      return res.status(404).json({ message: "Waiting list item not found" });
+    }
+
+    const accessError = assertWaitingListAccess(req, item);
+
+    if (accessError) {
+      return res.status(accessError.status).json({ message: accessError.message });
+    }
+
+    if (req.body.statusi !== undefined) {
+      if (!WAITING_STATUSES.includes(req.body.statusi)) {
+        return res.status(400).json({ message: "Waiting list status is not supported" });
+      }
+
+      if (req.user.role === "student" && req.body.statusi !== item.statusi) {
+        return res.status(403).json({
+          message: "Students cannot change waiting list status",
+        });
+      }
+
+      item.statusi = req.body.statusi;
+    }
+
+    if (req.body.prioriteti !== undefined) {
+      if (!WAITING_PRIORITIES.includes(req.body.prioriteti)) {
+        return res.status(400).json({ message: "Waiting list priority is not supported" });
+      }
+
+      if (req.user.role === "student") {
+        return res.status(403).json({
+          message: "Students cannot change waiting list priority",
+        });
+      }
+
+      item.prioriteti = req.body.prioriteti;
+    }
+
+    if (req.body.arsyeja !== undefined) {
+      item.arsyeja = req.body.arsyeja ? String(req.body.arsyeja).trim() : null;
+    }
+
+    if (req.body.njofto_me_email !== undefined) {
+      item.njofto_me_email =
+        req.body.njofto_me_email === true ||
+        req.body.njofto_me_email === "true" ||
+        req.body.njofto_me_email === 1 ||
+        req.body.njofto_me_email === "1";
+    }
+
+    if (req.body.statusi === "notified") {
+      item.data_njoftimit = new Date();
+      item.afati_pergjigjes = new Date(Date.now() + 48 * 60 * 60 * 1000);
+    }
+
+    const savedItem = await waitingRepository.save(item);
+
+    res.json({
+      message: "Waiting list item updated successfully",
+      item: mapWaitingListItem(savedItem),
     });
   } catch (err) {
     res.status(500).json(err);
