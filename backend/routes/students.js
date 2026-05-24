@@ -9,6 +9,104 @@ const {
 
 router.use(authenticateToken);
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_PASSWORD_LENGTH = 6;
+const MIN_STUDY_YEAR = 1;
+const MAX_STUDY_YEAR = 5;
+
+function createHttpError(status, message) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+}
+
+function normalizeStudentPayload(body) {
+  return {
+    username: String(body.username || "").trim(),
+    email: String(body.email || "").trim().toLowerCase(),
+    password: body.password || body.password_hash || "",
+    numri_studentit: String(body.numri_studentit || "").trim(),
+    programi: String(body.programi || "").trim(),
+    viti_studimit:
+      body.viti_studimit === "" || body.viti_studimit === null
+        ? null
+        : Number(body.viti_studimit),
+  };
+}
+
+function validateStudentPayload(payload, requirePassword = true) {
+  if (!payload.username || !payload.email) {
+    return "Username and email are required";
+  }
+
+  if (!EMAIL_PATTERN.test(payload.email)) {
+    return "Enter a valid student email address";
+  }
+
+  if (requirePassword && !payload.password) {
+    return "Password is required";
+  }
+
+  if (payload.password && payload.password.length < MIN_PASSWORD_LENGTH) {
+    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
+  }
+
+  if (!payload.numri_studentit || !payload.programi) {
+    return "Student number and program are required";
+  }
+
+  if (
+    !Number.isInteger(payload.viti_studimit) ||
+    payload.viti_studimit < MIN_STUDY_YEAR ||
+    payload.viti_studimit > MAX_STUDY_YEAR
+  ) {
+    return `Year of study must be between ${MIN_STUDY_YEAR} and ${MAX_STUDY_YEAR}`;
+  }
+
+  return null;
+}
+
+async function assertStudentUniqueness(
+  manager,
+  { email, numri_studentit },
+  { excludeUserId = null, excludeStudentId = null } = {}
+) {
+  const userRepository = manager.getRepository("User");
+  const studentRepository = manager.getRepository("Student");
+
+  const emailQuery = userRepository
+    .createQueryBuilder("user")
+    .where("LOWER(user.email) = LOWER(:email)", { email });
+
+  if (excludeUserId) {
+    emailQuery.andWhere("user.id != :excludeUserId", { excludeUserId });
+  }
+
+  const existingUser = await emailQuery.getOne();
+
+  if (existingUser) {
+    throw createHttpError(409, "A user with this email already exists");
+  }
+
+  const numberQuery = studentRepository
+    .createQueryBuilder("student")
+    .where("LOWER(student.numri_studentit) = LOWER(:studentNumber)", {
+      studentNumber: numri_studentit,
+    });
+
+  if (excludeStudentId) {
+    numberQuery.andWhere("student.id != :excludeStudentId", {
+      excludeStudentId,
+    });
+  }
+
+  const existingStudent = await numberQuery.getOne();
+
+  if (existingStudent) {
+    throw createHttpError(409, "A student with this student number already exists");
+  }
+}
+
 function mapStudent(student) {
   return {
     id: student.id,
@@ -151,21 +249,11 @@ router.get("/:id", requireRole("admin", "professor"), async (req, res) => {
 
 // POST create user + student
 router.post("/", requireRole("admin"), async (req, res) => {
-  const {
-    username,
-    email,
-    password,
-    password_hash,
-    numri_studentit,
-    programi,
-    viti_studimit,
-  } = req.body;
-  const rawPassword = password || password_hash;
+  const payload = normalizeStudentPayload(req.body);
+  const validationError = validateStudentPayload(payload);
 
-  if (!username || !email || !rawPassword) {
-    return res.status(400).json({
-      message: "Username, email and password are required",
-    });
+  if (validationError) {
+    return res.status(400).json({ message: validationError });
   }
 
   try {
@@ -173,19 +261,21 @@ router.post("/", requireRole("admin"), async (req, res) => {
       const userRepository = manager.getRepository("User");
       const studentRepository = manager.getRepository("Student");
 
+      await assertStudentUniqueness(manager, payload);
+
       const savedUser = await userRepository.save({
-        username,
-        email,
-        password_hash: bcrypt.hashSync(rawPassword, 10),
+        username: payload.username,
+        email: payload.email,
+        password_hash: bcrypt.hashSync(payload.password, 10),
         role: "student",
         status: "approved",
       });
 
       const savedStudent = await studentRepository.save({
         user: savedUser,
-        numri_studentit,
-        programi,
-        viti_studimit,
+        numri_studentit: payload.numri_studentit,
+        programi: payload.programi,
+        viti_studimit: payload.viti_studimit,
       });
 
       return { user: savedUser, student: savedStudent };
@@ -197,23 +287,25 @@ router.post("/", requireRole("admin"), async (req, res) => {
       student_id: student.id,
     });
   } catch (err) {
-    res.status(500).json(err);
+    res.status(err.status || 500).json({
+      message: err.message || "Failed to create student",
+    });
   }
 });
 
 // PUT update user + student
 router.put("/:id", requireRole("admin"), async (req, res) => {
   const id = Number(req.params.id);
-  const {
-    username,
-    email,
-    password,
-    password_hash,
-    numri_studentit,
-    programi,
-    viti_studimit,
-  } = req.body;
-  const rawPassword = password || password_hash;
+  const payload = normalizeStudentPayload(req.body);
+  const validationError = validateStudentPayload(payload, false);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ message: "Student id is not valid" });
+  }
+
+  if (validationError) {
+    return res.status(400).json({ message: validationError });
+  }
 
   try {
     const result = await AppDataSource.transaction(async (manager) => {
@@ -228,20 +320,25 @@ router.put("/:id", requireRole("admin"), async (req, res) => {
         return null;
       }
 
+      await assertStudentUniqueness(manager, payload, {
+        excludeUserId: student.user?.id,
+        excludeStudentId: id,
+      });
+
       const userUpdateData = {
-        username,
-        email,
+        username: payload.username,
+        email: payload.email,
       };
 
-      if (rawPassword) {
-        userUpdateData.password_hash = bcrypt.hashSync(rawPassword, 10);
+      if (payload.password) {
+        userUpdateData.password_hash = bcrypt.hashSync(payload.password, 10);
       }
 
       const userResult = await userRepository.update(student.user.id, userUpdateData);
       const studentResult = await studentRepository.update(id, {
-        numri_studentit,
-        programi,
-        viti_studimit,
+        numri_studentit: payload.numri_studentit,
+        programi: payload.programi,
+        viti_studimit: payload.viti_studimit,
       });
 
       return { userResult, studentResult };
@@ -256,7 +353,9 @@ router.put("/:id", requireRole("admin"), async (req, res) => {
       ...result,
     });
   } catch (err) {
-    res.status(500).json(err);
+    res.status(err.status || 500).json({
+      message: err.message || "Failed to update student",
+    });
   }
 });
 
