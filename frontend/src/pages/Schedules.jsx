@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Button from "../components/ui/Button";
 import SelectInput from "../components/ui/SelectInput";
+import StatusMessage from "../components/ui/StatusMessage";
 import TextInput from "../components/ui/TextInput";
 import { courseService } from "../services/courseService";
 import { scheduleService } from "../services/scheduleService";
+import { getApiErrorMessage } from "../utils/apiErrors";
 import { getAuthUser } from "../utils/authStorage";
 import { scheduleSchema, validateForm } from "../validation/schemas";
 
@@ -28,25 +30,41 @@ const Schedules = () => {
   const [courses, setCourses] = useState([]);
   const [formData, setFormData] = useState(initialFormData);
   const [editId, setEditId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [notice, setNotice] = useState(null);
 
-  function fetchSchedules() {
-    scheduleService
-      .getAll()
-      .then((res) => setSchedules(res.data))
-      .catch((err) => console.log(err));
-  }
+  const showNotice = useCallback((type, message) => {
+    setNotice({ type, message });
+  }, []);
 
-  function fetchCourses() {
-    courseService
-      .getAll()
-      .then((res) => setCourses(res.data))
-      .catch((err) => console.log(err));
-  }
+  const fetchSchedules = useCallback(async () => {
+    setIsLoading(true);
+
+    try {
+      const res = await scheduleService.getAll();
+      setSchedules(res.data);
+    } catch (err) {
+      showNotice("error", getApiErrorMessage(err, "Failed to load schedules."));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [showNotice]);
+
+  const fetchCourses = useCallback(async () => {
+    try {
+      const res = await courseService.getAll();
+      setCourses(res.data);
+    } catch (err) {
+      showNotice("error", getApiErrorMessage(err, "Failed to load courses."));
+    }
+  }, [showNotice]);
 
   useEffect(() => {
     fetchSchedules();
     fetchCourses();
-  }, []);
+  }, [fetchCourses, fetchSchedules]);
 
   const handleChange = (e) => {
     setFormData({
@@ -69,25 +87,22 @@ const Schedules = () => {
     const validationError = await validateForm(scheduleSchema, payload);
 
     if (validationError) {
-      alert(validationError);
+      showNotice("error", validationError);
       return;
     }
 
-    scheduleService
-      .create(payload)
-      .then(() => {
-        fetchSchedules();
-        resetForm();
-        alert("Schedule added successfully.");
-      })
-      .catch((err) => {
-        console.log(err);
-        alert(
-          err.response?.data?.error ||
-            err.response?.data?.message ||
-            "Failed to add schedule."
-        );
-      });
+    setIsSaving(true);
+
+    try {
+      await scheduleService.create(payload);
+      await fetchSchedules();
+      resetForm();
+      showNotice("success", "Schedule added successfully.");
+    } catch (err) {
+      showNotice("error", getApiErrorMessage(err, "Failed to add schedule."));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const updateSchedule = async () => {
@@ -99,45 +114,39 @@ const Schedules = () => {
     const validationError = await validateForm(scheduleSchema, payload);
 
     if (validationError) {
-      alert(validationError);
+      showNotice("error", validationError);
       return;
     }
 
-    scheduleService
-      .update(editId, payload)
-      .then(() => {
-        fetchSchedules();
-        resetForm();
-        alert("Schedule updated successfully.");
-      })
-      .catch((err) => {
-        console.log(err);
-        alert(
-          err.response?.data?.error ||
-            err.response?.data?.message ||
-            "Failed to update schedule."
-        );
-      });
+    setIsSaving(true);
+
+    try {
+      await scheduleService.update(editId, payload);
+      await fetchSchedules();
+      resetForm();
+      showNotice("success", "Schedule updated successfully.");
+    } catch (err) {
+      showNotice("error", getApiErrorMessage(err, "Failed to update schedule."));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const deleteSchedule = (id) => {
+  const deleteSchedule = async (id) => {
     if (!window.confirm("Do you want to delete this schedule?")) return;
 
-    scheduleService
-      .remove(id)
-      .then(() => {
-        fetchSchedules();
-        if (editId === id) resetForm();
-        alert("Schedule deleted successfully.");
-      })
-      .catch((err) => {
-        console.log(err);
-        alert(
-          err.response?.data?.error ||
-            err.response?.data?.message ||
-            "Failed to delete schedule."
-        );
-      });
+    setDeletingId(id);
+
+    try {
+      await scheduleService.remove(id);
+      await fetchSchedules();
+      if (editId === id) resetForm();
+      showNotice("success", "Schedule deleted successfully.");
+    } catch (err) {
+      showNotice("error", getApiErrorMessage(err, "Failed to delete schedule."));
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const editSchedule = (schedule) => {
@@ -153,6 +162,9 @@ const Schedules = () => {
 
   const uniqueRooms = new Set(
     schedules.map((schedule) => schedule.salla).filter(Boolean)
+  ).size;
+  const scheduledCourses = new Set(
+    schedules.map((schedule) => schedule.course_id).filter(Boolean)
   ).size;
 
   const hasTimeSelection =
@@ -200,9 +212,9 @@ const Schedules = () => {
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                <p className="text-sm text-sky-700">Courses Ready</p>
+                <p className="text-sm text-sky-700">Scheduled Courses</p>
                 <p className="mt-2 text-3xl font-bold text-slate-900">
-                  {courses.length}
+                  {scheduledCourses}
                 </p>
               </div>
 
@@ -214,6 +226,10 @@ const Schedules = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="mb-6">
+          <StatusMessage message={notice?.message} type={notice?.type} />
         </div>
 
         <div className={`grid gap-8 ${canManageSchedules ? "lg:grid-cols-3" : ""}`}>
@@ -297,13 +313,15 @@ const Schedules = () => {
                   <Button
                     onClick={updateSchedule}
                     className="flex-1 rounded-xl"
+                    disabled={isSaving}
                   >
-                    Update
+                    {isSaving ? "Saving..." : "Update"}
                   </Button>
                   <Button
                     onClick={resetForm}
                     className="flex-1 rounded-xl border-slate-200"
                     variant="secondary"
+                    disabled={isSaving}
                   >
                     Cancel
                   </Button>
@@ -313,8 +331,9 @@ const Schedules = () => {
                   onClick={addSchedule}
                   className="rounded-xl"
                   fullWidth
+                  disabled={isSaving}
                 >
-                  Add Schedule
+                  {isSaving ? "Saving..." : "Add Schedule"}
                 </Button>
               )}
             </div>
@@ -348,7 +367,16 @@ const Schedules = () => {
                 </thead>
 
                 <tbody>
-                  {schedules.length > 0 ? (
+                  {isLoading ? (
+                    <tr>
+                      <td
+                        className="px-4 py-10 text-center text-slate-400"
+                        colSpan={canManageSchedules ? "7" : "6"}
+                      >
+                        Loading schedules...
+                      </td>
+                    </tr>
+                  ) : schedules.length > 0 ? (
                     schedules.map((schedule) => (
                       <tr
                         key={schedule.id}
@@ -386,8 +414,9 @@ const Schedules = () => {
                                 onClick={() => deleteSchedule(schedule.id)}
                                 className="rounded-xl px-3 py-2"
                                 variant="danger"
+                                disabled={deletingId === schedule.id}
                               >
-                                Delete
+                                {deletingId === schedule.id ? "Deleting..." : "Delete"}
                               </Button>
                             </div>
                           </td>
