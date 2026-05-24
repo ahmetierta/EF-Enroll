@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import FormCard from "../components/layout/FormCard";
 import PageContainer from "../components/layout/PageContainer";
 import TableCard from "../components/layout/TableCard";
 import Button from "../components/ui/Button";
 import SelectInput from "../components/ui/SelectInput";
+import StatusMessage from "../components/ui/StatusMessage";
 import TextArea from "../components/ui/TextArea";
 import TextInput from "../components/ui/TextInput";
 import { departmentService } from "../services/departmentService";
 import { professorService } from "../services/professorService";
+import { getApiErrorMessage } from "../utils/apiErrors";
 import { departmentSchema, validateForm } from "../validation/schemas";
 
 const initialFormData = {
@@ -21,25 +23,41 @@ const Departments = () => {
   const [professors, setProfessors] = useState([]);
   const [formData, setFormData] = useState(initialFormData);
   const [editId, setEditId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [notice, setNotice] = useState(null);
 
-  function fetchDepartments() {
-    departmentService
-      .getAll()
-      .then((res) => setDepartments(res.data))
-      .catch((err) => console.log(err));
-  }
+  const showNotice = useCallback((type, message) => {
+    setNotice({ type, message });
+  }, []);
 
-  function fetchProfessors() {
-    professorService
-      .getAll()
-      .then((res) => setProfessors(res.data))
-      .catch((err) => console.log(err));
-  }
+  const fetchDepartments = useCallback(async () => {
+    setIsLoading(true);
+
+    try {
+      const res = await departmentService.getAll();
+      setDepartments(res.data);
+    } catch (err) {
+      showNotice("error", getApiErrorMessage(err, "Failed to load departments."));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [showNotice]);
+
+  const fetchProfessors = useCallback(async () => {
+    try {
+      const res = await professorService.getAll();
+      setProfessors(res.data);
+    } catch (err) {
+      showNotice("error", getApiErrorMessage(err, "Failed to load professors."));
+    }
+  }, [showNotice]);
 
   useEffect(() => {
     fetchDepartments();
     fetchProfessors();
-  }, []);
+  }, [fetchDepartments, fetchProfessors]);
 
   const handleChange = (e) => {
     setFormData({
@@ -57,58 +75,61 @@ const Departments = () => {
     const validationError = await validateForm(departmentSchema, formData);
 
     if (validationError) {
-      alert(validationError);
+      showNotice("error", validationError);
       return;
     }
 
-    departmentService
-      .create(formData)
-      .then(() => {
-        fetchDepartments();
-        resetForm();
-        alert("Department added successfully.");
-      })
-      .catch((err) => {
-        console.log(err);
-        alert("Failed to add department.");
-      });
+    setIsSaving(true);
+
+    try {
+      await departmentService.create(formData);
+      await fetchDepartments();
+      resetForm();
+      showNotice("success", "Department added successfully.");
+    } catch (err) {
+      showNotice("error", getApiErrorMessage(err, "Failed to add department."));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const updateDepartment = async () => {
     const validationError = await validateForm(departmentSchema, formData);
 
     if (validationError) {
-      alert(validationError);
+      showNotice("error", validationError);
       return;
     }
 
-    departmentService
-      .update(editId, formData)
-      .then(() => {
-        fetchDepartments();
-        resetForm();
-        alert("Department updated successfully.");
-      })
-      .catch((err) => {
-        console.log(err);
-        alert("Failed to update department.");
-      });
+    setIsSaving(true);
+
+    try {
+      await departmentService.update(editId, formData);
+      await fetchDepartments();
+      resetForm();
+      showNotice("success", "Department updated successfully.");
+    } catch (err) {
+      showNotice("error", getApiErrorMessage(err, "Failed to update department."));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const deleteDepartment = (id) => {
+  const deleteDepartment = async (id) => {
     if (!window.confirm("Do you want to delete this department?")) return;
 
-    departmentService
-      .remove(id)
-      .then(() => {
-        fetchDepartments();
-        if (editId === id) resetForm();
-        alert("Department deleted successfully.");
-      })
-      .catch((err) => {
-        console.log(err);
-        alert("Failed to delete department.");
-      });
+    setDeletingId(id);
+
+    try {
+      await departmentService.remove(id);
+      await fetchDepartments();
+      if (editId === id) resetForm();
+      showNotice("success", "Department deleted successfully.");
+    } catch (err) {
+      showNotice("error", getApiErrorMessage(err, "Failed to delete department."));
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const editDepartment = (department) => {
@@ -120,8 +141,50 @@ const Departments = () => {
     });
   };
 
+  const summary = useMemo(() => {
+    const heads = departments.filter((department) =>
+      Boolean(department.shefi_departamentit)
+    ).length;
+
+    return {
+      total: departments.length,
+      withHeads: heads,
+      withoutHeads: departments.length - heads,
+      professors: professors.length,
+    };
+  }, [departments, professors]);
+
   return (
     <PageContainer title="Departments Management">
+      <div className="mb-6 grid gap-4 md:grid-cols-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-sm font-semibold text-slate-500">Departments</p>
+          <p className="mt-2 text-2xl font-bold text-blue-700">{summary.total}</p>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-sm font-semibold text-slate-500">With heads</p>
+          <p className="mt-2 text-2xl font-bold text-emerald-700">
+            {summary.withHeads}
+          </p>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-sm font-semibold text-slate-500">Missing heads</p>
+          <p className="mt-2 text-2xl font-bold text-amber-700">
+            {summary.withoutHeads}
+          </p>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-sm font-semibold text-slate-500">Professors</p>
+          <p className="mt-2 text-2xl font-bold text-slate-900">
+            {summary.professors}
+          </p>
+        </div>
+      </div>
+
+      <div className="mb-6">
+        <StatusMessage message={notice?.message} type={notice?.type} />
+      </div>
+
       <div className="grid gap-8 lg:grid-cols-3">
         <FormCard title={editId ? "Edit Department" : "Add Department"}>
           <div className="space-y-4">
@@ -156,20 +219,25 @@ const Departments = () => {
           <div className="mt-6 flex gap-3">
             {editId ? (
               <>
-                <Button onClick={updateDepartment} className="flex-1">
-                  Update
+                <Button
+                  onClick={updateDepartment}
+                  className="flex-1"
+                  disabled={isSaving}
+                >
+                  {isSaving ? "Saving..." : "Update"}
                 </Button>
                 <Button
                   onClick={resetForm}
                   className="flex-1"
                   variant="secondary"
+                  disabled={isSaving}
                 >
                   Cancel
                 </Button>
               </>
             ) : (
-              <Button onClick={addDepartment} fullWidth>
-                Add Department
+              <Button onClick={addDepartment} fullWidth disabled={isSaving}>
+                {isSaving ? "Saving..." : "Add Department"}
               </Button>
             )}
           </div>
@@ -188,7 +256,13 @@ const Departments = () => {
               </thead>
 
               <tbody>
-                {departments.length > 0 ? (
+                {isLoading ? (
+                  <tr>
+                    <td className="px-4 py-6 text-slate-500" colSpan="5">
+                      Loading departments...
+                    </td>
+                  </tr>
+                ) : departments.length > 0 ? (
                   departments.map((department) => (
                     <tr
                       key={department.id}
@@ -213,8 +287,9 @@ const Departments = () => {
                             onClick={() => deleteDepartment(department.id)}
                             className="px-3 py-2"
                             variant="danger"
+                            disabled={deletingId === department.id}
                           >
-                            Delete
+                            {deletingId === department.id ? "Deleting..." : "Delete"}
                           </Button>
                         </div>
                       </td>

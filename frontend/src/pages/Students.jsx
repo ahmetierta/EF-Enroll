@@ -1,12 +1,14 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import FormCard from "../components/layout/FormCard";
 import PageContainer from "../components/layout/PageContainer";
 import TableCard from "../components/layout/TableCard";
 import Button from "../components/ui/Button";
 import SelectInput from "../components/ui/SelectInput";
+import StatusMessage from "../components/ui/StatusMessage";
 import TextInput from "../components/ui/TextInput";
 import { courseService } from "../services/courseService";
 import { studentService } from "../services/studentService";
+import { getApiErrorMessage } from "../utils/apiErrors";
 import { getAuthUser } from "../utils/authStorage";
 import {
   studentManagementSchema,
@@ -52,20 +54,42 @@ const Students = () => {
   const [formData, setFormData] = useState(initialFormData);
   const [filters, setFilters] = useState(initialFilters);
   const [editId, setEditId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [notice, setNotice] = useState(null);
 
-  const fetchStudents = useCallback((params = initialFilters) => {
-    studentService
-      .getAll(params)
-      .then((res) => setStudents(res.data))
-      .catch((err) => console.log(err));
+  const showNotice = useCallback((type, message) => {
+    setNotice({ type, message });
   }, []);
 
-  const fetchCourses = useCallback(() => {
-    courseService
-      .getAll()
-      .then((res) => setCourses(res.data))
-      .catch((err) => console.log(err));
-  }, []);
+  const fetchStudents = useCallback(
+    async (params = initialFilters) => {
+      setIsLoading(true);
+
+      try {
+        const res = await studentService.getAll(params);
+        setStudents(res.data);
+      } catch (err) {
+        showNotice("error", getApiErrorMessage(err, "Failed to load students."));
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [showNotice]
+  );
+
+  const fetchCourses = useCallback(
+    async () => {
+      try {
+        const res = await courseService.getAll();
+        setCourses(res.data);
+      } catch (err) {
+        showNotice("error", getApiErrorMessage(err, "Failed to load courses."));
+      }
+    },
+    [showNotice]
+  );
 
   useEffect(() => {
     fetchStudents(initialFilters);
@@ -107,21 +131,22 @@ const Students = () => {
     );
 
     if (validationError) {
-      alert(validationError);
+      showNotice("error", validationError);
       return;
     }
 
-    studentService
-      .create(formData)
-      .then(() => {
-        fetchStudents(filters);
-        resetForm();
-        alert("Student added successfully.");
-      })
-      .catch((err) => {
-        console.log(err);
-        alert("Failed to add student.");
-      });
+    setIsSaving(true);
+
+    try {
+      await studentService.create(formData);
+      await fetchStudents(filters);
+      resetForm();
+      showNotice("success", "Student added successfully.");
+    } catch (err) {
+      showNotice("error", getApiErrorMessage(err, "Failed to add student."));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const updateStudent = async () => {
@@ -131,37 +156,39 @@ const Students = () => {
     );
 
     if (validationError) {
-      alert(validationError);
+      showNotice("error", validationError);
       return;
     }
 
-    studentService
-      .update(editId, formData)
-      .then(() => {
-        fetchStudents(filters);
-        resetForm();
-        alert("Student updated successfully.");
-      })
-      .catch((err) => {
-        console.log(err);
-        alert("Failed to update student.");
-      });
+    setIsSaving(true);
+
+    try {
+      await studentService.update(editId, formData);
+      await fetchStudents(filters);
+      resetForm();
+      showNotice("success", "Student updated successfully.");
+    } catch (err) {
+      showNotice("error", getApiErrorMessage(err, "Failed to update student."));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const deleteStudent = (id) => {
+  const deleteStudent = async (id) => {
     if (!window.confirm("Do you want to delete this student?")) return;
 
-    studentService
-      .remove(id)
-      .then(() => {
-        fetchStudents(filters);
-        if (editId === id) resetForm();
-        alert("Student deleted successfully.");
-      })
-      .catch((err) => {
-        console.log(err);
-        alert("Failed to delete student.");
-      });
+    setDeletingId(id);
+
+    try {
+      await studentService.remove(id);
+      await fetchStudents(filters);
+      if (editId === id) resetForm();
+      showNotice("success", "Student deleted successfully.");
+    } catch (err) {
+      showNotice("error", getApiErrorMessage(err, "Failed to delete student."));
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const editStudent = (student) => {
@@ -176,10 +203,61 @@ const Students = () => {
     });
   };
 
+  const summary = useMemo(() => {
+    const programs = new Set(
+      students.map((student) => student.programi).filter(Boolean)
+    );
+    const years = new Set(
+      students.map((student) => student.viti_studimit).filter(Boolean)
+    );
+    const activeFilterCount = Object.entries(filters).filter(
+      ([key, value]) =>
+        value &&
+        !["sort_by", "sort_order"].includes(key) &&
+        value !== initialFilters[key]
+    ).length;
+
+    return {
+      total: students.length,
+      programs: programs.size,
+      years: years.size,
+      activeFilterCount,
+    };
+  }, [filters, students]);
+
   return (
     <PageContainer
       title={canManageStudents ? "Students Management" : "My Course Students"}
     >
+      <div className="mb-6 grid gap-4 md:grid-cols-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-sm font-semibold text-slate-500">Students shown</p>
+          <p className="mt-2 text-2xl font-bold text-blue-700">{summary.total}</p>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-sm font-semibold text-slate-500">Programs</p>
+          <p className="mt-2 text-2xl font-bold text-emerald-700">
+            {summary.programs}
+          </p>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-sm font-semibold text-slate-500">Study years</p>
+          <p className="mt-2 text-2xl font-bold text-amber-700">
+            {summary.years}
+          </p>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-sm font-semibold text-slate-500">Active filters</p>
+          <p className="mt-2 text-2xl font-bold text-slate-900">
+            {summary.activeFilterCount}
+          </p>
+        </div>
+      </div>
+
+      <div className="mb-6">
+        <StatusMessage message={notice?.message} type={notice?.type} />
+      </div>
+
       <div className={`grid gap-8 ${canManageStudents ? "lg:grid-cols-3" : ""}`}>
         {canManageStudents && (
         <FormCard title={editId ? "Edit Student" : "Add Student"}>
@@ -244,20 +322,25 @@ const Students = () => {
           <div className="mt-6 flex gap-3">
             {editId ? (
               <>
-                <Button onClick={updateStudent} className="flex-1">
-                  Update
+                <Button
+                  onClick={updateStudent}
+                  className="flex-1"
+                  disabled={isSaving}
+                >
+                  {isSaving ? "Saving..." : "Update"}
                 </Button>
                 <Button
                   onClick={resetForm}
                   className="flex-1"
                   variant="secondary"
+                  disabled={isSaving}
                 >
                   Cancel
                 </Button>
               </>
             ) : (
-              <Button onClick={addStudent} fullWidth>
-                Add Student
+              <Button onClick={addStudent} fullWidth disabled={isSaving}>
+                {isSaving ? "Saving..." : "Add Student"}
               </Button>
             )}
           </div>
@@ -357,8 +440,10 @@ const Students = () => {
             </div>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              <Button onClick={applyFilters}>Apply Filters</Button>
-              <Button onClick={resetFilters} variant="secondary">
+              <Button onClick={applyFilters} disabled={isLoading}>
+                {isLoading ? "Loading..." : "Apply Filters"}
+              </Button>
+              <Button onClick={resetFilters} variant="secondary" disabled={isLoading}>
                 Clear Filters
               </Button>
               <span className="rounded-lg bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700">
@@ -385,7 +470,16 @@ const Students = () => {
               </thead>
 
               <tbody>
-                {students.length > 0 ? (
+                {isLoading ? (
+                  <tr>
+                    <td
+                      className="px-4 py-6 text-slate-500"
+                      colSpan={canManageStudents ? "7" : "6"}
+                    >
+                      Loading students...
+                    </td>
+                  </tr>
+                ) : students.length > 0 ? (
                   students.map((student) => (
                     <tr
                       key={student.id}
@@ -411,8 +505,9 @@ const Students = () => {
                               onClick={() => deleteStudent(student.id)}
                               className="px-3 py-2"
                               variant="danger"
+                              disabled={deletingId === student.id}
                             >
-                              Delete
+                              {deletingId === student.id ? "Deleting..." : "Delete"}
                             </Button>
                           </div>
                         </td>
