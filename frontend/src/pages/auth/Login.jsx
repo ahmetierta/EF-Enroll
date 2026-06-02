@@ -60,7 +60,7 @@ const Login = () => {
             Email Address
           </label>
           <TextInput
-            autoComplete="on"
+            autoComplete="email"
             id="email"
             type="email"
             placeholder="you@example.com"

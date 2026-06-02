@@ -12,12 +12,12 @@ const CourseMaterial = new EntitySchema({
     titulli: {
       type: "varchar",
       length: 200,
-      nullable: true,
+      nullable: false,
     },
     file_url: {
       type: "varchar",
       length: 500,
-      nullable: true,
+      nullable: false,
     },
     material_type: {
       type: "varchar",
@@ -61,7 +61,7 @@ const CourseMaterial = new EntitySchema({
       joinColumn: {
         name: "course_id",
       },
-      nullable: true,
+      nullable: false,
       onDelete: "NO ACTION",
     },
     professor: {
@@ -70,7 +70,7 @@ const CourseMaterial = new EntitySchema({
       joinColumn: {
         name: "professor_id",
       },
-      nullable: true,
+      nullable: false,
       onDelete: "NO ACTION",
     },
   },

@@ -11,12 +11,12 @@ const Enrollment = new EntitySchema({
     },
     data_regjistrimit: {
       type: "date",
-      nullable: true,
+      nullable: false,
     },
     statusi: {
       type: "varchar",
       length: 50,
-      nullable: true,
+      nullable: false,
     },
     nota: {
       type: "int",
@@ -56,7 +56,7 @@ const Enrollment = new EntitySchema({
       joinColumn: {
         name: "student_id",
       },
-      nullable: true,
+      nullable: false,
       onDelete: "NO ACTION",
     },
     course: {
@@ -65,7 +65,7 @@ const Enrollment = new EntitySchema({
       joinColumn: {
         name: "course_id",
       },
-      nullable: true,
+      nullable: false,
       onDelete: "NO ACTION",
     },
     payments: {

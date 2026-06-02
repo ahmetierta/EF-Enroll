@@ -1,7 +1,17 @@
 import * as yup from "yup";
 
+const emailPattern = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+const namePattern = /^[\p{L}][\p{L}\s'.-]{1,99}$/u;
+const studentNumberPattern = /^STU-\d{4}-\d{4}$/i;
+
 const requiredText = (label) =>
   yup.string().trim().required(`${label} is required.`);
+
+const fullName = yup
+  .string()
+  .trim()
+  .matches(namePattern, "Full name is not valid.")
+  .required("Full name is required.");
 
 const optionalPassword = yup
   .string()
@@ -17,6 +27,7 @@ const email = yup
   .string()
   .trim()
   .email("Enter a valid email address.")
+  .matches(emailPattern, "Enter a valid email address.")
   .required("Email is required.");
 
 const positiveInteger = (label) =>
@@ -54,7 +65,7 @@ export const resetPasswordSchema = yup.object({
 });
 
 export const studentRegisterSchema = yup.object({
-  username: requiredText("Username"),
+  username: fullName,
   email,
   password,
   programi: requiredText("Program"),
@@ -62,7 +73,7 @@ export const studentRegisterSchema = yup.object({
 });
 
 export const professorRegisterSchema = yup.object({
-  username: requiredText("Username"),
+  username: fullName,
   email,
   password,
   titulli: requiredText("Title"),
@@ -71,16 +82,19 @@ export const professorRegisterSchema = yup.object({
 
 export const studentManagementSchema = (isEdit = false) =>
   yup.object({
-    username: requiredText("Username"),
+    username: fullName,
     email,
     password: isEdit ? optionalPassword : password,
-    numri_studentit: requiredText("Student number"),
+    numri_studentit: requiredText("Student number").matches(
+      studentNumberPattern,
+      "Student number must look like STU-2026-0001."
+    ),
     programi: requiredText("Program"),
     viti_studimit: positiveInteger("Year of study"),
   });
 
 export const professorProfileSchema = yup.object({
-  username: requiredText("Username"),
+  username: fullName,
   email,
   titulli: requiredText("Title"),
   departamenti: requiredText("Department"),

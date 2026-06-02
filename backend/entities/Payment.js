@@ -27,13 +27,13 @@ const Payment = new EntitySchema({
     invoice_number: {
       type: "varchar",
       length: 50,
-      nullable: true,
+      nullable: false,
       unique: true,
     },
     transaction_id: {
       type: "varchar",
       length: 100,
-      nullable: true,
+      nullable: false,
     },
     currency: {
       type: "varchar",
@@ -70,7 +70,7 @@ const Payment = new EntitySchema({
       joinColumn: {
         name: "enrollment_id",
       },
-      nullable: true,
+      nullable: false,
       onDelete: "NO ACTION",
     },
   },

@@ -264,7 +264,7 @@ const Students = () => {
           <div className="space-y-4">
             <TextInput
               name="username"
-              placeholder="Username"
+              placeholder="Full name"
               value={formData.username}
               onChange={handleChange}
             />
@@ -423,7 +423,7 @@ const Students = () => {
                 onChange={handleFilterChange}
               >
                 <option value="newest">Newest</option>
-                <option value="username">Username</option>
+                <option value="username">Full name</option>
                 <option value="student_number">Student Number</option>
                 <option value="program">Program</option>
                 <option value="year">Year</option>
@@ -458,7 +458,7 @@ const Students = () => {
               <thead>
                 <tr className="border-b border-slate-200 text-blue-700">
                   <th className="px-4 py-3">ID</th>
-                  <th className="px-4 py-3">Username</th>
+                  <th className="px-4 py-3">Full name</th>
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">Student Number</th>
                   <th className="px-4 py-3">Program</th>

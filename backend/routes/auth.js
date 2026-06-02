@@ -19,6 +19,9 @@ const { authenticateToken } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 const RESET_TOKEN_EXPIRES_MS = 15 * 60 * 1000;
+const EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+const NAME_PATTERN = /^[\p{L}][\p{L}\s'.-]{1,99}$/u;
+const STUDENT_NUMBER_PATTERN = /^STU-\d{4}-\d{4}$/i;
 
 const accessCookieOptions = {
   httpOnly: true,
@@ -184,7 +187,11 @@ async function createStudentNumber(studentRepository) {
 }
 
 function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  return EMAIL_PATTERN.test(email);
+}
+
+function isValidName(name) {
+  return NAME_PATTERN.test(String(name || "").trim());
 }
 
 function isValidPassword(password) {
@@ -412,7 +419,11 @@ router.post("/register/student", async (req, res) => {
   const trimmedUsername = String(username || "").trim();
 
   if (!trimmedUsername || !normalizedEmail || !password) {
-    return res.status(400).json({ message: "Username, email and password are required" });
+    return res.status(400).json({ message: "Full name, email and password are required" });
+  }
+
+  if (!isValidName(trimmedUsername)) {
+    return res.status(400).json({ message: "Full name is not valid" });
   }
 
   if (!isValidEmail(normalizedEmail)) {
@@ -423,6 +434,16 @@ router.post("/register/student", async (req, res) => {
     return res.status(400).json({
       message: "Password must be at least 6 characters long",
     });
+  }
+
+  if (numri_studentit && !STUDENT_NUMBER_PATTERN.test(numri_studentit)) {
+    return res.status(400).json({ message: "Student number must look like STU-2026-0001" });
+  }
+
+  const studyYear = Number(viti_studimit);
+
+  if (!programi || !Number.isInteger(studyYear) || studyYear < 1 || studyYear > 5) {
+    return res.status(400).json({ message: "Program and year of study are required" });
   }
 
   const passwordHash = bcrypt.hashSync(password, 10);
@@ -456,7 +477,7 @@ router.post("/register/student", async (req, res) => {
         user: savedUser,
         numri_studentit: studentNumber,
         programi,
-        viti_studimit,
+        viti_studimit: studyYear,
       });
 
       return { user: savedUser, student: savedStudent };
@@ -480,7 +501,11 @@ router.post("/register/professor", async (req, res) => {
   const trimmedUsername = String(username || "").trim();
 
   if (!trimmedUsername || !normalizedEmail || !password) {
-    return res.status(400).json({ message: "Username, email and password are required" });
+    return res.status(400).json({ message: "Full name, email and password are required" });
+  }
+
+  if (!isValidName(trimmedUsername)) {
+    return res.status(400).json({ message: "Full name is not valid" });
   }
 
   if (!isValidEmail(normalizedEmail)) {
@@ -491,6 +516,10 @@ router.post("/register/professor", async (req, res) => {
     return res.status(400).json({
       message: "Password must be at least 6 characters long",
     });
+  }
+
+  if (!titulli || !departamenti) {
+    return res.status(400).json({ message: "Title and department are required" });
   }
 
   const passwordHash = bcrypt.hashSync(password, 10);

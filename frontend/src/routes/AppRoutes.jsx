@@ -1,25 +1,16 @@
+import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
-import AdminDashboard from "../pages/admin/AdminDashboard";
 import DashboardLayout from "../layouts/DashboardLayout";
-import AdminApprovals from "../pages/admin/AdminApprovals";
 import Announcements from "../pages/Announcements";
 import CourseDetails from "../pages/CourseDetails";
-import Courses from "../pages/Courses";
 import Departments from "../pages/Departments";
 import Enrollments from "../pages/Enrollments";
 import Home from "../pages/Home";
-import Materials from "../pages/Materials";
 import MyEnrollments from "../pages/MyEnrollments";
 import NotFound from "../pages/NotFound";
-import Payments from "../pages/Payments";
-import ProfessorDashboard from "../pages/professor/ProfessorDashboard";
-import Professors from "../pages/Professors";
 import PublicCourses from "../pages/PublicCourses";
-import Revenue from "../pages/Revenue";
 import Schedules from "../pages/Schedules";
 import Semesters from "../pages/Semesters";
-import Students from "../pages/Students";
-import StudentDashboard from "../pages/student/StudentDashboard";
 import WaitingList from "../pages/WaitingList";
 import ForgotPassword from "../pages/auth/ForgotPassword";
 import Login from "../pages/auth/Login";
@@ -29,8 +20,20 @@ import RegisterStudent from "../pages/auth/RegisterStudent";
 import ResetPassword from "../pages/auth/ResetPassword";
 import ProtectedRoute from "./ProtectedRoute";
 
+const AdminDashboard = lazy(() => import("../pages/admin/AdminDashboard"));
+const AdminApprovals = lazy(() => import("../pages/admin/AdminApprovals"));
+const Courses = lazy(() => import("../pages/Courses"));
+const Materials = lazy(() => import("../pages/Materials"));
+const Payments = lazy(() => import("../pages/Payments"));
+const ProfessorDashboard = lazy(() => import("../pages/professor/ProfessorDashboard"));
+const Professors = lazy(() => import("../pages/Professors"));
+const Revenue = lazy(() => import("../pages/Revenue"));
+const Students = lazy(() => import("../pages/Students"));
+const StudentDashboard = lazy(() => import("../pages/student/StudentDashboard"));
+
 const AppRoutes = () => {
   return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 p-6 text-slate-600">Loading...</div>}>
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/catalog" element={<PublicCourses />} />
@@ -183,6 +186,7 @@ const AppRoutes = () => {
 
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </Suspense>
   );
 };
 

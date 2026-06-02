@@ -12,16 +12,16 @@ const Department = new EntitySchema({
     emertimi: {
       type: "varchar",
       length: 150,
-      nullable: true,
+      nullable: false,
     },
     pershkrimi: {
       type: "text",
-      nullable: true,
+      nullable: false,
     },
     shefi_departamentit: {
       type: "varchar",
       length: 150,
-      nullable: true,
+      nullable: false,
     },
   },
 });

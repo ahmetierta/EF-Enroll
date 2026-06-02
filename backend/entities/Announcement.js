@@ -12,15 +12,15 @@ const Announcement = new EntitySchema({
     titulli: {
       type: "varchar",
       length: 200,
-      nullable: true,
+      nullable: false,
     },
     permbajtja: {
       type: "text",
-      nullable: true,
+      nullable: false,
     },
     data: {
       type: "date",
-      nullable: true,
+      nullable: false,
     },
   },
   relations: {
@@ -30,7 +30,7 @@ const Announcement = new EntitySchema({
       joinColumn: {
         name: "course_id",
       },
-      nullable: true,
+      nullable: false,
       onDelete: "NO ACTION",
     },
     professor: {
@@ -39,7 +39,7 @@ const Announcement = new EntitySchema({
       joinColumn: {
         name: "professor_id",
       },
-      nullable: true,
+      nullable: false,
       onDelete: "NO ACTION",
     },
   },

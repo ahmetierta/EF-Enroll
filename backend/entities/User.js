@@ -16,6 +16,7 @@ const User = new EntitySchema({
     email: {
       type: "varchar",
       length: 150,
+      unique: true,
     },
     password_hash: {
       type: "varchar",

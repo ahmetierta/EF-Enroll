@@ -120,7 +120,7 @@ const Professors = () => {
               <div className="space-y-4">
                 <TextInput
                   name="username"
-                  placeholder="Username"
+                  placeholder="Full name"
                   value={formData.username}
                   onChange={handleChange}
                 />
@@ -188,7 +188,7 @@ const Professors = () => {
               <thead>
                 <tr className="border-b border-slate-200 text-blue-700">
                   <th className="px-4 py-3">ID</th>
-                  <th className="px-4 py-3">Username</th>
+                  <th className="px-4 py-3">Full name</th>
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">Title</th>
                   <th className="px-4 py-3">Department</th>

@@ -12,19 +12,19 @@ const Course = new EntitySchema({
     emertimi: {
       type: "varchar",
       length: 150,
-      nullable: true,
+      nullable: false,
     },
     pershkrimi: {
       type: "text",
-      nullable: true,
+      nullable: false,
     },
     kredite: {
       type: "int",
-      nullable: true,
+      nullable: false,
     },
     kapaciteti: {
       type: "int",
-      nullable: true,
+      nullable: false,
     },
     cmimi: {
       type: "decimal",
@@ -40,7 +40,7 @@ const Course = new EntitySchema({
       joinColumn: {
         name: "professor_id",
       },
-      nullable: true,
+      nullable: false,
       onDelete: "NO ACTION",
     },
     semester: {
@@ -49,7 +49,7 @@ const Course = new EntitySchema({
       joinColumn: {
         name: "semester_id",
       },
-      nullable: true,
+      nullable: false,
       onDelete: "NO ACTION",
     },
     schedules: {

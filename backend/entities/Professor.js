@@ -12,12 +12,12 @@ const Professor = new EntitySchema({
     titulli: {
       type: "varchar",
       length: 100,
-      nullable: true,
+      nullable: false,
     },
     departamenti: {
       type: "varchar",
       length: 150,
-      nullable: true,
+      nullable: false,
     },
   },
   relations: {
@@ -27,7 +27,7 @@ const Professor = new EntitySchema({
       joinColumn: {
         name: "user_id",
       },
-      nullable: true,
+      nullable: false,
       onDelete: "NO ACTION",
     },
     courses: {

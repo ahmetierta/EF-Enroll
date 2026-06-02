@@ -12,20 +12,20 @@ const Schedule = new EntitySchema({
     dita: {
       type: "varchar",
       length: 20,
-      nullable: true,
+      nullable: false,
     },
     ora_fillimit: {
       type: "time",
-      nullable: true,
+      nullable: false,
     },
     ora_perfundimit: {
       type: "time",
-      nullable: true,
+      nullable: false,
     },
     salla: {
       type: "varchar",
       length: 50,
-      nullable: true,
+      nullable: false,
     },
   },
   relations: {
@@ -35,7 +35,7 @@ const Schedule = new EntitySchema({
       joinColumn: {
         name: "course_id",
       },
-      nullable: true,
+      nullable: false,
       onDelete: "NO ACTION",
     },
   },

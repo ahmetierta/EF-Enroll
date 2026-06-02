@@ -161,24 +161,13 @@ router.delete("/:id", async (req, res) => {
         return null;
       }
 
-      await manager
-        .createQueryBuilder()
-        .update("Course")
-        .set({ professor: null })
-        .where("professor_id = :id", { id })
-        .execute();
-      await manager
-        .createQueryBuilder()
-        .update("Announcement")
-        .set({ professor: null })
-        .where("professor_id = :id", { id })
-        .execute();
-      await manager
-        .createQueryBuilder()
-        .update("CourseMaterial")
-        .set({ professor: null })
-        .where("professor_id = :id", { id })
-        .execute();
+      const assignedCourses = await manager.getRepository("Course").count({
+        where: { professor: { id } },
+      });
+
+      if (assignedCourses > 0) {
+        return { conflict: true, assignedCourses };
+      }
 
       const userId = professor.user?.id;
       const professorResult = await professorRepository.delete(id);
@@ -189,6 +178,13 @@ router.delete("/:id", async (req, res) => {
 
     if (!result) {
       return res.status(404).json({ message: "Profesori nuk u gjet" });
+    }
+
+    if (result.conflict) {
+      return res.status(409).json({
+        message: "Professor has assigned courses and cannot be deleted",
+        assigned_courses: result.assignedCourses,
+      });
     }
 
     res.json({

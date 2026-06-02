@@ -12,20 +12,20 @@ const Semester = new EntitySchema({
     emertimi: {
       type: "varchar",
       length: 100,
-      nullable: true,
+      nullable: false,
     },
     data_fillimit: {
       type: "date",
-      nullable: true,
+      nullable: false,
     },
     data_perfundimit: {
       type: "date",
-      nullable: true,
+      nullable: false,
     },
     statusi: {
       type: "varchar",
       length: 50,
-      nullable: true,
+      nullable: false,
     },
   },
   relations: {

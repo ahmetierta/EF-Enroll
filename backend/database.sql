@@ -10,100 +10,113 @@ CREATE TABLE IF NOT EXISTS users (
   reset_password_expires TIMESTAMP NULL,
   role ENUM('admin', 'professor', 'student') NOT NULL DEFAULT 'student',
   status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT chk_users_email_format CHECK (email REGEXP '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$')
 );
 
 CREATE TABLE IF NOT EXISTS departments (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  emertimi VARCHAR(150),
-  pershkrimi TEXT,
-  shefi_departamentit VARCHAR(150),
+  emertimi VARCHAR(150) NOT NULL,
+  pershkrimi TEXT NOT NULL,
+  shefi_departamentit VARCHAR(150) NOT NULL,
   UNIQUE KEY uq_departments_emertimi (emertimi)
 );
 
 CREATE TABLE IF NOT EXISTS semesters (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  emertimi VARCHAR(100),
-  data_fillimit DATE,
-  data_perfundimit DATE,
-  statusi VARCHAR(50),
-  UNIQUE KEY uq_semesters_emertimi (emertimi)
+  emertimi VARCHAR(100) NOT NULL,
+  data_fillimit DATE NOT NULL,
+  data_perfundimit DATE NOT NULL,
+  statusi VARCHAR(50) NOT NULL,
+  UNIQUE KEY uq_semesters_emertimi (emertimi),
+  CONSTRAINT chk_semesters_dates CHECK (data_perfundimit >= data_fillimit)
 );
 
 CREATE TABLE IF NOT EXISTS students (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT,
-  numri_studentit VARCHAR(50),
-  programi VARCHAR(100),
-  viti_studimit INT,
+  user_id INT NOT NULL,
+  numri_studentit VARCHAR(50) NOT NULL,
+  programi VARCHAR(100) NOT NULL,
+  viti_studimit INT NOT NULL,
   UNIQUE KEY uq_students_user (user_id),
   UNIQUE KEY uq_students_numri (numri_studentit),
+  CONSTRAINT chk_students_number_format CHECK (numri_studentit REGEXP '^STU-[0-9]{4}-[0-9]{4}$'),
+  CONSTRAINT chk_students_year CHECK (viti_studimit BETWEEN 1 AND 5),
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 CREATE TABLE IF NOT EXISTS professors (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT,
-  titulli VARCHAR(100),
-  departamenti VARCHAR(150),
+  user_id INT NOT NULL,
+  titulli VARCHAR(100) NOT NULL,
+  departamenti VARCHAR(150) NOT NULL,
   UNIQUE KEY uq_professors_user (user_id),
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 CREATE TABLE IF NOT EXISTS courses (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  emertimi VARCHAR(150),
-  pershkrimi TEXT,
-  kredite INT,
-  professor_id INT,
-  semester_id INT,
-  kapaciteti INT,
-  cmimi DECIMAL(10,2) DEFAULT 0.00,
+  emertimi VARCHAR(150) NOT NULL,
+  pershkrimi TEXT NOT NULL,
+  kredite INT NOT NULL,
+  professor_id INT NOT NULL,
+  semester_id INT NOT NULL,
+  kapaciteti INT NOT NULL,
+  cmimi DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  CONSTRAINT chk_courses_credits CHECK (kredite > 0),
+  CONSTRAINT chk_courses_capacity CHECK (kapaciteti > 0),
+  CONSTRAINT chk_courses_price CHECK (cmimi >= 0),
   FOREIGN KEY (professor_id) REFERENCES professors(id),
   FOREIGN KEY (semester_id) REFERENCES semesters(id)
 );
 
 CREATE TABLE IF NOT EXISTS schedules (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  course_id INT,
-  dita VARCHAR(20),
-  ora_fillimit TIME,
-  ora_perfundimit TIME,
-  salla VARCHAR(50),
+  course_id INT NOT NULL,
+  dita VARCHAR(20) NOT NULL,
+  ora_fillimit TIME NOT NULL,
+  ora_perfundimit TIME NOT NULL,
+  salla VARCHAR(50) NOT NULL,
+  CONSTRAINT chk_schedules_time CHECK (ora_perfundimit > ora_fillimit),
   FOREIGN KEY (course_id) REFERENCES courses(id)
 );
 
 CREATE TABLE IF NOT EXISTS enrollments (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  student_id INT,
-  course_id INT,
-  data_regjistrimit DATE,
-  statusi VARCHAR(50),
+  student_id INT NOT NULL,
+  course_id INT NOT NULL,
+  data_regjistrimit DATE NOT NULL,
+  statusi VARCHAR(50) NOT NULL,
   nota INT,
   kohezgjatja_muaj INT NOT NULL DEFAULT 1,
   cmimi_baze DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   zbritja_perqindje DECIMAL(5,2) NOT NULL DEFAULT 0.00,
   cmimi_final DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   oferta_fillestare TINYINT(1) NOT NULL DEFAULT 0,
+  UNIQUE KEY uq_enrollments_student_course (student_id, course_id),
   INDEX idx_enrollments_course_status (course_id, statusi),
+  CONSTRAINT chk_enrollments_duration CHECK (kohezgjatja_muaj IN (1, 3, 6, 12)),
+  CONSTRAINT chk_enrollments_price CHECK (cmimi_baze >= 0 AND zbritja_perqindje >= 0 AND cmimi_final >= 0),
   FOREIGN KEY (student_id) REFERENCES students(id),
   FOREIGN KEY (course_id) REFERENCES courses(id)
 );
 
 CREATE TABLE IF NOT EXISTS payments (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  enrollment_id INT,
+  enrollment_id INT NOT NULL,
   amount DECIMAL(10,2) NOT NULL,
-  statusi VARCHAR(50) DEFAULT 'paid',
-  payment_method VARCHAR(50) DEFAULT 'simulated',
-  invoice_number VARCHAR(50) UNIQUE,
-  transaction_id VARCHAR(100),
+  statusi VARCHAR(50) NOT NULL DEFAULT 'paid',
+  payment_method VARCHAR(50) NOT NULL DEFAULT 'simulated',
+  invoice_number VARCHAR(50) NOT NULL UNIQUE,
+  transaction_id VARCHAR(100) NOT NULL,
   currency VARCHAR(10) NOT NULL DEFAULT 'EUR',
   payer_name VARCHAR(150),
   payer_email VARCHAR(150),
   notes TEXT,
   refunded_at TIMESTAMP NULL,
   data_pageses TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT chk_payments_amount CHECK (amount >= 0),
+  CONSTRAINT chk_payments_email_format CHECK (payer_email IS NULL OR payer_email REGEXP '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'),
   FOREIGN KEY (enrollment_id) REFERENCES enrollments(id)
 );
 
@@ -123,10 +136,10 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 
 CREATE TABLE IF NOT EXISTS waiting_list (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  student_id INT,
-  course_id INT,
-  data DATE,
-  pozicioni INT,
+  student_id INT NOT NULL,
+  course_id INT NOT NULL,
+  data DATE NOT NULL,
+  pozicioni INT NOT NULL,
   statusi VARCHAR(30) NOT NULL DEFAULT 'waiting',
   prioriteti VARCHAR(30) NOT NULL DEFAULT 'normal',
   arsyeja TEXT,
@@ -136,27 +149,28 @@ CREATE TABLE IF NOT EXISTS waiting_list (
   UNIQUE KEY uq_waiting_list_student_course (student_id, course_id),
   INDEX idx_waiting_list_course_position (course_id, pozicioni),
   INDEX idx_waiting_list_student (student_id),
+  CONSTRAINT chk_waiting_list_position CHECK (pozicioni > 0),
   FOREIGN KEY (student_id) REFERENCES students(id),
   FOREIGN KEY (course_id) REFERENCES courses(id)
 );
 
 CREATE TABLE IF NOT EXISTS announcements (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  course_id INT,
-  titulli VARCHAR(200),
-  permbajtja TEXT,
-  data DATE,
-  professor_id INT,
+  course_id INT NOT NULL,
+  titulli VARCHAR(200) NOT NULL,
+  permbajtja TEXT NOT NULL,
+  data DATE NOT NULL,
+  professor_id INT NOT NULL,
   FOREIGN KEY (course_id) REFERENCES courses(id),
   FOREIGN KEY (professor_id) REFERENCES professors(id)
 );
 
 CREATE TABLE IF NOT EXISTS course_materials (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  course_id INT,
-  professor_id INT,
-  titulli VARCHAR(200),
-  file_url VARCHAR(500),
+  course_id INT NOT NULL,
+  professor_id INT NOT NULL,
+  titulli VARCHAR(200) NOT NULL,
+  file_url VARCHAR(500) NOT NULL,
   material_type VARCHAR(30) NOT NULL DEFAULT 'resource',
   pershkrimi TEXT,
   moduli VARCHAR(120),
@@ -165,6 +179,8 @@ CREATE TABLE IF NOT EXISTS course_materials (
   is_required TINYINT(1) NOT NULL DEFAULT 1,
   order_index INT NOT NULL DEFAULT 0,
   data TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT chk_course_materials_duration CHECK (duration_minutes >= 0),
+  CONSTRAINT chk_course_materials_order CHECK (order_index >= 0),
   FOREIGN KEY (course_id) REFERENCES courses(id),
   FOREIGN KEY (professor_id) REFERENCES professors(id)
 );

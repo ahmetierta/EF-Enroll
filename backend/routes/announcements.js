@@ -151,12 +151,18 @@ router.post("/", requireRole("admin", "professor"), async (req, res) => {
       });
     }
 
+    const announcementProfessor = professor || course.professor;
+
+    if (!announcementProfessor) {
+      return res.status(400).json({ message: "Course must have a professor" });
+    }
+
     const announcement = await announcementRepository.save({
       course,
       titulli: payload.titulli,
       permbajtja: payload.permbajtja,
       data: new Date().toISOString().slice(0, 10),
-      professor,
+      professor: announcementProfessor,
     });
 
     res.status(201).json({
@@ -229,6 +235,7 @@ router.put("/:id", requireRole("admin", "professor"), async (req, res) => {
 
     announcementRepository.merge(announcement, {
       course,
+      professor: professor || course.professor,
       titulli: payload.titulli,
       permbajtja: payload.permbajtja,
     });

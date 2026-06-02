@@ -12,16 +12,16 @@ const Student = new EntitySchema({
     numri_studentit: {
       type: "varchar",
       length: 50,
-      nullable: true,
+      nullable: false,
     },
     programi: {
       type: "varchar",
       length: 100,
-      nullable: true,
+      nullable: false,
     },
     viti_studimit: {
       type: "int",
-      nullable: true,
+      nullable: false,
     },
   },
   relations: {
@@ -31,7 +31,7 @@ const Student = new EntitySchema({
       joinColumn: {
         name: "user_id",
       },
-      nullable: true,
+      nullable: false,
       onDelete: "NO ACTION",
     },
     enrollments: {

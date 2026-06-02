@@ -81,15 +81,23 @@ router.delete("/:id", requireRole("admin"), async (req, res) => {
 
   try {
     const result = await AppDataSource.transaction(async (manager) => {
-      await manager
-        .createQueryBuilder()
-        .update("Course")
-        .set({ semester: null })
-        .where("semester_id = :id", { id })
-        .execute();
+      const assignedCourses = await manager.getRepository("Course").count({
+        where: { semester: { id } },
+      });
+
+      if (assignedCourses > 0) {
+        return { conflict: true, assignedCourses };
+      }
 
       return manager.getRepository("Semester").delete(id);
     });
+
+    if (result.conflict) {
+      return res.status(409).json({
+        message: "Semester has assigned courses and cannot be deleted",
+        assigned_courses: result.assignedCourses,
+      });
+    }
 
     res.json({ message: "Semestri u fshi me sukses", result });
   } catch (err) {

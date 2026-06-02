@@ -81,12 +81,12 @@ const RegisterStudent = () => {
             htmlFor="username"
             className="mb-2 block text-sm font-medium text-slate-700"
           >
-            Username
+            Full name
           </label>
           <TextInput
-            autoComplete="on"
+            autoComplete="name"
             id="username"
-            placeholder="Your username"
+            placeholder="e.g. Arta Krasniqi"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
@@ -101,7 +101,7 @@ const RegisterStudent = () => {
             Email Address
           </label>
           <TextInput
-            autoComplete="on"
+            autoComplete="email"
             id="email"
             type="email"
             placeholder="you@example.com"

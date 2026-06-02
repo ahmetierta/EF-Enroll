@@ -11,11 +11,11 @@ const WaitingList = new EntitySchema({
     },
     data: {
       type: "date",
-      nullable: true,
+      nullable: false,
     },
     pozicioni: {
       type: "int",
-      nullable: true,
+      nullable: false,
     },
     statusi: {
       type: "varchar",
@@ -51,7 +51,7 @@ const WaitingList = new EntitySchema({
       joinColumn: {
         name: "student_id",
       },
-      nullable: true,
+      nullable: false,
       onDelete: "NO ACTION",
     },
     course: {
@@ -60,7 +60,7 @@ const WaitingList = new EntitySchema({
       joinColumn: {
         name: "course_id",
       },
-      nullable: true,
+      nullable: false,
       onDelete: "NO ACTION",
     },
   },
