@@ -60,8 +60,9 @@ const RegisterStudent = () => {
 
     try {
       await registerStudent(payload);
-      alert("Student account created successfully. You can log in now.");
-      navigate("/login");
+      navigate("/login", {
+        state: { message: "Student account created successfully. You can log in now." },
+      });
     } catch (err) {
       setError(err.response?.data?.message || "Error occurred while registering.");
       console.log(err.message);

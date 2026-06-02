@@ -4,7 +4,9 @@ import PageContainer from "../components/layout/PageContainer";
 import TableCard from "../components/layout/TableCard";
 import Button from "../components/ui/Button";
 import SelectInput from "../components/ui/SelectInput";
+import StatusMessage from "../components/ui/StatusMessage";
 import TextInput from "../components/ui/TextInput";
+import { getApiErrorMessage } from "../utils/apiErrors";
 import { departmentService } from "../services/departmentService";
 import { professorService } from "../services/professorService";
 import {
@@ -32,6 +34,8 @@ const Professors = () => {
   const [departments, setDepartments] = useState([]);
   const [formData, setFormData] = useState(initialFormData);
   const [editId, setEditId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [notice, setNotice] = useState(null);
 
   function fetchProfessors() {
     professorService
@@ -68,7 +72,7 @@ const Professors = () => {
     const validationError = await validateForm(professorProfileSchema, formData);
 
     if (validationError) {
-      alert(validationError);
+      setNotice({ type: "error", message: validationError });
       return;
     }
 
@@ -77,27 +81,32 @@ const Professors = () => {
       .then(() => {
         fetchProfessors();
         resetForm();
-        alert("Professor updated successfully.");
+        setNotice({ type: "success", message: "Professor updated successfully." });
       })
       .catch((err) => {
         console.log(err);
-        alert("Failed to update professor.");
+        setNotice({ type: "error", message: getApiErrorMessage(err, "Failed to update professor.") });
       });
   };
 
   const deleteProfessor = (id) => {
-    if (!window.confirm("Do you want to delete this professor?")) return;
+    if (confirmDeleteId !== id) {
+      setConfirmDeleteId(id);
+      setNotice({ type: "info", message: "Click Delete again to confirm." });
+      return;
+    }
 
     professorService
       .remove(id)
       .then(() => {
         fetchProfessors();
         if (editId === id) resetForm();
-        alert("Professor deleted successfully.");
+        setConfirmDeleteId(null);
+        setNotice({ type: "success", message: "Professor deleted successfully." });
       })
       .catch((err) => {
         console.log(err);
-        alert("Failed to delete professor.");
+        setNotice({ type: "error", message: getApiErrorMessage(err, "Failed to delete professor.") });
       });
   };
 
@@ -113,6 +122,10 @@ const Professors = () => {
 
   return (
     <PageContainer title="Professors Management">
+      <div className="mb-6">
+        <StatusMessage message={notice?.message} type={notice?.type} />
+      </div>
+
       <div className="grid gap-8 lg:grid-cols-3">
         <FormCard title={editId ? "Edit Professor" : "Professor Accounts"}>
           {editId ? (
@@ -246,7 +259,7 @@ const Professors = () => {
                             className="px-3 py-2"
                             variant="danger"
                           >
-                            Delete
+                            {confirmDeleteId === professor.id ? "Confirm" : "Delete"}
                           </Button>
                         </div>
                       </td>

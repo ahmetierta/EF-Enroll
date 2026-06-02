@@ -57,6 +57,7 @@ const Students = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [notice, setNotice] = useState(null);
 
   const showNotice = useCallback((type, message) => {
@@ -175,7 +176,11 @@ const Students = () => {
   };
 
   const deleteStudent = async (id) => {
-    if (!window.confirm("Do you want to delete this student?")) return;
+    if (confirmDeleteId !== id) {
+      setConfirmDeleteId(id);
+      showNotice("info", "Click Delete again to confirm.");
+      return;
+    }
 
     setDeletingId(id);
 
@@ -183,6 +188,7 @@ const Students = () => {
       await studentService.remove(id);
       await fetchStudents(filters);
       if (editId === id) resetForm();
+      setConfirmDeleteId(null);
       showNotice("success", "Student deleted successfully.");
     } catch (err) {
       showNotice("error", getApiErrorMessage(err, "Failed to delete student."));
@@ -507,7 +513,11 @@ const Students = () => {
                               variant="danger"
                               disabled={deletingId === student.id}
                             >
-                              {deletingId === student.id ? "Deleting..." : "Delete"}
+                              {deletingId === student.id
+                                ? "Deleting..."
+                                : confirmDeleteId === student.id
+                                  ? "Confirm"
+                                  : "Delete"}
                             </Button>
                           </div>
                         </td>

@@ -33,6 +33,7 @@ const Schedules = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [notice, setNotice] = useState(null);
 
   const showNotice = useCallback((type, message) => {
@@ -133,7 +134,11 @@ const Schedules = () => {
   };
 
   const deleteSchedule = async (id) => {
-    if (!window.confirm("Do you want to delete this schedule?")) return;
+    if (confirmDeleteId !== id) {
+      setConfirmDeleteId(id);
+      showNotice("info", "Click Delete again to confirm.");
+      return;
+    }
 
     setDeletingId(id);
 
@@ -141,6 +146,7 @@ const Schedules = () => {
       await scheduleService.remove(id);
       await fetchSchedules();
       if (editId === id) resetForm();
+      setConfirmDeleteId(null);
       showNotice("success", "Schedule deleted successfully.");
     } catch (err) {
       showNotice("error", getApiErrorMessage(err, "Failed to delete schedule."));
@@ -416,7 +422,11 @@ const Schedules = () => {
                                 variant="danger"
                                 disabled={deletingId === schedule.id}
                               >
-                                {deletingId === schedule.id ? "Deleting..." : "Delete"}
+                                {deletingId === schedule.id
+                                  ? "Deleting..."
+                                  : confirmDeleteId === schedule.id
+                                    ? "Confirm"
+                                    : "Delete"}
                               </Button>
                             </div>
                           </td>

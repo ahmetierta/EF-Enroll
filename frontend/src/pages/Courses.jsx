@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Button from "../components/ui/Button";
 import SelectInput from "../components/ui/SelectInput";
+import StatusMessage from "../components/ui/StatusMessage";
 import TextArea from "../components/ui/TextArea";
 import TextInput from "../components/ui/TextInput";
 import { courseService } from "../services/courseService";
@@ -52,6 +53,8 @@ const Courses = () => {
   const [semesters, setSemesters] = useState([]);
   const [formData, setFormData] = useState(initialFormData);
   const [editId, setEditId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [notice, setNotice] = useState(null);
 
   function fetchCourses() {
     courseService
@@ -96,14 +99,14 @@ const Courses = () => {
 
   const addCourse = async () => {
     if (!canManageCourses) {
-      alert("Only admins can add courses.");
+      setNotice({ type: "error", message: "Only admins can add courses." });
       return;
     }
 
     const validationError = await validateForm(courseSchema, formData);
 
     if (validationError) {
-      alert(validationError);
+      setNotice({ type: "error", message: validationError });
       return;
     }
 
@@ -112,24 +115,24 @@ const Courses = () => {
       .then(() => {
         fetchCourses();
         resetForm();
-        alert("Course added successfully.");
+        setNotice({ type: "success", message: "Course added successfully." });
       })
       .catch((err) => {
         console.log(err);
-        alert(getErrorMessage(err, "Failed to add course."));
+        setNotice({ type: "error", message: getErrorMessage(err, "Failed to add course.") });
       });
   };
 
   const updateCourse = async () => {
     if (!canManageCourses) {
-      alert("Only admins can update courses.");
+      setNotice({ type: "error", message: "Only admins can update courses." });
       return;
     }
 
     const validationError = await validateForm(courseSchema, formData);
 
     if (validationError) {
-      alert(validationError);
+      setNotice({ type: "error", message: validationError });
       return;
     }
 
@@ -138,32 +141,37 @@ const Courses = () => {
       .then(() => {
         fetchCourses();
         resetForm();
-        alert("Course updated successfully.");
+        setNotice({ type: "success", message: "Course updated successfully." });
       })
       .catch((err) => {
         console.log(err);
-        alert(getErrorMessage(err, "Failed to update course."));
+        setNotice({ type: "error", message: getErrorMessage(err, "Failed to update course.") });
       });
   };
 
   const deleteCourse = (id) => {
     if (!canManageCourses) {
-      alert("Only admins can delete courses.");
+      setNotice({ type: "error", message: "Only admins can delete courses." });
       return;
     }
 
-    if (!window.confirm("Do you want to delete this course?")) return;
+    if (confirmDeleteId !== id) {
+      setConfirmDeleteId(id);
+      setNotice({ type: "info", message: "Click Delete again to confirm." });
+      return;
+    }
 
     courseService
       .remove(id)
       .then(() => {
         fetchCourses();
         if (editId === id) resetForm();
-        alert("Course deleted successfully.");
+        setConfirmDeleteId(null);
+        setNotice({ type: "success", message: "Course deleted successfully." });
       })
       .catch((err) => {
         console.log(err);
-        alert(getErrorMessage(err, "Failed to delete course."));
+        setNotice({ type: "error", message: getErrorMessage(err, "Failed to delete course.") });
       });
   };
 
@@ -230,6 +238,10 @@ const Courses = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="mb-6">
+          <StatusMessage message={notice?.message} type={notice?.type} />
         </div>
 
         <div className={`grid gap-8 ${canManageCourses ? "lg:grid-cols-3" : ""}`}>
@@ -436,7 +448,7 @@ const Courses = () => {
                               className="rounded-xl px-3 py-2"
                               variant="danger"
                             >
-                              Delete
+                              {confirmDeleteId === course.id ? "Confirm" : "Delete"}
                             </Button>
                           )}
                         </div>

@@ -55,6 +55,7 @@ const WaitingList = () => {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [processingId, setProcessingId] = useState(null);
+  const [confirmRemoveId, setConfirmRemoveId] = useState(null);
 
   const fetchWaitingList = () => {
     waitingListService
@@ -174,17 +175,21 @@ const WaitingList = () => {
   };
 
   const removeItem = (waitingListId) => {
-    if (!window.confirm("Do you want to remove this waiting list entry?")) {
+    setMessage("");
+    setError("");
+
+    if (confirmRemoveId !== waitingListId) {
+      setConfirmRemoveId(waitingListId);
+      setMessage("Click Remove again to confirm.");
       return;
     }
 
-    setMessage("");
-    setError("");
     setProcessingId(waitingListId);
 
     waitingListService
       .remove(waitingListId)
       .then((res) => {
+        setConfirmRemoveId(null);
         setMessage(res.data.message || "Waiting list item removed.");
         fetchWaitingList();
       })
@@ -413,7 +418,7 @@ const WaitingList = () => {
                             disabled={isProcessing}
                             className="px-3 py-2 text-sm"
                           >
-                            Remove
+                            {confirmRemoveId === item.id ? "Confirm" : "Remove"}
                           </Button>
                         </div>
                       </td>

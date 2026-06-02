@@ -57,8 +57,9 @@ const RegisterProfessor = () => {
 
     try {
       await registerProfessor(payload);
-      alert("Professor account created. It is pending admin approval.");
-      navigate("/login");
+      navigate("/login", {
+        state: { message: "Professor account created. It is pending admin approval." },
+      });
     } catch (err) {
       setError(err.response?.data?.message || "Error occurred while registering.");
       console.log(err.message);

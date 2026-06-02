@@ -84,6 +84,7 @@ const Materials = () => {
   const [filters, setFilters] = useState(initialFilters);
   const [editId, setEditId] = useState(null);
   const [processingId, setProcessingId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -219,17 +220,21 @@ const Materials = () => {
   };
 
   const deleteMaterial = (materialId) => {
-    if (!window.confirm("Do you want to delete this material?")) {
+    setMessage("");
+    setError("");
+
+    if (confirmDeleteId !== materialId) {
+      setConfirmDeleteId(materialId);
+      setMessage("Click Delete again to confirm.");
       return;
     }
 
     setProcessingId(materialId);
-    setMessage("");
-    setError("");
 
     materialService
       .remove(materialId)
       .then((res) => {
+        setConfirmDeleteId(null);
         setMessage(res.data.message || "Material deleted successfully.");
         fetchMaterials();
       })
@@ -544,7 +549,7 @@ const Materials = () => {
                               disabled={processingId === material.id}
                               variant="danger"
                             >
-                              Delete
+                              {confirmDeleteId === material.id ? "Confirm" : "Delete"}
                             </Button>
                           </>
                         )}

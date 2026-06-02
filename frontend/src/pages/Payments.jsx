@@ -9,6 +9,7 @@ const Payments = () => {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [processingId, setProcessingId] = useState(null);
+  const [confirmRefundId, setConfirmRefundId] = useState(null);
 
   function fetchPayments() {
     paymentService
@@ -34,15 +35,21 @@ const Payments = () => {
   ).length;
 
   const refundPayment = (paymentId) => {
-    if (!window.confirm("Do you want to refund this payment?")) return;
-
     setError("");
     setMessage("");
+
+    if (confirmRefundId !== paymentId) {
+      setConfirmRefundId(paymentId);
+      setMessage("Click Refund again to confirm.");
+      return;
+    }
+
     setProcessingId(paymentId);
 
     paymentService
       .refund(paymentId, "Refunded from admin dashboard")
       .then((res) => {
+        setConfirmRefundId(null);
         setMessage(res.data.message || "Payment refunded successfully.");
         fetchPayments();
       })
@@ -176,7 +183,7 @@ const Payments = () => {
                       className="px-3 py-2 text-sm"
                       variant="secondary"
                     >
-                      Refund
+                      {confirmRefundId === payment.id ? "Confirm" : "Refund"}
                     </Button>
                   </td>
                 </tr>

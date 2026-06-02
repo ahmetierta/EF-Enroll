@@ -4,8 +4,10 @@ import PageContainer from "../components/layout/PageContainer";
 import TableCard from "../components/layout/TableCard";
 import Button from "../components/ui/Button";
 import SelectInput from "../components/ui/SelectInput";
+import StatusMessage from "../components/ui/StatusMessage";
 import TextInput from "../components/ui/TextInput";
 import { semesterService } from "../services/semesterService";
+import { getApiErrorMessage } from "../utils/apiErrors";
 import { semesterSchema, validateForm } from "../validation/schemas";
 
 const initialFormData = {
@@ -19,6 +21,8 @@ const Semesters = () => {
   const [semesters, setSemesters] = useState([]);
   const [formData, setFormData] = useState(initialFormData);
   const [editId, setEditId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [notice, setNotice] = useState(null);
 
   function fetchSemesters() {
     semesterService
@@ -47,7 +51,7 @@ const Semesters = () => {
     const validationError = await validateForm(semesterSchema, formData);
 
     if (validationError) {
-      alert(validationError);
+      setNotice({ type: "error", message: validationError });
       return;
     }
 
@@ -56,11 +60,11 @@ const Semesters = () => {
       .then(() => {
         fetchSemesters();
         resetForm();
-        alert("Semester added successfully.");
+        setNotice({ type: "success", message: "Semester added successfully." });
       })
       .catch((err) => {
         console.log(err);
-        alert("Failed to add semester.");
+        setNotice({ type: "error", message: getApiErrorMessage(err, "Failed to add semester.") });
       });
   };
 
@@ -68,7 +72,7 @@ const Semesters = () => {
     const validationError = await validateForm(semesterSchema, formData);
 
     if (validationError) {
-      alert(validationError);
+      setNotice({ type: "error", message: validationError });
       return;
     }
 
@@ -77,27 +81,32 @@ const Semesters = () => {
       .then(() => {
         fetchSemesters();
         resetForm();
-        alert("Semester updated successfully.");
+        setNotice({ type: "success", message: "Semester updated successfully." });
       })
       .catch((err) => {
         console.log(err);
-        alert("Failed to update semester.");
+        setNotice({ type: "error", message: getApiErrorMessage(err, "Failed to update semester.") });
       });
   };
 
   const deleteSemester = (id) => {
-    if (!window.confirm("Do you want to delete this semester?")) return;
+    if (confirmDeleteId !== id) {
+      setConfirmDeleteId(id);
+      setNotice({ type: "info", message: "Click Delete again to confirm." });
+      return;
+    }
 
     semesterService
       .remove(id)
       .then(() => {
         fetchSemesters();
         if (editId === id) resetForm();
-        alert("Semester deleted successfully.");
+        setConfirmDeleteId(null);
+        setNotice({ type: "success", message: "Semester deleted successfully." });
       })
       .catch((err) => {
         console.log(err);
-        alert("Failed to delete semester.");
+        setNotice({ type: "error", message: getApiErrorMessage(err, "Failed to delete semester.") });
       });
   };
 
@@ -113,6 +122,10 @@ const Semesters = () => {
 
   return (
     <PageContainer title="Semesters Management">
+      <div className="mb-6">
+        <StatusMessage message={notice?.message} type={notice?.type} />
+      </div>
+
       <div className="grid gap-8 lg:grid-cols-3">
         <FormCard title={editId ? "Edit Semester" : "Add Semester"}>
           <div className="space-y-4">
@@ -217,7 +230,7 @@ const Semesters = () => {
                             className="px-3 py-2"
                             variant="danger"
                           >
-                            Delete
+                            {confirmDeleteId === semester.id ? "Confirm" : "Delete"}
                           </Button>
                         </div>
                       </td>

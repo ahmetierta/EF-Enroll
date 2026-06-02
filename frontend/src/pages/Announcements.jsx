@@ -35,6 +35,7 @@ const Announcements = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [notice, setNotice] = useState(null);
 
   const showNotice = useCallback((type, message) => {
@@ -131,7 +132,9 @@ const Announcements = () => {
   };
 
   const deleteAnnouncement = async (announcementId) => {
-    if (!window.confirm("Do you want to delete this announcement?")) {
+    if (confirmDeleteId !== announcementId) {
+      setConfirmDeleteId(announcementId);
+      showNotice("info", "Click Delete again to confirm.");
       return;
     }
 
@@ -143,6 +146,7 @@ const Announcements = () => {
       if (editId === announcementId) {
         resetForm();
       }
+      setConfirmDeleteId(null);
       showNotice("success", "Announcement deleted successfully.");
     } catch (err) {
       showNotice(
@@ -359,6 +363,8 @@ const Announcements = () => {
                           >
                             {deletingId === announcement.id
                               ? "Deleting..."
+                              : confirmDeleteId === announcement.id
+                                ? "Confirm"
                               : "Delete"}
                           </Button>
                         </div>

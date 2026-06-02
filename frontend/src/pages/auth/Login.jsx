@@ -8,18 +8,20 @@ import { loginSchema, validateForm } from "../../validation/schemas";
 import AuthShell from "./AuthShell";
 
 const Login = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState(location.state?.message || "");
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
   const { login } = useContext(AuthContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setMessage("");
 
     const validationError = await validateForm(loginSchema, { email, password });
 
@@ -101,6 +103,12 @@ const Login = () => {
         {error && (
           <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
+          </p>
+        )}
+
+        {message && (
+          <p className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
+            {message}
           </p>
         )}
 

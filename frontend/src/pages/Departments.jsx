@@ -26,6 +26,7 @@ const Departments = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [notice, setNotice] = useState(null);
 
   const showNotice = useCallback((type, message) => {
@@ -116,7 +117,11 @@ const Departments = () => {
   };
 
   const deleteDepartment = async (id) => {
-    if (!window.confirm("Do you want to delete this department?")) return;
+    if (confirmDeleteId !== id) {
+      setConfirmDeleteId(id);
+      showNotice("info", "Click Delete again to confirm.");
+      return;
+    }
 
     setDeletingId(id);
 
@@ -124,6 +129,7 @@ const Departments = () => {
       await departmentService.remove(id);
       await fetchDepartments();
       if (editId === id) resetForm();
+      setConfirmDeleteId(null);
       showNotice("success", "Department deleted successfully.");
     } catch (err) {
       showNotice("error", getApiErrorMessage(err, "Failed to delete department."));
@@ -289,7 +295,11 @@ const Departments = () => {
                             variant="danger"
                             disabled={deletingId === department.id}
                           >
-                            {deletingId === department.id ? "Deleting..." : "Delete"}
+                            {deletingId === department.id
+                              ? "Deleting..."
+                              : confirmDeleteId === department.id
+                                ? "Confirm"
+                                : "Delete"}
                           </Button>
                         </div>
                       </td>

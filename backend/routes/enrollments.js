@@ -70,6 +70,15 @@ function mapStudentEnrollment(enrollment) {
   };
 }
 
+function isDuplicateEnrollmentError(err) {
+  return (
+    err?.code === "ER_DUP_ENTRY" &&
+    String(err.sqlMessage || err.message || "").includes(
+      "uq_enrollments_student_course"
+    )
+  );
+}
+
 // GET all enrollments with student and course details
 router.get("/", requireRole("admin", "professor"), async (req, res) => {
   try {
@@ -245,6 +254,12 @@ router.post("/", requireRole("student"), async (req, res) => {
       first_time_offer: pricing.isFirstTimeOffer,
     });
   } catch (err) {
+    if (isDuplicateEnrollmentError(err)) {
+      return res.status(409).json({
+        message: "You are already enrolled in this course",
+      });
+    }
+
     res.status(500).json(err);
   }
 });
