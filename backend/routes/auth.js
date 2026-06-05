@@ -37,6 +37,8 @@ const refreshCookieOptions = {
   maxAge: REFRESH_TOKEN_MAX_AGE_MS,
 };
 
+const sessionCookieOptions = refreshCookieOptions;
+
 function getCookieValue(req, name) {
   const cookies = req.headers.cookie;
 
@@ -70,6 +72,7 @@ function createToken(user) {
 function clearAuthCookies(res) {
   res.cookie("token", "", { ...accessCookieOptions, maxAge: 1 });
   res.cookie("refreshToken", "", { ...refreshCookieOptions, maxAge: 1 });
+  res.cookie("sessionId", "", { ...sessionCookieOptions, maxAge: 1 });
 }
 
 function createRefreshToken(user, tokenId) {
@@ -117,6 +120,18 @@ function getRequestIp(req) {
   return req.ip || req.socket?.remoteAddress || null;
 }
 
+function getSessionMetadata(req) {
+  return {
+    user_agent: String(req.headers["user-agent"] || "").slice(0, 255) || null,
+    ip_address: getRequestIp(req),
+    last_seen_at: new Date(),
+  };
+}
+
+function getRefreshTokenFromRequest(req) {
+  return getCookieValue(req, "sessionId") || getCookieValue(req, "refreshToken");
+}
+
 async function issueAuthCookies(res, req, user, oldRefreshTokenRecord = null) {
   const refreshTokenRepository = AppDataSource.getRepository("RefreshToken");
   const refreshTokenId = crypto.randomUUID();
@@ -128,8 +143,7 @@ async function issueAuthCookies(res, req, user, oldRefreshTokenRecord = null) {
     user,
     token_hash: refreshTokenHash,
     expires_at: new Date(Date.now() + REFRESH_TOKEN_MAX_AGE_MS),
-    user_agent: String(req.headers["user-agent"] || "").slice(0, 255) || null,
-    ip_address: getRequestIp(req),
+    ...getSessionMetadata(req),
   });
 
   await refreshTokenRepository.save(refreshRecord);
@@ -137,11 +151,13 @@ async function issueAuthCookies(res, req, user, oldRefreshTokenRecord = null) {
   if (oldRefreshTokenRecord) {
     oldRefreshTokenRecord.revoked_at = new Date();
     oldRefreshTokenRecord.replaced_by_token_hash = refreshTokenHash;
+    oldRefreshTokenRecord.last_seen_at = new Date();
     await refreshTokenRepository.save(oldRefreshTokenRecord);
   }
 
   res.cookie("token", token, accessCookieOptions);
   res.cookie("refreshToken", refreshToken, refreshCookieOptions);
+  res.cookie("sessionId", refreshToken, sessionCookieOptions);
 
   return { token, refreshToken };
 }
@@ -239,7 +255,7 @@ router.post("/login", async (req, res) => {
 });
 
 router.post("/refresh", async (req, res) => {
-  const refreshToken = getCookieValue(req, "refreshToken");
+  const refreshToken = getRefreshTokenFromRequest(req);
 
   if (!refreshToken) {
     return res.status(401).json({ message: "Refresh token is missing" });
@@ -578,7 +594,7 @@ router.get("/me", authenticateToken, (req, res) => {
 
 router.get("/sessions", authenticateToken, async (req, res) => {
   try {
-    const currentRefreshToken = getCookieValue(req, "refreshToken");
+    const currentRefreshToken = getRefreshTokenFromRequest(req);
     const currentRefreshTokenHash = currentRefreshToken
       ? hashToken(currentRefreshToken)
       : null;
@@ -601,6 +617,7 @@ router.get("/sessions", authenticateToken, async (req, res) => {
         ),
         user_agent: session.user_agent,
         ip_address: session.ip_address,
+        last_seen_at: session.last_seen_at,
         status: "active",
         current: session.token_hash === currentRefreshTokenHash,
       }))
@@ -612,7 +629,7 @@ router.get("/sessions", authenticateToken, async (req, res) => {
 
 router.delete("/sessions", authenticateToken, async (req, res) => {
   try {
-    const currentRefreshToken = getCookieValue(req, "refreshToken");
+    const currentRefreshToken = getRefreshTokenFromRequest(req);
     const currentRefreshTokenHash = currentRefreshToken
       ? hashToken(currentRefreshToken)
       : null;
@@ -637,7 +654,7 @@ router.delete("/sessions", authenticateToken, async (req, res) => {
 
 router.delete("/sessions/:id", authenticateToken, async (req, res) => {
   try {
-    const currentRefreshToken = getCookieValue(req, "refreshToken");
+    const currentRefreshToken = getRefreshTokenFromRequest(req);
     const currentRefreshTokenHash = currentRefreshToken
       ? hashToken(currentRefreshToken)
       : null;
@@ -683,7 +700,7 @@ router.post("/logout-all", authenticateToken, async (req, res) => {
 });
 
 router.post("/logout", async (req, res) => {
-  const refreshToken = getCookieValue(req, "refreshToken");
+  const refreshToken = getRefreshTokenFromRequest(req);
 
   try {
     await revokeRefreshToken(refreshToken);

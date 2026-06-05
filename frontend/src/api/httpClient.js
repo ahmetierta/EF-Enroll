@@ -15,6 +15,12 @@ const refreshClient = axios.create({
 
 let refreshPromise = null;
 
+function redirectToLogin() {
+  if (window.location.pathname !== "/login") {
+    window.location.href = "/login";
+  }
+}
+
 httpClient.interceptors.request.use((config) => {
   if (config.skipAuth) {
     config.withCredentials = false;
@@ -52,6 +58,7 @@ httpClient.interceptors.response.use(
         return httpClient(originalRequest);
       } catch {
         clearAuth();
+        redirectToLogin();
       }
     } else if (error.response?.status === 401) {
       clearAuth();

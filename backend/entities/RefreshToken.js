@@ -36,6 +36,10 @@ const RefreshToken = new EntitySchema({
       length: 45,
       nullable: true,
     },
+    last_seen_at: {
+      type: "timestamp",
+      nullable: true,
+    },
     created_at: {
       type: "timestamp",
       createDate: true,

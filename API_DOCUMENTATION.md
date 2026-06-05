@@ -6,7 +6,7 @@ Base URL:
 http://localhost:5000
 ```
 
-The API uses HTTP-only cookies for the access token and refresh token. After login, the browser sends cookies automatically.
+The API uses HTTP-only cookies for the access token and refresh/session token. After login, the browser sends cookies automatically.
 
 ## Health
 
@@ -63,7 +63,7 @@ Creates a pending professor account that must be approved by admin.
 
 ### POST `/auth/refresh`
 
-Refreshes the access token using a refresh token cookie.
+Refreshes the access token using the `sessionId` cookie. The same signed refresh token is also kept in the `refreshToken` cookie for backward compatibility, and its hash is stored in `refresh_tokens`.
 
 ### POST `/auth/logout`
 
@@ -92,6 +92,7 @@ Revokes a specific session. If the current session is revoked, cookies are clear
 Token rules:
 
 - Access tokens expire quickly and are used only for protected requests.
+- Login creates an HTTP-only `token` cookie and an HTTP-only `sessionId` refresh/session cookie.
 - Refresh tokens are stored as SHA-256 hashes in the database.
 - Refresh tokens rotate on every `/auth/refresh`.
 - Reuse of an already revoked refresh token revokes all user sessions.

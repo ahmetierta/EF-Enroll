@@ -129,6 +129,7 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
   replaced_by_token_hash VARCHAR(64) NULL,
   user_agent VARCHAR(255) NULL,
   ip_address VARCHAR(45) NULL,
+  last_seen_at TIMESTAMP NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_refresh_tokens_user_active (user_id, revoked_at, expires_at),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
