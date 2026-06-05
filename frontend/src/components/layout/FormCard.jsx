@@ -1,8 +1,12 @@
 const FormCard = ({ children, title }) => {
   return (
-    <div className="rounded-2xl border border-slate-300 bg-white p-6 shadow-sm">
-      <h2 className="mb-6 text-xl font-semibold">{title}</h2>
+    <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+        <h2 className="text-base font-bold text-slate-950">{title}</h2>
+      </div>
+      <div className="p-5">
       {children}
+      </div>
     </div>
   );
 };

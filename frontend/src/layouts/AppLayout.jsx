@@ -8,26 +8,34 @@ const AppLayout = ({
   title = "Dashboard",
 }) => {
   return (
-    <div className="min-h-screen bg-slate-300">
-      <header className="sticky top-0 z-50 border-b border-slate-300/80 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 lg:px-8">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-700">
-              {sectionLabel}
-            </p>
-            <h1 className="text-xl font-bold text-slate-900">
-              {title}
-            </h1>
-            <p className="mt-1 text-sm text-slate-600">{subtitle}</p>
-          </div>
-
-          <MainNavbar navRoles={navRoles} />
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <header className="border-b border-slate-200 bg-white lg:hidden">
+        <div className="px-4 py-4">
+          <p className="text-xs font-semibold uppercase text-blue-700">
+            {sectionLabel}
+          </p>
+          <h1 className="mt-1 text-xl font-bold text-slate-950">{title}</h1>
+          <p className="mt-1 text-sm text-slate-600">{subtitle}</p>
         </div>
+        <MainNavbar navRoles={navRoles} />
       </header>
 
-      <main>
+      <div className="lg:grid lg:min-h-screen lg:grid-cols-[280px_1fr]">
+        <aside className="hidden border-r border-slate-200 bg-white lg:flex lg:flex-col">
+          <div className="border-b border-slate-200 px-6 py-6">
+            <p className="text-xs font-semibold uppercase text-blue-700">
+              {sectionLabel}
+            </p>
+            <h1 className="mt-2 text-2xl font-bold text-slate-950">{title}</h1>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{subtitle}</p>
+          </div>
+          <MainNavbar navRoles={navRoles} variant="sidebar" />
+        </aside>
+
+        <main className="min-w-0">
         <Outlet />
-      </main>
+        </main>
+      </div>
     </div>
   );
 };

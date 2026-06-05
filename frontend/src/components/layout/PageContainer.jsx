@@ -1,8 +1,15 @@
 const PageContainer = ({ children, title }) => {
   return (
-    <div className="min-h-screen bg-slate-300 p-8 text-slate-900">
+    <div className="bg-slate-50 px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <h1 className="mb-8 text-3xl font-bold text-blue-700">{title}</h1>
+        {title && (
+          <div className="mb-5 border-b border-slate-200 pb-4">
+            <p className="text-xs font-semibold uppercase text-blue-700">
+              Workspace
+            </p>
+            <h1 className="mt-1 text-2xl font-bold text-slate-950">{title}</h1>
+          </div>
+        )}
         {children}
       </div>
     </div>
