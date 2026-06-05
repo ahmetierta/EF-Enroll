@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import { getAuthUser } from "../utils/authStorage";
 import AdminLayout from "./admin/AdminLayout";
 import ProfessorLayout from "./professor/ProfessorLayout";
@@ -8,7 +8,7 @@ const DashboardLayout = () => {
   const authUser = getAuthUser();
 
   if (!authUser) {
-    return <Navigate to="/login" replace />;
+    return <Outlet />;
   }
 
   if (authUser.role === "admin") {
@@ -23,7 +23,7 @@ const DashboardLayout = () => {
     return <UserLayout />;
   }
 
-  return <Navigate to="/" replace />;
+  return <Outlet />;
 };
 
 export default DashboardLayout;
