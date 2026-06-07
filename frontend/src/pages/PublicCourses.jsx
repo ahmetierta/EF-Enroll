@@ -1,9 +1,9 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import PublicHeader from "../components/navigation/PublicHeader";
 import Button from "../components/ui/Button";
 import SelectInput from "../components/ui/SelectInput";
 import TextInput from "../components/ui/TextInput";
-import AuthContext from "../context/AuthContext";
 import { courseService } from "../services/courseService";
 import { enrollmentService } from "../services/enrollmentService";
 import { waitingListService } from "../services/waitingListService";
@@ -54,10 +54,8 @@ const PublicCourses = () => {
   const [enrollingCourseId, setEnrollingCourseId] = useState(null);
   const [selectedDurationByCourse, setSelectedDurationByCourse] = useState({});
   const navigate = useNavigate();
-  const { logout } = useContext(AuthContext);
   const authUser = getAuthUser();
   const authRole = authUser?.role;
-  const userInitial = authUser?.username?.charAt(0)?.toUpperCase() || "U";
 
   const fetchCourses = useCallback(() => {
     courseService
@@ -321,96 +319,9 @@ const PublicCourses = () => {
       });
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch {
-      // Local logout still clears client state if the server is unreachable.
-    }
-
-    navigate("/login");
-  };
-
   return (
     <div className="min-h-screen bg-[#eef2f7] text-slate-900">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 lg:px-8">
-          <Link to="/" className="text-xl font-bold text-slate-950">
-            EF Enroll
-          </Link>
-
-          <nav className="flex flex-wrap items-center gap-2 text-sm">
-            <Link
-              to="/"
-              className="rounded border border-slate-300 bg-white px-3 py-2 font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              Home
-            </Link>
-            <Link
-              to="/catalog"
-              className="rounded border border-blue-200 bg-blue-50 px-3 py-2 font-semibold text-blue-700"
-            >
-              Catalog
-            </Link>
-            {authUser?.role === "student" && (
-              <Link
-                to="/my-enrollments"
-                className="rounded border border-slate-300 bg-white px-3 py-2 font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                My courses
-              </Link>
-            )}
-            {authUser && authUser.role !== "student" && (
-              <Link
-                to="/courses"
-                className="rounded border border-slate-300 bg-white px-3 py-2 font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Dashboard
-              </Link>
-            )}
-          </nav>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {authUser ? (
-              <>
-                <div className="flex items-center gap-2 rounded border border-slate-300 bg-slate-50 px-2 py-1">
-                  <div className="flex h-8 w-8 items-center justify-center rounded bg-blue-700 text-sm font-bold text-white">
-                    {userInitial}
-                  </div>
-                  <div className="text-xs leading-tight">
-                    <p className="font-semibold text-slate-900">
-                      {authUser.username}
-                    </p>
-                    <p className="capitalize text-slate-500">{authUser.role}</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  Logout
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/register"
-                  className="rounded bg-blue-700 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-800"
-                >
-                  Sign up
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      <PublicHeader activePage="catalog" />
 
       <main>
         <section

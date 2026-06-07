@@ -1,7 +1,6 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import AuthContext from "../context/AuthContext";
-import { getRoleHomePath } from "../routes/roleRedirects";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import PublicHeader from "../components/navigation/PublicHeader";
 import { courseService } from "../services/courseService";
 import { getAuthUser } from "../utils/authStorage";
 import { formatCoursePrice, getCourseImage } from "../utils/courseVisuals";
@@ -60,9 +59,6 @@ const processSteps = [
 const Home = () => {
   const [courses, setCourses] = useState([]);
   const authUser = getAuthUser();
-  const { logout } = useContext(AuthContext);
-  const navigate = useNavigate();
-  const dashboardPath = getRoleHomePath(authUser?.role);
 
   const fetchCourses = useCallback(() => {
     courseService
@@ -85,78 +81,15 @@ const Home = () => {
     [courses]
   );
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch {
-      // Local logout still clears client state if the server is unreachable.
-    }
-
-    navigate("/login");
-  };
-
   return (
     <div className="min-h-screen bg-[#f3f4f6] text-slate-900">
+      <PublicHeader activePage="home" />
+
       <section
         className="relative min-h-[76vh] bg-cover bg-center text-white"
         style={{ backgroundImage: `url(${heroImage})` }}
       >
         <div className="absolute inset-0 bg-slate-950/65" />
-
-        <header className="relative z-10 border-b border-white/20">
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 lg:px-8">
-            <Link to="/" className="text-xl font-bold">
-              EF Enroll
-            </Link>
-
-            <nav className="flex flex-wrap items-center gap-2 text-sm">
-              <Link
-                to="/"
-                className="rounded-full border border-white/30 bg-white px-4 py-2 font-semibold text-slate-950 shadow-sm"
-              >
-                Home
-              </Link>
-              <Link
-                to="/catalog"
-                className="rounded-full border border-white/30 bg-white/10 px-4 py-2 font-semibold text-white hover:bg-white/20"
-              >
-                Catalog
-              </Link>
-              {authUser ? (
-                <>
-                  <Link
-                    to={dashboardPath}
-                    className="rounded-full border border-white/30 bg-white/10 px-4 py-2 font-semibold text-white hover:bg-white/20"
-                  >
-                    Dashboard
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="rounded-full border border-white/30 bg-white/10 px-4 py-2 font-semibold text-white hover:bg-white/20"
-                  >
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link
-                    to="/login"
-                    className="rounded-full border border-white/30 bg-white/10 px-4 py-2 font-semibold text-white hover:bg-white/20"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="rounded-full bg-white px-4 py-2 font-semibold text-slate-950 shadow-sm hover:bg-slate-100"
-                  >
-                    Sign up
-                  </Link>
-                </>
-              )}
-            </nav>
-          </div>
-        </header>
 
         <div className="relative z-10 mx-auto flex max-w-7xl flex-col justify-end px-4 pb-14 pt-24 lg:px-8">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200">
