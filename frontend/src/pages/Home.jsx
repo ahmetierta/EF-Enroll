@@ -80,6 +80,10 @@ const Home = () => {
     () => courses.filter((course) => course.schedules?.length).length,
     [courses]
   );
+  const freeCourses = useMemo(
+    () => courses.filter((course) => Number(course.cmimi || 0) === 0).length,
+    [courses]
+  );
 
   return (
     <div className="min-h-screen bg-[#f3f4f6] text-slate-900">
@@ -281,7 +285,7 @@ const Home = () => {
           </div>
         </section>
 
-        <section id="stats" className="mt-8 grid scroll-mt-24 gap-4 md:grid-cols-3">
+        <section id="stats" className="mt-8 grid scroll-mt-24 gap-4 md:grid-cols-4">
           <div className="border border-slate-300 bg-white p-5">
             <p className="text-sm text-slate-500">Courses</p>
             <p className="mt-2 text-3xl font-bold text-slate-950">
@@ -298,6 +302,12 @@ const Home = () => {
             <p className="text-sm text-slate-500">Scheduled Courses</p>
             <p className="mt-2 text-3xl font-bold text-emerald-700">
               {scheduledCourses}
+            </p>
+          </div>
+          <div className="border border-slate-300 bg-white p-5">
+            <p className="text-sm text-slate-500">Free Courses</p>
+            <p className="mt-2 text-3xl font-bold text-cyan-700">
+              {freeCourses}
             </p>
           </div>
         </section>

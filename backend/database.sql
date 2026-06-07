@@ -595,3 +595,211 @@ SELECT c.id, c.professor_id, 'SEO Audit Checklist', 'https://example.com/materia
 FROM courses c
 WHERE c.emertimi = 'Digital Marketing'
   AND NOT EXISTS (SELECT 1 FROM course_materials WHERE course_id = c.id AND titulli = 'SEO Audit Checklist');
+
+INSERT INTO users (username, email, password_hash, role, status)
+SELECT 'Ariana Berisha', 'ariana.student@ef-enroll.test', @demo_password_hash, 'student', 'approved'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'ariana.student@ef-enroll.test');
+
+INSERT INTO users (username, email, password_hash, role, status)
+SELECT 'Dren Morina', 'dren.student@ef-enroll.test', @demo_password_hash, 'student', 'approved'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'dren.student@ef-enroll.test');
+
+INSERT INTO users (username, email, password_hash, role, status)
+SELECT 'Leona Shala', 'leona.student@ef-enroll.test', @demo_password_hash, 'student', 'approved'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'leona.student@ef-enroll.test');
+
+INSERT INTO users (username, email, password_hash, role, status)
+SELECT 'Rron Gashi', 'rron.student@ef-enroll.test', @demo_password_hash, 'student', 'approved'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'rron.student@ef-enroll.test');
+
+INSERT INTO users (username, email, password_hash, role, status)
+SELECT 'Sara Hyseni', 'sara.student@ef-enroll.test', @demo_password_hash, 'student', 'approved'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'sara.student@ef-enroll.test');
+
+INSERT INTO users (username, email, password_hash, role, status)
+SELECT 'Valon Krasniqi', 'valon.student@ef-enroll.test', @demo_password_hash, 'student', 'approved'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'valon.student@ef-enroll.test');
+
+INSERT INTO students (user_id, numri_studentit, programi, viti_studimit)
+SELECT id, 'STU-2026-0006', 'Computer Science', 1
+FROM users
+WHERE email = 'ariana.student@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM students WHERE numri_studentit = 'STU-2026-0006');
+
+INSERT INTO students (user_id, numri_studentit, programi, viti_studimit)
+SELECT id, 'STU-2026-0007', 'Software Engineering', 3
+FROM users
+WHERE email = 'dren.student@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM students WHERE numri_studentit = 'STU-2026-0007');
+
+INSERT INTO students (user_id, numri_studentit, programi, viti_studimit)
+SELECT id, 'STU-2026-0008', 'Data Science', 2
+FROM users
+WHERE email = 'leona.student@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM students WHERE numri_studentit = 'STU-2026-0008');
+
+INSERT INTO students (user_id, numri_studentit, programi, viti_studimit)
+SELECT id, 'STU-2026-0009', 'Business', 1
+FROM users
+WHERE email = 'rron.student@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM students WHERE numri_studentit = 'STU-2026-0009');
+
+INSERT INTO students (user_id, numri_studentit, programi, viti_studimit)
+SELECT id, 'STU-2026-0010', 'Digital Marketing', 2
+FROM users
+WHERE email = 'sara.student@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM students WHERE numri_studentit = 'STU-2026-0010');
+
+INSERT INTO students (user_id, numri_studentit, programi, viti_studimit)
+SELECT id, 'STU-2026-0011', 'Cloud Computing', 4
+FROM users
+WHERE email = 'valon.student@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM students WHERE numri_studentit = 'STU-2026-0011');
+
+INSERT INTO courses (emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi)
+SELECT 'Git and GitHub Essentials', 'A free practical course for version control, branches, pull requests, and team collaboration.', 3, p.id, s.id, 35, 0.00
+FROM professors p
+JOIN users u ON u.id = p.user_id
+JOIN semesters s ON s.emertimi = 'Spring 2026'
+WHERE u.email = 'ilir.professor@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM courses WHERE emertimi = 'Git and GitHub Essentials');
+
+INSERT INTO courses (emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi)
+SELECT 'Excel for Beginners', 'A free beginner-friendly course covering spreadsheets, formulas, charts, and simple dashboards.', 3, p.id, s.id, 40, 0.00
+FROM professors p
+JOIN users u ON u.id = p.user_id
+JOIN semesters s ON s.emertimi = 'Spring 2026'
+WHERE u.email = 'besart.professor@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM courses WHERE emertimi = 'Excel for Beginners');
+
+INSERT INTO courses (emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi)
+SELECT 'Career Readiness Workshop', 'A free workshop for CV writing, interview preparation, portfolio review, and professional communication.', 2, p.id, s.id, 45, 0.00
+FROM professors p
+JOIN users u ON u.id = p.user_id
+JOIN semesters s ON s.emertimi = 'Spring 2026'
+WHERE u.email = 'elira.professor@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM courses WHERE emertimi = 'Career Readiness Workshop');
+
+INSERT INTO courses (emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi)
+SELECT 'Academic Writing Basics', 'A free course for essays, research structure, citations, and clear academic writing.', 2, p.id, s.id, 30, 0.00
+FROM professors p
+JOIN users u ON u.id = p.user_id
+JOIN semesters s ON s.emertimi = 'Spring 2026'
+WHERE u.email = 'nora.professor@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM courses WHERE emertimi = 'Academic Writing Basics');
+
+INSERT INTO courses (emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi)
+SELECT 'Mobile App Development', 'Build mobile application screens, navigation, API calls, and deployment-ready project structure.', 6, p.id, s.id, 24, 175.00
+FROM professors p
+JOIN users u ON u.id = p.user_id
+JOIN semesters s ON s.emertimi = 'Spring 2026'
+WHERE u.email = 'elira.professor@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM courses WHERE emertimi = 'Mobile App Development');
+
+INSERT INTO courses (emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi)
+SELECT 'Machine Learning Foundations', 'Supervised learning, model evaluation, feature preparation, and practical machine learning workflows.', 6, p.id, s.id, 20, 210.00
+FROM professors p
+JOIN users u ON u.id = p.user_id
+JOIN semesters s ON s.emertimi = 'Spring 2026'
+WHERE u.email = 'nora.professor@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM courses WHERE emertimi = 'Machine Learning Foundations');
+
+INSERT INTO courses (emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi)
+SELECT 'Project Management', 'Planning, agile boards, deadlines, risk tracking, team communication, and delivery reports.', 5, p.id, s.id, 28, 125.00
+FROM professors p
+JOIN users u ON u.id = p.user_id
+JOIN semesters s ON s.emertimi = 'Spring 2026'
+WHERE u.email = 'besart.professor@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM courses WHERE emertimi = 'Project Management');
+
+INSERT INTO courses (emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi)
+SELECT 'Advanced SQL and Reporting', 'Complex joins, window functions, views, reporting queries, and database performance basics.', 5, p.id, s.id, 22, 155.00
+FROM professors p
+JOIN users u ON u.id = p.user_id
+JOIN semesters s ON s.emertimi = 'Spring 2026'
+WHERE u.email = 'arben.professor@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM courses WHERE emertimi = 'Advanced SQL and Reporting');
+
+INSERT INTO schedules (course_id, dita, ora_fillimit, ora_perfundimit, salla)
+SELECT id, 'Monday', '16:00:00', '17:30:00', 'Lab A'
+FROM courses
+WHERE emertimi = 'Git and GitHub Essentials'
+  AND NOT EXISTS (SELECT 1 FROM schedules WHERE course_id = courses.id AND dita = 'Monday' AND ora_fillimit = '16:00:00');
+
+INSERT INTO schedules (course_id, dita, ora_fillimit, ora_perfundimit, salla)
+SELECT id, 'Tuesday', '09:00:00', '10:30:00', 'Business Lab'
+FROM courses
+WHERE emertimi = 'Excel for Beginners'
+  AND NOT EXISTS (SELECT 1 FROM schedules WHERE course_id = courses.id AND dita = 'Tuesday' AND ora_fillimit = '09:00:00');
+
+INSERT INTO schedules (course_id, dita, ora_fillimit, ora_perfundimit, salla)
+SELECT id, 'Wednesday', '13:00:00', '14:30:00', 'Career Room'
+FROM courses
+WHERE emertimi = 'Career Readiness Workshop'
+  AND NOT EXISTS (SELECT 1 FROM schedules WHERE course_id = courses.id AND dita = 'Wednesday' AND ora_fillimit = '13:00:00');
+
+INSERT INTO schedules (course_id, dita, ora_fillimit, ora_perfundimit, salla)
+SELECT id, 'Thursday', '15:00:00', '16:30:00', 'Room 7'
+FROM courses
+WHERE emertimi = 'Academic Writing Basics'
+  AND NOT EXISTS (SELECT 1 FROM schedules WHERE course_id = courses.id AND dita = 'Thursday' AND ora_fillimit = '15:00:00');
+
+INSERT INTO schedules (course_id, dita, ora_fillimit, ora_perfundimit, salla)
+SELECT id, 'Friday', '14:00:00', '15:30:00', 'Mobile Lab'
+FROM courses
+WHERE emertimi = 'Mobile App Development'
+  AND NOT EXISTS (SELECT 1 FROM schedules WHERE course_id = courses.id AND dita = 'Friday' AND ora_fillimit = '14:00:00');
+
+INSERT INTO schedules (course_id, dita, ora_fillimit, ora_perfundimit, salla)
+SELECT id, 'Monday', '11:00:00', '12:30:00', 'AI Lab'
+FROM courses
+WHERE emertimi = 'Machine Learning Foundations'
+  AND NOT EXISTS (SELECT 1 FROM schedules WHERE course_id = courses.id AND dita = 'Monday' AND ora_fillimit = '11:00:00');
+
+INSERT INTO schedules (course_id, dita, ora_fillimit, ora_perfundimit, salla)
+SELECT id, 'Wednesday', '09:00:00', '10:30:00', 'Room 8'
+FROM courses
+WHERE emertimi = 'Project Management'
+  AND NOT EXISTS (SELECT 1 FROM schedules WHERE course_id = courses.id AND dita = 'Wednesday' AND ora_fillimit = '09:00:00');
+
+INSERT INTO schedules (course_id, dita, ora_fillimit, ora_perfundimit, salla)
+SELECT id, 'Thursday', '12:00:00', '13:30:00', 'Database Lab'
+FROM courses
+WHERE emertimi = 'Advanced SQL and Reporting'
+  AND NOT EXISTS (SELECT 1 FROM schedules WHERE course_id = courses.id AND dita = 'Thursday' AND ora_fillimit = '12:00:00');
+
+INSERT INTO course_materials (course_id, professor_id, titulli, file_url, material_type, pershkrimi, moduli, java, duration_minutes, is_required, order_index)
+SELECT c.id, c.professor_id, 'Git Branching Practice', 'https://example.com/materials/git-branching-practice.pdf', 'assignment', 'Hands-on branching and pull request workflow.', 'Version Control', 1, 90, 1, 1
+FROM courses c
+WHERE c.emertimi = 'Git and GitHub Essentials'
+  AND NOT EXISTS (SELECT 1 FROM course_materials WHERE course_id = c.id AND titulli = 'Git Branching Practice');
+
+INSERT INTO course_materials (course_id, professor_id, titulli, file_url, material_type, pershkrimi, moduli, java, duration_minutes, is_required, order_index)
+SELECT c.id, c.professor_id, 'Excel Formula Cheat Sheet', 'https://example.com/materials/excel-formula-cheat-sheet.pdf', 'resource', 'Common formulas and chart examples.', 'Spreadsheets', 1, 35, 1, 1
+FROM courses c
+WHERE c.emertimi = 'Excel for Beginners'
+  AND NOT EXISTS (SELECT 1 FROM course_materials WHERE course_id = c.id AND titulli = 'Excel Formula Cheat Sheet');
+
+INSERT INTO course_materials (course_id, professor_id, titulli, file_url, material_type, pershkrimi, moduli, java, duration_minutes, is_required, order_index)
+SELECT c.id, c.professor_id, 'CV Template Pack', 'https://example.com/materials/cv-template-pack.zip', 'resource', 'Editable CV and portfolio templates.', 'Career Tools', 1, 25, 0, 1
+FROM courses c
+WHERE c.emertimi = 'Career Readiness Workshop'
+  AND NOT EXISTS (SELECT 1 FROM course_materials WHERE course_id = c.id AND titulli = 'CV Template Pack');
+
+INSERT INTO course_materials (course_id, professor_id, titulli, file_url, material_type, pershkrimi, moduli, java, duration_minutes, is_required, order_index)
+SELECT c.id, c.professor_id, 'Mobile UI Starter Screens', 'https://example.com/materials/mobile-ui-starter-screens.fig', 'resource', 'Starter screens for mobile app projects.', 'UI Foundations', 1, 50, 1, 1
+FROM courses c
+WHERE c.emertimi = 'Mobile App Development'
+  AND NOT EXISTS (SELECT 1 FROM course_materials WHERE course_id = c.id AND titulli = 'Mobile UI Starter Screens');
+
+INSERT INTO course_materials (course_id, professor_id, titulli, file_url, material_type, pershkrimi, moduli, java, duration_minutes, is_required, order_index)
+SELECT c.id, c.professor_id, 'Model Evaluation Notebook', 'https://example.com/materials/model-evaluation-notebook.ipynb', 'assignment', 'Practice metrics and train/test evaluation.', 'Model Evaluation', 2, 120, 1, 1
+FROM courses c
+WHERE c.emertimi = 'Machine Learning Foundations'
+  AND NOT EXISTS (SELECT 1 FROM course_materials WHERE course_id = c.id AND titulli = 'Model Evaluation Notebook');
+
+INSERT INTO announcements (course_id, professor_id, titulli, permbajtja, data)
+SELECT c.id, c.professor_id, 'Free course enrollment is open', 'Students can enroll in this free course directly from the public catalog.', '2026-06-01'
+FROM courses c
+WHERE c.cmimi = 0.00
+  AND NOT EXISTS (SELECT 1 FROM announcements WHERE course_id = c.id AND titulli = 'Free course enrollment is open');

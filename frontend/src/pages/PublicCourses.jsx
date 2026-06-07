@@ -228,6 +228,7 @@ const PublicCourses = () => {
   const paidCount = myEnrollments.filter(
     (enrollment) => enrollment.payment_status === "paid"
   ).length;
+  const freeCount = courses.filter((course) => Number(course.cmimi || 0) === 0).length;
   const isFirstTimeStudent = authRole === "student" && myEnrollments.length === 0;
   const availableCount = courses.filter((course) => {
     const capacity = Number(course.kapaciteti || 0);
@@ -349,10 +350,11 @@ const PublicCourses = () => {
               </p>
             </div>
 
-            <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
               {[
                 ["Courses", courses.length],
                 ["Available", availableCount],
+                ["Free", freeCount],
                 ["Professors", professors.length],
                 ["My courses", enrolledCount],
                 ["Waiting list", waitingCount],
@@ -614,6 +616,11 @@ const PublicCourses = () => {
                           <span className="rounded bg-slate-950 px-3 py-1 text-sm font-bold text-white">
                             {formatCoursePrice(course)}
                           </span>
+                          {Number(course.cmimi || 0) === 0 && (
+                            <span className="rounded bg-cyan-100 px-3 py-1 text-sm font-bold text-cyan-800">
+                              Free course
+                            </span>
+                          )}
                         </div>
 
                         <p className="line-clamp-2 text-sm leading-6 text-slate-600">
