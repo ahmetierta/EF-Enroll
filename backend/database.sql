@@ -827,3 +827,21 @@ WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'mentor.professor@ef-enroll.
 INSERT INTO users (username, email, password_hash, role, status)
 SELECT 'Alma Bytyqi', 'alma.professor@ef-enroll.test', @demo_password_hash, 'professor', 'pending'
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'alma.professor@ef-enroll.test');
+
+INSERT INTO professors (user_id, titulli, departamenti)
+SELECT id, 'Dr.', 'Cybersecurity'
+FROM users
+WHERE email = 'valmira.professor@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM professors WHERE user_id = users.id);
+
+INSERT INTO professors (user_id, titulli, departamenti)
+SELECT id, 'MSc.', 'Career Development'
+FROM users
+WHERE email = 'mentor.professor@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM professors WHERE user_id = users.id);
+
+INSERT INTO professors (user_id, titulli, departamenti)
+SELECT id, 'Dr.', 'Data Science'
+FROM users
+WHERE email = 'alma.professor@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM professors WHERE user_id = users.id);
