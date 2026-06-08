@@ -48,7 +48,7 @@ This file creates the database, tables, admin user, demo students, demo professo
 cd backend
 npm install
 copy .env.example .env
-npm run dev
+node server.js
 ```
 
 Backend runs on:
@@ -117,11 +117,26 @@ npm run build
 
 ## Presentation Notes
 
-The project uses access tokens for protected requests and HTTP-only session/refresh cookies for session continuity. The backend sets a short-lived `token` cookie and a longer-lived `sessionId` cookie; the signed refresh token is hashed in the database, rotated on refresh, and revoked on logout. This gives the project a more realistic authentication flow than storing one long-lived token in the browser.
+The project uses access tokens for protected requests and HTTP-only cookies for session continuity. The backend sets a short-lived `token` cookie and a longer-lived `refreshToken` cookie; the refresh token is hashed in the database, rotated on refresh, and revoked on logout. This gives the project a more realistic authentication flow than storing one long-lived token in the browser.
 
 Protected routes also re-check the user in the database. If a user becomes pending, rejected, or deleted after login, old access tokens stop working.
 
 Database changes are managed with the normal SQL file `backend/database.sql`, so the project can be restored without migration scripts.
+
+## Final Demo Checklist
+
+Before presenting, verify:
+
+```text
+1. Import backend/database.sql into MySQL.
+2. Start backend with node server.js.
+3. Start frontend with npm run dev.
+4. Open http://localhost:5173.
+5. Log in as admin, professor, and student.
+6. Open catalog, enroll in a course, pay an enrollment, and view materials.
+7. Check waiting list, announcements, payments, and admin analytics.
+8. Test logout and browser refresh to confirm cookie sessions still work.
+```
 
 ## Demo Data For Testing
 
