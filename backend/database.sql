@@ -885,3 +885,19 @@ SELECT id, 'STU-2026-0015', 'Data Science', 4
 FROM users
 WHERE email = 'arian.student@ef-enroll.test'
   AND NOT EXISTS (SELECT 1 FROM students WHERE numri_studentit = 'STU-2026-0015');
+
+INSERT INTO courses (emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi)
+SELECT 'Digital Safety Basics', 'A free introductory course about passwords, phishing, safe browsing, and personal data protection.', 2, p.id, s.id, 50, 0.00
+FROM professors p
+JOIN users u ON u.id = p.user_id
+JOIN semesters s ON s.emertimi = 'Summer 2026'
+WHERE u.email = 'valmira.professor@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM courses WHERE emertimi = 'Digital Safety Basics');
+
+INSERT INTO courses (emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi)
+SELECT 'Portfolio Sprint', 'A free guided sprint where students prepare a simple portfolio, project summary, and presentation notes.', 2, p.id, s.id, 35, 0.00
+FROM professors p
+JOIN users u ON u.id = p.user_id
+JOIN semesters s ON s.emertimi = 'Summer 2026'
+WHERE u.email = 'mentor.professor@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM courses WHERE emertimi = 'Portfolio Sprint');
