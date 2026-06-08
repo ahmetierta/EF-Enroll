@@ -901,3 +901,19 @@ JOIN users u ON u.id = p.user_id
 JOIN semesters s ON s.emertimi = 'Summer 2026'
 WHERE u.email = 'mentor.professor@ef-enroll.test'
   AND NOT EXISTS (SELECT 1 FROM courses WHERE emertimi = 'Portfolio Sprint');
+
+INSERT INTO courses (emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi)
+SELECT 'Ethical Hacking Lab', 'Hands-on security lab with vulnerability scanning, web security practice, and defensive reporting.', 6, p.id, s.id, 18, 220.00
+FROM professors p
+JOIN users u ON u.id = p.user_id
+JOIN semesters s ON s.emertimi = 'Summer 2026'
+WHERE u.email = 'valmira.professor@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM courses WHERE emertimi = 'Ethical Hacking Lab');
+
+INSERT INTO courses (emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti, cmimi)
+SELECT 'Professional Communication', 'Practical course for presentations, email writing, meeting etiquette, and project communication.', 4, p.id, s.id, 26, 95.00
+FROM professors p
+JOIN users u ON u.id = p.user_id
+JOIN semesters s ON s.emertimi = 'Summer 2026'
+WHERE u.email = 'mentor.professor@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM courses WHERE emertimi = 'Professional Communication');
