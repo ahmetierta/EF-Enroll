@@ -2,9 +2,9 @@ import { Link } from "react-router-dom";
 
 const AuthShell = ({ children, subtitle, title }) => {
   return (
-    <div className="min-h-screen bg-slate-300 px-4 py-10 text-slate-900">
+    <div className="min-h-screen bg-slate-50 px-4 py-10 text-slate-900">
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-5xl items-center justify-center">
-        <div className="grid w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:grid-cols-[1fr_1.2fr]">
+        <div className="grid w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm lg:grid-cols-[1fr_1.2fr]">
           <div className="bg-slate-900 p-8 text-white">
             <Link
               to="/"

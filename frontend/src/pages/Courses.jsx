@@ -207,9 +207,9 @@ const Courses = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-300 p-6 text-slate-900 lg:p-8">
+    <div className="min-h-screen bg-slate-50 p-6 text-slate-900 lg:p-8">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-8 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+        <div className="mb-8 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="grid gap-8 px-6 py-8 lg:grid-cols-[1.5fr_1fr] lg:px-10">
             <div>
               <span className="inline-flex rounded-full bg-sky-100 px-3 py-1 text-sm font-semibold text-sky-700">
@@ -225,21 +225,21 @@ const Courses = () => {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
-              <div className="rounded-2xl border border-slate-200 bg-slate-900 p-5 text-white">
+              <div className="rounded-lg border border-slate-200 bg-slate-900 p-5 text-white">
                 <p className="text-sm text-slate-300">Total Courses</p>
                 <p className="mt-2 text-3xl font-bold">
                   {displayedCourses.length}
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="rounded-lg border border-slate-200 bg-white p-5">
                 <p className="text-sm text-sky-700">Professors Available</p>
                 <p className="mt-2 text-3xl font-bold text-slate-900">
                   {professors.length}
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="rounded-lg border border-slate-200 bg-white p-5">
                 <p className="text-sm text-blue-700">Total Capacity</p>
                 <p className="mt-2 text-3xl font-bold text-slate-900">
                   {totalCapacity}
@@ -255,7 +255,7 @@ const Courses = () => {
 
         <div className={`grid gap-8 ${canManageCourses ? "lg:grid-cols-3" : ""}`}>
           {canManageCourses && (
-          <div className="rounded-[1.75rem] border border-blue-100 bg-white p-6 shadow-lg shadow-blue-100/40">
+          <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="mb-2 text-xl font-semibold text-slate-900">
               {editId ? "Edit Course" : "Add Course"}
             </h2>
@@ -369,7 +369,7 @@ const Courses = () => {
           </div>
           )}
 
-          <div className={`overflow-hidden rounded-[1.75rem] border border-blue-100 bg-white p-6 shadow-lg shadow-blue-100/40 ${canManageCourses ? "lg:col-span-2" : ""}`}>
+          <div className={`overflow-hidden rounded-lg border border-slate-200 bg-white p-6 shadow-sm ${canManageCourses ? "lg:col-span-2" : ""}`}>
             <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="text-xl font-semibold text-slate-900">

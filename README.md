@@ -117,7 +117,7 @@ npm run build
 
 ## Presentation Notes
 
-The project uses access tokens for protected requests and HTTP-only cookies for session continuity. The backend sets a short-lived `token` cookie and a longer-lived `refreshToken` cookie; the refresh token is hashed in the database, rotated on refresh, and revoked on logout. This gives the project a more realistic authentication flow than storing one long-lived token in the browser.
+The project uses access tokens for protected requests and HTTP-only cookies for session continuity. The backend sets a short-lived `token` cookie plus longer-lived `sessionId` and `refreshToken` cookies for refresh/session continuity; the signed refresh token is hashed in the database, rotated on refresh, and revoked on logout. This gives the project a more realistic authentication flow than storing one long-lived token in the browser.
 
 Protected routes also re-check the user in the database. If a user becomes pending, rejected, or deleted after login, old access tokens stop working.
 

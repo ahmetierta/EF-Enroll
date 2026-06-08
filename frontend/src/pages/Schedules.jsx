@@ -194,9 +194,9 @@ const Schedules = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-300 p-6 text-slate-900 lg:p-8">
+    <div className="min-h-screen bg-slate-50 p-6 text-slate-900 lg:p-8">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-8 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+        <div className="mb-8 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="grid gap-8 px-6 py-8 lg:grid-cols-[1.5fr_1fr] lg:px-10">
             <div>
               <span className="inline-flex rounded-full bg-sky-100 px-3 py-1 text-sm font-semibold text-sky-700">
@@ -212,19 +212,19 @@ const Schedules = () => {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
-              <div className="rounded-2xl border border-slate-200 bg-slate-900 p-5 text-white">
+              <div className="rounded-lg border border-slate-200 bg-slate-900 p-5 text-white">
                 <p className="text-sm text-slate-300">Total Schedules</p>
                 <p className="mt-2 text-3xl font-bold">{schedules.length}</p>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="rounded-lg border border-slate-200 bg-white p-5">
                 <p className="text-sm text-sky-700">Scheduled Courses</p>
                 <p className="mt-2 text-3xl font-bold text-slate-900">
                   {scheduledCourses}
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="rounded-lg border border-slate-200 bg-white p-5">
                 <p className="text-sm text-blue-700">Rooms Used</p>
                 <p className="mt-2 text-3xl font-bold text-slate-900">
                   {uniqueRooms}
@@ -240,7 +240,7 @@ const Schedules = () => {
 
         <div className={`grid gap-8 ${canManageSchedules ? "lg:grid-cols-3" : ""}`}>
           {canManageSchedules && (
-          <div className="rounded-[1.75rem] border border-blue-100 bg-white p-6 shadow-lg shadow-blue-100/40">
+          <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="mb-2 text-xl font-semibold text-slate-900">
               {editId ? "Edit Schedule" : "Add Schedule"}
             </h2>
@@ -346,7 +346,7 @@ const Schedules = () => {
           </div>
           )}
 
-          <div className={`overflow-hidden rounded-[1.75rem] border border-blue-100 bg-white p-6 shadow-lg shadow-blue-100/40 ${canManageSchedules ? "lg:col-span-2" : ""}`}>
+          <div className={`overflow-hidden rounded-lg border border-slate-200 bg-white p-6 shadow-sm ${canManageSchedules ? "lg:col-span-2" : ""}`}>
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-slate-900">
                 Schedules List
