@@ -845,3 +845,19 @@ SELECT id, 'Dr.', 'Data Science'
 FROM users
 WHERE email = 'alma.professor@ef-enroll.test'
   AND NOT EXISTS (SELECT 1 FROM professors WHERE user_id = users.id);
+
+INSERT INTO users (username, email, password_hash, role, status)
+SELECT 'Elda Hoti', 'elda.student@ef-enroll.test', @demo_password_hash, 'student', 'approved'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'elda.student@ef-enroll.test');
+
+INSERT INTO users (username, email, password_hash, role, status)
+SELECT 'Noel Daci', 'noel.student@ef-enroll.test', @demo_password_hash, 'student', 'approved'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'noel.student@ef-enroll.test');
+
+INSERT INTO users (username, email, password_hash, role, status)
+SELECT 'Mira Kodra', 'mira.student@ef-enroll.test', @demo_password_hash, 'student', 'approved'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'mira.student@ef-enroll.test');
+
+INSERT INTO users (username, email, password_hash, role, status)
+SELECT 'Arian Leka', 'arian.student@ef-enroll.test', @demo_password_hash, 'student', 'approved'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'arian.student@ef-enroll.test');
