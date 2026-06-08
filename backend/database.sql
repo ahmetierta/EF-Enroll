@@ -861,3 +861,27 @@ WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'mira.student@ef-enroll.test
 INSERT INTO users (username, email, password_hash, role, status)
 SELECT 'Arian Leka', 'arian.student@ef-enroll.test', @demo_password_hash, 'student', 'approved'
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'arian.student@ef-enroll.test');
+
+INSERT INTO students (user_id, numri_studentit, programi, viti_studimit)
+SELECT id, 'STU-2026-0012', 'Cybersecurity', 2
+FROM users
+WHERE email = 'elda.student@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM students WHERE numri_studentit = 'STU-2026-0012');
+
+INSERT INTO students (user_id, numri_studentit, programi, viti_studimit)
+SELECT id, 'STU-2026-0013', 'Software Engineering', 1
+FROM users
+WHERE email = 'noel.student@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM students WHERE numri_studentit = 'STU-2026-0013');
+
+INSERT INTO students (user_id, numri_studentit, programi, viti_studimit)
+SELECT id, 'STU-2026-0014', 'Business Administration', 3
+FROM users
+WHERE email = 'mira.student@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM students WHERE numri_studentit = 'STU-2026-0014');
+
+INSERT INTO students (user_id, numri_studentit, programi, viti_studimit)
+SELECT id, 'STU-2026-0015', 'Data Science', 4
+FROM users
+WHERE email = 'arian.student@ef-enroll.test'
+  AND NOT EXISTS (SELECT 1 FROM students WHERE numri_studentit = 'STU-2026-0015');
