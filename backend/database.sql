@@ -803,3 +803,15 @@ SELECT c.id, c.professor_id, 'Free course enrollment is open', 'Students can enr
 FROM courses c
 WHERE c.cmimi = 0.00
   AND NOT EXISTS (SELECT 1 FROM announcements WHERE course_id = c.id AND titulli = 'Free course enrollment is open');
+
+INSERT INTO departments (emertimi, pershkrimi, shefi_departamentit)
+SELECT 'Cybersecurity', 'Security operations, secure coding, systems defense, and digital risk courses.', 'Valmira Rexha'
+WHERE NOT EXISTS (SELECT 1 FROM departments WHERE emertimi = 'Cybersecurity');
+
+INSERT INTO departments (emertimi, pershkrimi, shefi_departamentit)
+SELECT 'Career Development', 'Professional skills, portfolio building, communication, and employability workshops.', 'Mentor Gashi'
+WHERE NOT EXISTS (SELECT 1 FROM departments WHERE emertimi = 'Career Development');
+
+INSERT INTO semesters (emertimi, data_fillimit, data_perfundimit, statusi)
+SELECT 'Summer 2026', '2026-07-01', '2026-08-28', 'planned'
+WHERE NOT EXISTS (SELECT 1 FROM semesters WHERE emertimi = 'Summer 2026');
