@@ -815,3 +815,15 @@ WHERE NOT EXISTS (SELECT 1 FROM departments WHERE emertimi = 'Career Development
 INSERT INTO semesters (emertimi, data_fillimit, data_perfundimit, statusi)
 SELECT 'Summer 2026', '2026-07-01', '2026-08-28', 'planned'
 WHERE NOT EXISTS (SELECT 1 FROM semesters WHERE emertimi = 'Summer 2026');
+
+INSERT INTO users (username, email, password_hash, role, status)
+SELECT 'Valmira Rexha', 'valmira.professor@ef-enroll.test', @demo_password_hash, 'professor', 'approved'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'valmira.professor@ef-enroll.test');
+
+INSERT INTO users (username, email, password_hash, role, status)
+SELECT 'Mentor Gashi', 'mentor.professor@ef-enroll.test', @demo_password_hash, 'professor', 'approved'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'mentor.professor@ef-enroll.test');
+
+INSERT INTO users (username, email, password_hash, role, status)
+SELECT 'Alma Bytyqi', 'alma.professor@ef-enroll.test', @demo_password_hash, 'professor', 'pending'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'alma.professor@ef-enroll.test');
