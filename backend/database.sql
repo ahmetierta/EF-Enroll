@@ -917,3 +917,27 @@ JOIN users u ON u.id = p.user_id
 JOIN semesters s ON s.emertimi = 'Summer 2026'
 WHERE u.email = 'mentor.professor@ef-enroll.test'
   AND NOT EXISTS (SELECT 1 FROM courses WHERE emertimi = 'Professional Communication');
+
+INSERT INTO schedules (course_id, dita, ora_fillimit, ora_perfundimit, salla)
+SELECT id, 'Monday', '09:00:00', '10:15:00', 'Security Lab'
+FROM courses
+WHERE emertimi = 'Digital Safety Basics'
+  AND NOT EXISTS (SELECT 1 FROM schedules WHERE course_id = courses.id AND dita = 'Monday' AND ora_fillimit = '09:00:00');
+
+INSERT INTO schedules (course_id, dita, ora_fillimit, ora_perfundimit, salla)
+SELECT id, 'Tuesday', '14:00:00', '15:30:00', 'Career Room'
+FROM courses
+WHERE emertimi = 'Portfolio Sprint'
+  AND NOT EXISTS (SELECT 1 FROM schedules WHERE course_id = courses.id AND dita = 'Tuesday' AND ora_fillimit = '14:00:00');
+
+INSERT INTO schedules (course_id, dita, ora_fillimit, ora_perfundimit, salla)
+SELECT id, 'Wednesday', '10:00:00', '12:00:00', 'Security Lab'
+FROM courses
+WHERE emertimi = 'Ethical Hacking Lab'
+  AND NOT EXISTS (SELECT 1 FROM schedules WHERE course_id = courses.id AND dita = 'Wednesday' AND ora_fillimit = '10:00:00');
+
+INSERT INTO schedules (course_id, dita, ora_fillimit, ora_perfundimit, salla)
+SELECT id, 'Thursday', '11:00:00', '12:30:00', 'Room 9'
+FROM courses
+WHERE emertimi = 'Professional Communication'
+  AND NOT EXISTS (SELECT 1 FROM schedules WHERE course_id = courses.id AND dita = 'Thursday' AND ora_fillimit = '11:00:00');
