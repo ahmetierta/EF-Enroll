@@ -42,7 +42,6 @@ const Login = () => {
       navigate(redirectPath);
     } catch (err) {
       setError(err.response?.data?.message || "Invalid email or password.");
-      console.log(err.message);
     } finally {
       setLoading(false);
     }

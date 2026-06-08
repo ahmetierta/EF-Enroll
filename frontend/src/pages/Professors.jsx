@@ -41,14 +41,24 @@ const Professors = () => {
     professorService
       .getAll()
       .then((res) => setProfessors(res.data))
-      .catch((err) => console.log(err));
+      .catch((err) =>
+        setNotice({
+          type: "error",
+          message: getApiErrorMessage(err, "Professors could not be loaded."),
+        })
+      );
   }
 
   function fetchDepartments() {
     departmentService
       .getAll()
       .then((res) => setDepartments(res.data))
-      .catch((err) => console.log(err));
+      .catch((err) =>
+        setNotice({
+          type: "error",
+          message: getApiErrorMessage(err, "Departments could not be loaded."),
+        })
+      );
   }
 
   useEffect(() => {
@@ -84,7 +94,6 @@ const Professors = () => {
         setNotice({ type: "success", message: "Professor updated successfully." });
       })
       .catch((err) => {
-        console.log(err);
         setNotice({ type: "error", message: getApiErrorMessage(err, "Failed to update professor.") });
       });
   };
@@ -105,7 +114,6 @@ const Professors = () => {
         setNotice({ type: "success", message: "Professor deleted successfully." });
       })
       .catch((err) => {
-        console.log(err);
         setNotice({ type: "error", message: getApiErrorMessage(err, "Failed to delete professor.") });
       });
   };

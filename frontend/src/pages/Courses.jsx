@@ -8,6 +8,7 @@ import TextInput from "../components/ui/TextInput";
 import { courseService } from "../services/courseService";
 import { professorService } from "../services/professorService";
 import { semesterService } from "../services/semesterService";
+import { getApiErrorMessage } from "../utils/apiErrors";
 import { getAuthUser } from "../utils/authStorage";
 import { courseSchema, validateForm } from "../validation/schemas";
 
@@ -41,10 +42,6 @@ function getScheduleLabel(course) {
   return "No schedule set";
 }
 
-function getErrorMessage(err, fallback) {
-  return err.response?.data?.message || err.response?.data?.error || fallback;
-}
-
 const Courses = () => {
   const authUser = getAuthUser();
   const canManageCourses = authUser?.role === "admin";
@@ -60,21 +57,36 @@ const Courses = () => {
     courseService
       .getAll()
       .then((res) => setCourses(res.data))
-      .catch((err) => console.log(err));
+      .catch((err) =>
+        setNotice({
+          type: "error",
+          message: getApiErrorMessage(err, "Courses could not be loaded."),
+        })
+      );
   }
 
   function fetchProfessors() {
     professorService
       .getAll()
       .then((res) => setProfessors(res.data))
-      .catch((err) => console.log(err));
+      .catch((err) =>
+        setNotice({
+          type: "error",
+          message: getApiErrorMessage(err, "Professors could not be loaded."),
+        })
+      );
   }
 
   function fetchSemesters() {
     semesterService
       .getAll()
       .then((res) => setSemesters(res.data))
-      .catch((err) => console.log(err));
+      .catch((err) =>
+        setNotice({
+          type: "error",
+          message: getApiErrorMessage(err, "Semesters could not be loaded."),
+        })
+      );
   }
 
   useEffect(() => {
@@ -118,8 +130,7 @@ const Courses = () => {
         setNotice({ type: "success", message: "Course added successfully." });
       })
       .catch((err) => {
-        console.log(err);
-        setNotice({ type: "error", message: getErrorMessage(err, "Failed to add course.") });
+        setNotice({ type: "error", message: getApiErrorMessage(err, "Failed to add course.") });
       });
   };
 
@@ -144,8 +155,7 @@ const Courses = () => {
         setNotice({ type: "success", message: "Course updated successfully." });
       })
       .catch((err) => {
-        console.log(err);
-        setNotice({ type: "error", message: getErrorMessage(err, "Failed to update course.") });
+        setNotice({ type: "error", message: getApiErrorMessage(err, "Failed to update course.") });
       });
   };
 
@@ -170,8 +180,7 @@ const Courses = () => {
         setNotice({ type: "success", message: "Course deleted successfully." });
       })
       .catch((err) => {
-        console.log(err);
-        setNotice({ type: "error", message: getErrorMessage(err, "Failed to delete course.") });
+        setNotice({ type: "error", message: getApiErrorMessage(err, "Failed to delete course.") });
       });
   };
 

@@ -5,6 +5,7 @@ import SelectInput from "../../components/ui/SelectInput";
 import TextInput from "../../components/ui/TextInput";
 import AuthContext from "../../context/AuthContext";
 import { departmentService } from "../../services/departmentService";
+import { getApiErrorMessage } from "../../utils/apiErrors";
 import {
   professorRegisterSchema,
   validateForm,
@@ -28,7 +29,9 @@ const RegisterProfessor = () => {
     departmentService
       .getAll()
       .then((res) => setDepartments(res.data))
-      .catch((err) => console.log(err));
+      .catch((err) =>
+        setError(getApiErrorMessage(err, "Departments could not be loaded."))
+      );
   }
 
   useEffect(() => {
@@ -62,7 +65,6 @@ const RegisterProfessor = () => {
       });
     } catch (err) {
       setError(err.response?.data?.message || "Error occurred while registering.");
-      console.log(err.message);
     } finally {
       setLoading(false);
     }

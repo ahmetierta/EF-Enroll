@@ -65,7 +65,6 @@ const RegisterStudent = () => {
       });
     } catch (err) {
       setError(err.response?.data?.message || "Error occurred while registering.");
-      console.log(err.message);
     } finally {
       setLoading(false);
     }

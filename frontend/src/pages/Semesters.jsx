@@ -28,7 +28,12 @@ const Semesters = () => {
     semesterService
       .getAll()
       .then((res) => setSemesters(res.data))
-      .catch((err) => console.log(err));
+      .catch((err) =>
+        setNotice({
+          type: "error",
+          message: getApiErrorMessage(err, "Semesters could not be loaded."),
+        })
+      );
   }
 
   useEffect(() => {
@@ -63,7 +68,6 @@ const Semesters = () => {
         setNotice({ type: "success", message: "Semester added successfully." });
       })
       .catch((err) => {
-        console.log(err);
         setNotice({ type: "error", message: getApiErrorMessage(err, "Failed to add semester.") });
       });
   };
@@ -84,7 +88,6 @@ const Semesters = () => {
         setNotice({ type: "success", message: "Semester updated successfully." });
       })
       .catch((err) => {
-        console.log(err);
         setNotice({ type: "error", message: getApiErrorMessage(err, "Failed to update semester.") });
       });
   };
@@ -105,7 +108,6 @@ const Semesters = () => {
         setNotice({ type: "success", message: "Semester deleted successfully." });
       })
       .catch((err) => {
-        console.log(err);
         setNotice({ type: "error", message: getApiErrorMessage(err, "Failed to delete semester.") });
       });
   };
